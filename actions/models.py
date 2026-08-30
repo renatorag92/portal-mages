@@ -16,10 +16,10 @@ class Acao(models.Model):
     
     class Meta:
         verbose_name_plural = 'Ações'
-
+        
+    # Retorna o nome da etapa quando for chamado o objeto
     def __str__(self):
-        return f"{self.codigo} - {self.nome}" # Retorna o nome da etapa quando for chamado o objeto
-
+        return f"{self.codigo} - {self.nome}" 
 
 class Etapa(models.Model):
     

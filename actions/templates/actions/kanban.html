@@ -22,6 +22,9 @@
                         <div class="card-body">
                             <h6 class="card-title fw-bold">{{ acao.codigo }} - {{ acao.nome }}</h6>
                             <p class="card-text text-muted small">{{ acao.observacao }}</p>
+                            <!-- ⚠️ ATENÇÃO FRONTEND: Não remover o csrf_token nem alterar o 'action'. Eles garantem a segurança e o envio correto da alteração de status para o Django. Também não mexer na sintaxe dos forms, para não quebrar a página -->
+<form action="{% url 'atualizar_status_acao' acao.id %}" method="POST" class="mt-2">
+    {% csrf_token %}
                             <form action="{% url 'atualizar_status_acao' acao.id %}" method="POST" class="mt-2">
     {% csrf_token %}
     <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -65,6 +68,7 @@
                         <div class="card-body">
                             <h6 class="card-title fw-bold">{{ acao.codigo }} - {{ acao.nome }}</h6>
                             <p class="card-text text-muted small">{{ acao.observacao }}</p>
+                            <!-- ⚠️ ATENÇÃO FRONTEND: Não remover o csrf_token nem alterar o 'action'. Eles garantem a segurança e o envio correto da alteração de status para o Django. Também não mexer na sintaxe dos forms, para não quebrar a página -->
                            <form action="{% url 'atualizar_status_acao' acao.id %}" method="POST" class="mt-2">
     {% csrf_token %}
     <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -108,6 +112,7 @@
                         <div class="card-body">
                             <h6 class="card-title fw-bold">{{ acao.codigo }} - {{ acao.nome }}</h6>
                             <p class="card-text text-muted small">{{ acao.observacao }}</p>
+                            <!-- ⚠️ ATENÇÃO FRONTEND: Não remover o csrf_token nem alterar o 'action'. Eles garantem a segurança e o envio correto da alteração de status para o Django. Também não mexer na sintaxe dos forms, para não quebrar a página -->
                             <form action="{% url 'atualizar_status_acao' acao.id %}" method="POST" class="mt-2">
     {% csrf_token %}
     <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -151,6 +156,7 @@
                         <div class="card-body">
                             <h6 class="card-title fw-bold">{{ acao.codigo }} - {{ acao.nome }}</h6>
                             <p class="card-text text-muted small">{{ acao.observacao }}</p>
+                            <!-- ⚠️ ATENÇÃO FRONTEND: Não remover o csrf_token nem alterar o 'action'. Eles garantem a segurança e o envio correto da alteração de status para o Django. Também não mexer na sintaxe dos forms, para não quebrar a página -->
                             <form action="{% url 'atualizar_status_acao' acao.id %}" method="POST" class="mt-2">
     {% csrf_token %}
     <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -194,6 +200,7 @@
                         <div class="card-body">
                             <h6 class="card-title fw-bold">{{ acao.codigo }} - {{ acao.nome }}</h6>
                             <p class="card-text text-muted small">{{ acao.observacao }}</p>
+                            <!-- ⚠️ ATENÇÃO FRONTEND: Não remover o csrf_token nem alterar o 'action'. Eles garantem a segurança e o envio correto da alteração de status para o Django. Também não mexer na sintaxe dos forms, para não quebrar a página -->
                             <form action="{% url 'atualizar_status_acao' acao.id %}" method="POST" class="mt-2">
     {% csrf_token %}
     <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -237,6 +244,7 @@
                         <div class="card-body">
                             <h6 class="card-title fw-bold">{{ acao.codigo }} - {{ acao.nome }}</h6>
                             <p class="card-text text-muted small">{{ acao.observacao }}</p>
+                            <!-- ⚠️ ATENÇÃO FRONTEND: Não remover o csrf_token nem alterar o 'action'. Eles garantem a segurança e o envio correto da alteração de status para o Django. Também não mexer na sintaxe dos forms, para não quebrar a página -->
                             <form action="{% url 'atualizar_status_acao' acao.id %}" method="POST" class="mt-2">
     {% csrf_token %}
     <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
