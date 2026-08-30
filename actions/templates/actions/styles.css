@@ -1,0 +1,5 @@
+.kanban-column {
+    width: 260px;
+    min-width: 260px;
+    flex: 0 0 260px;
+}
