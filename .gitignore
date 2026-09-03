@@ -10,7 +10,6 @@ __pyache__/
 
 # Configurações de IDE
 .vscode/
-images/
 .env
 
 
