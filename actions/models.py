@@ -4,7 +4,7 @@ from .choices import Status_status, Status_prioridade, Status_eixo
 
 class Acao(models.Model):
 
-    codigo = models.CharField(max_length=10)
+    codigo = models.CharField(max_length=10, unique=True) # ex.: A001, A002, etc.
     nome = models.CharField(max_length=100)
     eixo = models.CharField(max_length=100, choices=Status_eixo)
     prioridade = models.CharField(max_length=20, choices=Status_prioridade)
