@@ -1,5 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login  # IMPORTAÇÃO NECESSÁRIA
+from django.contrib import messages                   # IMPORTAÇÃO NECESSÁRIA
 from .models import Acao
 from .choices import Status_status
 
@@ -26,4 +28,19 @@ def atualizar_status_acao(request, acao_id):
             acao.status = novo_status
             acao.save()
             
-    return redirect('kanban')  # Redireciona para a lista de ações após a atualização
+    return redirect('kanban')
+
+def login_view(request):
+    if request.method == 'POST':
+        contrato = request.POST.get('username')
+        senha = request.POST.get('password')
+        
+        user = authenticate(request, username=contrato, password=senha)
+        
+        if user is not None:
+            login(request, user)
+            return redirect('kanban')
+        else:
+            messages.error(request, 'Contrato ou senha inválidos.')
+
+    return render(request, 'actions/login.html')
