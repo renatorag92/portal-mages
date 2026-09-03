@@ -9,9 +9,9 @@ class Status_eixo(models.TextChoices):
 
 class Status_status(models.TextChoices):
         PLANEJADO = 'planejado', 'Planejado'
-        EM_PREPARACAO = 'em_preparacao', 'Em preparação'
-        EM_EXECUCAO = 'em_execucao', 'Em execução'
-        EM_VALIDACAO = 'em_validacao', 'Em validação'
+        EM_PREPARACAO = 'preparacao', 'Em preparação'
+        EM_EXECUCAO = 'execucao', 'Em execução'
+        EM_VALIDACAO = 'validacao', 'Em validação'
         CONCLUIDO = 'concluido', 'Concluído'
         CANCELADO = 'cancelado', 'Cancelado'
 

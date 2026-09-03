@@ -117,6 +117,15 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+import os
+
+STATIC_URL = 'static/'
+
+# Esta linha diz ao Django para procurar pastas "static" dentro de cada app instalado
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+]
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration

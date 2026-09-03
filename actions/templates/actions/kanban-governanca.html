@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+{% load static %}
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kanban de Governança</title>
+  <link rel="stylesheet" href="{% static 'actions/css/kanban-governanca.css' %}">
+</head>
+
+<body>
+  <div class="frame">
+    <div class="app">
+      <!-- Sidebar -->
+      <div class="sidebar" id="sidebar">
+        <div class="sidebar-brand" id="sidebarToggle">
+          <div class="logo">
+            <img src="{% static 'actions/images/portal-mages.png' %}" alt="Logo MAGES" class="logo-img">
+          </div>
+          <!-- <div class="brand-text">
+            <span class="brand-name">
+              PORTAL MAGES</span>
+            <span class="brand-sub">SISTEMA DE GOVERNANÇA<br>E EFICIÊNCIA SISTÊMICA</span>
+          </div> -->
+        </div>
+        <div class="sidebar-menu">
+          <div class="menu-item">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+            <span class="label">Dashboard</span>
+          </div>
+          <div class="menu-item">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="8" y1="6" x2="21" y2="6" />
+              <line x1="8" y1="12" x2="21" y2="12" />
+              <line x1="8" y1="18" x2="21" y2="18" />
+              <line x1="3" y1="6" x2="3.01" y2="6" />
+              <line x1="3" y1="12" x2="3.01" y2="12" />
+              <line x1="3" y1="18" x2="3.01" y2="18" />
+            </svg>
+            <span class="label">Gestão de Ações</span>
+          </div>
+          <div class="menu-item">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <span class="label">Plano de Execução</span>
+          </div>
+          <div class="menu-item active">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="9" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span class="label">Kanban de Governança</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main -->
+      <div class="main">
+        <div class="topbar">
+          <h1>Kanban de Governança</h1>
+          <div class="topbar-icons">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+            <div class="avatar">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="filters">
+          <select>
+            <option>Selecione o eixo específico</option>
+          </select>
+          <input class="search" type="text" placeholder="🔍 Buscar ação...">
+        </div>
+
+        <div class="board-wrapper">
+          <div class="board">
+
+            <div class="column col-planejado">
+              <div class="column-header">
+                <span class="title">Planejado</span>
+                <span class="count">{{ kanban.planejado|length }}</span>
+              </div>
+              <div class="column-body">
+                {% for acao in kanban.planejado %}
+                <div class="task-card">
+                  <span class="task-id"> ACÃO {{acao.codigo}}</span>
+                  <div class="task-desc">{{acao.nome}}</div>
+
+                  <!-- Formulário para alterar o status no Django -->
+                  <form action="{% url 'atualizar_status_acao' acao.id %}" method="post">
+                    {% csrf_token %}
+                    <select name="status" class="status-select" onchange="this.form.submit()">
+                      <option value="planejado">Planejado</option>
+                      <option value="preparacao">Em preparação</option>
+                      <option value="execucao">Em execução</option>
+                      <option value="validacao">Em validação</option>
+                      <option value="concluido">Concluído</option>
+                      <option value="cancelado">Cancelado</option>
+                    </select>
+                  </form>
+                </div>
+                {% empty %}
+                <div class="empty-column-msg">Nenhuma ação nesta fase.
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="column col-preparacao">
+              <div class="column-header">
+                <span class="title">Em preparação</span>
+                <span class="count">{{ kanban.preparacao|length }}</span>
+              </div>
+              <div class="column-body">
+                {% for acao in kanban.preparacao %}
+                <div class="task-card">
+                  <span class="task-id">ACÃO {{acao.codigo}}</span>
+                  <div class="task-desc">{{acao.nome}}</div>
+                  <!-- Formulário para alterar o status no Django -->
+                  <form action="{% url 'atualizar_status_acao' acao.id %}" method="post">
+                    {% csrf_token %}
+                    <select name="status" class="status-select" onchange="this.form.submit()">
+                      <option value="planejado">Planejado</option>
+                      <option value="preparacao">Em preparação</option>
+                      <option value="execucao">Em execução</option>
+                      <option value="validacao">Em validação</option>
+                      <option value="concluido">Concluído</option>
+                      <option value="cancelado">Cancelado</option>
+                    </select>
+                  </form>
+                </div>
+                {% empty %}
+                <div class="empty-column-msg">Nenhuma ação nesta fase.</div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="column col-execucao">
+              <div class="column-header">
+                <span>Em execução</span>
+              </div>
+              <div class="column-body">
+                {% for acao in kanban.execucao %}
+                <div class="task-card">
+                  <span class="task-id">{{acao.codigo}}</span>
+                  <div class="task-desc">{{acao.nome}}</div>
+                  <!-- Formulário para alterar o status no Django -->
+                  <form action="{% url 'atualizar_status_acao' acao.id %}" method="post">
+                    {% csrf_token %}
+                    <select name="status" class="status-select" onchange="this.form.submit()">
+                      <option value="planejado">Planejado</option>
+                      <option value="preparacao">Em preparação</option>
+                      <option value="execucao">Em execução</option>
+                      <option value="validacao">Em validação</option>
+                      <option value="concluido">Concluído</option>
+                      <option value="cancelado">Cancelado</option>
+                    </select>
+                  </form>
+                </div>
+                {% empty %}
+                <div class="empty-column-msg">Nenhuma ação nesta fase.</div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="column col-validacao">
+              <div class="column-header">
+                <span>Em validação</span>
+                <span class="count">{{ kanban.validacao|length }}</span>
+              </div>
+              <div class="column-body">
+                {% for acao in kanban.validacao %}
+                <div class="task-card">
+                  <span class="task-id">AÇÃO {{acao.codigo}}</span>
+                  <div class="task-desc">{{acao.nome}}</div>
+                  <!-- Formulário para alterar o status no Django -->
+                  <form action="{% url 'atualizar_status_acao' acao.id %}" method="post">
+                    {% csrf_token %}
+                    <select name="status" class="status-select" onchange="this.form.submit()">
+                      <option value="planejado">Planejado</option>
+                      <option value="preparacao">Em preparação</option>
+                      <option value="execucao">Em execução</option>
+                      <option value="validacao">Em validação</option>
+                      <option value="concluido">Concluído</option>
+                      <option value="cancelado">Cancelado</option>
+                    </select>
+                  </form>
+                </div>
+                {% empty %}
+                <div class="empty-column-msg">Nenhuma ação nesta fase.</div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="column col-concluido">
+              <div class="column-header">
+                <span>Concluído</span>
+                <span class="count">{{ kanban.concluido|length }}</span>
+              </div>
+              <div class="column-body">
+                {% for acao in kanban.concluido %}
+                <div class="task-card">
+                  <span class="task-id">{{acao.codigo}}</span>
+                  <div class="task-desc">{{acao.nome}}</div>
+                  <!-- Formulário para alterar o status no Django -->
+                  <form action="{% url 'atualizar_status_acao' acao.id %}" method="post">
+                    {% csrf_token %}
+                    <select name="status" class="status-select" onchange="this.form.submit()">
+                      <option value="planejado">Planejado</option>
+                      <option value="preparacao">Em preparação</option>
+                      <option value="execucao">Em execução</option>
+                      <option value="validacao">Em validação</option>
+                      <option value="concluido">Concluído</option>
+                      <option value="cancelado">Cancelado</option>
+                    </select>
+                  </form>
+                </div>
+                {% empty %}
+                <div class="empty-column-msg">Nenhuma ação nesta fase.</div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="column col-cancelado">
+              <div class="column-header">
+                <span>Cancelado</span>
+                <span class="count">{{ kanban.cancelado|length }}</span>
+              </div>
+              <div class="column-body">
+                {% for acao in kanban.cancelado %}
+                <div class="task-card highlight">
+                  <span class="task-id">{{acao.codigo}}</span>
+                  <div class="task-desc">{{acao.nome}}</div>
+                </div>
+                {% empty %}
+                <div class="empty-column-msg">Nenhuma ação nesta fase.</div>
+                {% endfor %}
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const sidebar = document.getElementById('sidebar');
+
+    document.getElementById('sidebarToggle').addEventListener('click', function () {
+      sidebar.classList.toggle('expanded');
+    });
+
+    sidebar.addEventListener('mouseenter', function () {
+      sidebar.classList.add('hover-expanded');
+    });
+    sidebar.addEventListener('mouseleave', function () {
+      sidebar.classList.remove('hover-expanded');
+    });
+  </script>
+
+</body>
+
+</html>
