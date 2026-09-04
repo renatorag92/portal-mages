@@ -1,0 +1,42 @@
+body {
+    background-color: #f2f0eb; /* Fundo bege claro da tela */
+}
+
+.login-card {
+    background-color: #c4c4c4; /* Cinza do card principal */
+    width: 100%;
+    max-width: 420px;
+        border-radius: 12px;
+}
+
+.form-control-custom {
+    background-color: #d9d9d9; /* Cinza dos inputs */
+    border: 1px solid #a6a6a6;
+    height: 42px;
+}
+
+.form-control-custom:focus {
+    background-color: #e6e6e6;
+    border-color: #2a9d8f;
+    box-shadow: none;
+}
+
+.btn-custom {
+    background-color: #2a9d8f; /* Verde do botão */
+    color: #ffffff;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 30px;
+}
+
+.btn-custom:hover {
+    background-color: #238377;
+    color: #ffffff;
+}
+
+.label-custom {
+    color: #555555;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
