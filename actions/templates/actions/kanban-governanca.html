@@ -114,7 +114,6 @@
                   <form action="{% url 'atualizar_status_acao' acao.id %}" method="post">
                     {% csrf_token %}
                     <select name="status" class="status-select" onchange="this.form.submit()">
-                      <option value="planejado">Planejado</option>
                       <option value="preparacao">Em preparação</option>
                       <option value="execucao">Em execução</option>
                       <option value="validacao">Em validação</option>
@@ -145,7 +144,6 @@
                     {% csrf_token %}
                     <select name="status" class="status-select" onchange="this.form.submit()">
                       <option value="planejado">Planejado</option>
-                      <option value="preparacao">Em preparação</option>
                       <option value="execucao">Em execução</option>
                       <option value="validacao">Em validação</option>
                       <option value="concluido">Concluído</option>
@@ -162,6 +160,7 @@
             <div class="column col-execucao">
               <div class="column-header">
                 <span>Em execução</span>
+                <span class="count">{{ kanban.execucao|length }}</span>
               </div>
               <div class="column-body">
                 {% for acao in kanban.execucao %}
@@ -174,7 +173,6 @@
                     <select name="status" class="status-select" onchange="this.form.submit()">
                       <option value="planejado">Planejado</option>
                       <option value="preparacao">Em preparação</option>
-                      <option value="execucao">Em execução</option>
                       <option value="validacao">Em validação</option>
                       <option value="concluido">Concluído</option>
                       <option value="cancelado">Cancelado</option>
@@ -204,7 +202,6 @@
                       <option value="planejado">Planejado</option>
                       <option value="preparacao">Em preparação</option>
                       <option value="execucao">Em execução</option>
-                      <option value="validacao">Em validação</option>
                       <option value="concluido">Concluído</option>
                       <option value="cancelado">Cancelado</option>
                     </select>
@@ -234,7 +231,6 @@
                       <option value="preparacao">Em preparação</option>
                       <option value="execucao">Em execução</option>
                       <option value="validacao">Em validação</option>
-                      <option value="concluido">Concluído</option>
                       <option value="cancelado">Cancelado</option>
                     </select>
                   </form>

@@ -18,15 +18,19 @@
   box-sizing: border-box;
 }
 
+html {
+  height: 100%;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: #000;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: stretch;
   width: 100%;
-  min-height: 100%;
+  min-height: 100vh;
   padding: 0;
 }
 
@@ -38,12 +42,15 @@ body {
   border-radius: 0;
   overflow: hidden;
   box-shadow: none;
+  display: flex;
+  flex-direction: column;
 }
 
 .app {
   display: flex;
   background: var(--bg);
   min-height: 640px;
+  flex: 1;
 }
 
 /* Sidebar */
