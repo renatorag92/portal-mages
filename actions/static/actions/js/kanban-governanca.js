@@ -1,248 +1,532 @@
-document.addEventListener('DOMContentLoaded', function () {
-  /* =====================================================
+document.addEventListener("DOMContentLoaded", function () {
+
+  /* =========================================================
      SIDEBAR
-  ===================================================== */
-  const sidebar = document.getElementById('sidebar');
+     ========================================================= */
+
+  const sidebar = document.getElementById("sidebar");
 
   if (sidebar) {
-    sidebar.addEventListener('mouseenter', function () {
-      sidebar.classList.add('hover-expanded');
+
+    sidebar.addEventListener("mouseenter", function () {
+      sidebar.classList.add("hover-expanded");
     });
 
-    sidebar.addEventListener('mouseleave', function () {
-      sidebar.classList.remove('hover-expanded');
+    sidebar.addEventListener("mouseleave", function () {
+      if (!sidebar.classList.contains("expanded")) {
+        sidebar.classList.remove("hover-expanded");
+      }
     });
+
   }
 
-  /* =====================================================
-     DRAG AND DROP DO KANBAN
-  ===================================================== */
-  /*
-   * Apenas cards que possuem draggable="true" podem ser arrastados.
-   * Os cards da coluna "Cancelado" não possuem esse atributo.
-   */
-  const cards = document.querySelectorAll('.task-card[draggable="true"]');
 
-  /*
-   * Pegamos as colunas inteiras como área de drop para funcionar 
-   * mesmo ao arrastar sobre o cabeçalho ou elementos internos.
-   */
-  const columns = document.querySelectorAll('.column');
+  /* =========================================================
+     MENU DE DETALHES DA AÇÃO
+     ========================================================= */
+
+  const menuButtons = document.querySelectorAll(".status-menu-toggle");
+
+  function closeAllMenus(exceptCard = null) {
+
+    document.querySelectorAll(".task-card.menu-open").forEach(function (card) {
+
+      if (card !== exceptCard) {
+
+        card.classList.remove("menu-open");
+
+        const menu = card.querySelector(".action-menu");
+
+        if (menu) {
+          menu.classList.remove("open");
+        }
+
+      }
+
+    });
+
+  }
+
+
+  function positionActionMenu(card, menu, button) {
+
+    const buttonRect = button.getBoundingClientRect();
+
+    const menuWidth = 330;
+    const menuHeight = menu.offsetHeight;
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let left = buttonRect.right + 10;
+    let top = buttonRect.top;
+
+    if (left + menuWidth > viewportWidth - 10) {
+      left = buttonRect.left - menuWidth - 10;
+    }
+
+    if (left < 10) {
+      left = 10;
+    }
+
+    if (top + menuHeight > viewportHeight - 10) {
+      top = viewportHeight - menuHeight - 10;
+    }
+
+    if (top < 10) {
+      top = 10;
+    }
+
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+  }
+
+
+  menuButtons.forEach(function (button) {
+
+    button.addEventListener("click", function (event) {
+
+      event.stopPropagation();
+
+      const card = button.closest(".task-card");
+      const menu = card.querySelector(".action-menu");
+
+      if (!menu) {
+        return;
+      }
+
+      const alreadyOpen = card.classList.contains("menu-open");
+
+      closeAllMenus(card);
+
+      if (alreadyOpen) {
+
+        card.classList.remove("menu-open");
+        menu.classList.remove("open");
+
+        return;
+      }
+
+      card.classList.add("menu-open");
+      menu.classList.add("open");
+
+      positionActionMenu(card, menu, button);
+
+    });
+
+  });
+
+
+  document.addEventListener("click", function (event) {
+
+    if (
+      !event.target.closest(".action-menu") &&
+      !event.target.closest(".status-menu-toggle")
+    ) {
+      closeAllMenus();
+    }
+
+  });
+
+
+  window.addEventListener("resize", function () {
+
+    document.querySelectorAll(".task-card.menu-open").forEach(function (card) {
+
+      const menu = card.querySelector(".action-menu");
+      const button = card.querySelector(".status-menu-toggle");
+
+      if (menu && button && menu.classList.contains("open")) {
+        positionActionMenu(card, menu, button);
+      }
+
+    });
+
+  });
+
+
+  window.addEventListener("scroll", function () {
+
+    document.querySelectorAll(".task-card.menu-open").forEach(function (card) {
+
+      const menu = card.querySelector(".action-menu");
+      const button = card.querySelector(".status-menu-toggle");
+
+      if (menu && button && menu.classList.contains("open")) {
+        positionActionMenu(card, menu, button);
+      }
+
+    });
+
+  }, true);
+
+
+  /* =========================================================
+     ALTERAÇÃO DE STATUS
+     ========================================================= */
+
+  const statusOptions = document.querySelectorAll(".status-option");
+
+  statusOptions.forEach(function (option) {
+
+    option.addEventListener("click", function (event) {
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const card = option.closest(".task-card");
+
+      if (!card) {
+        return;
+      }
+
+      /*
+       * Ação cancelada é definitiva.
+       * Não existe formulário de alteração dentro dela.
+       */
+      if (card.closest(".column")?.classList.contains("col-cancelado")) {
+        return;
+      }
+
+      const status = option.dataset.status;
+
+      const form = card.querySelector("form");
+
+      if (!form || !status) {
+        return;
+      }
+
+      const statusInput = form.querySelector('input[name="status"]');
+
+      if (!statusInput) {
+        return;
+      }
+
+      statusInput.value = status;
+
+      form.submit();
+
+    });
+
+  });
+
+
+  /* =========================================================
+     DRAG AND DROP
+     ========================================================= */
 
   let draggedCard = null;
 
-  /* =====================================================
-     INÍCIO E FIM DO ARRASTE (CARDS)
-  ===================================================== */
-  cards.forEach(function (card) {
-    card.addEventListener('dragstart', function (event) {
-      /*
-       * Segurança adicional: se por algum motivo um card cancelado 
-       * receber draggable="true", impede o arraste.
-       */
-      const origemBody = card.closest('.column-body');
+  const taskCards = document.querySelectorAll(".task-card");
 
-      if (origemBody && origemBody.dataset.status === 'cancelado') {
+  taskCards.forEach(function (card) {
+
+    /*
+     * Cards da coluna Cancelado não podem ser arrastados.
+     */
+    const isCancelled = card.closest(".col-cancelado");
+
+    if (isCancelled) {
+
+      card.setAttribute("draggable", "false");
+      card.classList.remove("dragging");
+
+      return;
+    }
+
+
+    card.addEventListener("dragstart", function (event) {
+
+      if (card.closest(".col-cancelado")) {
         event.preventDefault();
-        draggedCard = null;
         return;
       }
 
       draggedCard = card;
-      card.classList.add('dragging');
 
-      event.dataTransfer.effectAllowed = 'move';
-      event.dataTransfer.setData(
-        'text/plain',
-        card.querySelector('.task-id')?.textContent || 'card'
-      );
+      card.classList.add("dragging");
+
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", "kanban-card");
+
     });
 
-    card.addEventListener('dragend', function () {
-      card.classList.remove('dragging');
 
-      // Remove o destaque de todas as colunas
-      columns.forEach(function (column) {
-        column.classList.remove('drag-over');
+    card.addEventListener("dragend", function () {
+
+      card.classList.remove("dragging");
+
+      document.querySelectorAll(".column-body").forEach(function (body) {
+        body.classList.remove("drag-over");
       });
 
       draggedCard = null;
+
     });
+
   });
 
-  /* =====================================================
-     ÁREAS DE DROP (COLUNAS)
-  ===================================================== */
-  columns.forEach(function (column) {
-    /* --- DRAGENTER --- */
-    column.addEventListener('dragenter', function (event) {
-      event.preventDefault();
 
-      if (!draggedCard) return;
+  const columnBodies = document.querySelectorAll(".column-body");
 
-      const columnBody = column.querySelector('.column-body');
-      if (!columnBody || !columnBody.dataset.status) return;
+  columnBodies.forEach(function (body) {
 
-      column.classList.add('drag-over');
-    });
+    body.addEventListener("dragover", function (event) {
 
-    /* --- DRAGOVER --- */
-    column.addEventListener('dragover', function (event) {
-      // Sem preventDefault() o navegador impede o drop
-      event.preventDefault();
-
-      if (!draggedCard) return;
-
-      event.dataTransfer.dropEffect = 'move';
-
-      const columnBody = column.querySelector('.column-body');
-      if (!columnBody || !columnBody.dataset.status) return;
-
-      column.classList.add('drag-over');
-    });
-
-    /* --- DRAGLEAVE --- */
-    column.addEventListener('dragleave', function (event) {
-      // Só remove o destaque quando o cursor realmente sair da coluna
-      if (!column.contains(event.relatedTarget)) {
-        column.classList.remove('drag-over');
-      }
-    });
-
-    /* --- DROP --- */
-    column.addEventListener('drop', function (event) {
-      event.preventDefault();
-      event.stopPropagation();
-
-      column.classList.remove('drag-over');
-
-      // 1. Verifica se existe card sendo arrastado
       if (!draggedCard) {
-        console.warn('Nenhum card está sendo arrastado.');
         return;
       }
 
-      // 2. Descobre a coluna e corpo de origem
-      const origemBody = draggedCard.closest('.column-body');
-      const origemColumn = draggedCard.closest('.column');
-
-      // SEGURANÇA: ação cancelada não pode sair de Cancelado
-      if (origemBody && origemBody.dataset.status === 'cancelado') {
-        console.warn('Ação cancelada não pode ser movimentada.');
+      /*
+       * Nunca permitir drop em Cancelado.
+       */
+      if (body.dataset.status === "cancelado") {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "none";
         return;
       }
 
-      // 3. Descobre o corpo da coluna de destino e seu novo status
-      const destinoBody = column.querySelector('.column-body');
+      event.preventDefault();
 
-      if (!destinoBody) {
-        console.error('Não foi encontrado o .column-body da coluna.');
-        return;
-      }
+      event.dataTransfer.dropEffect = "move";
 
-      const novoStatus = destinoBody.dataset.status;
+      body.classList.add("drag-over");
 
-      if (!novoStatus) {
-        console.error('A coluna de destino não possui data-status.');
-        return;
-      }
-
-      // 4. Não faz nada se for a mesma coluna
-      if (origemColumn === column) {
-        return;
-      }
-
-      // 5. Encontra a URL para atualizar a ação
-      const form = draggedCard.querySelector('form');
-      let url = form ? form.action : draggedCard.dataset.updateUrl;
-
-      if (!url) {
-        console.error('URL de atualização não encontrada.');
-        alert('Não foi possível encontrar a URL para atualizar esta ação.');
-        return;
-      }
-
-      // 6. Obtém o CSRF Token
-      const csrfInput =
-        draggedCard.querySelector('input[name="csrfmiddlewaretoken"]') ||
-        document.querySelector('input[name="csrfmiddlewaretoken"]');
-
-      const csrfToken = csrfInput ? csrfInput.value : getCookie('csrftoken');
-
-      if (!csrfToken) {
-        console.error('Token CSRF não encontrado.');
-        alert('Token CSRF não encontrado.');
-        return;
-      }
-
-      // DEBUG LOGS
-      console.log('=================================');
-      console.log('Movendo ação');
-      console.log('Status anterior:', origemBody?.dataset.status);
-      console.log('Novo status:', novoStatus);
-      console.log('URL:', url);
-      console.log('=================================');
-
-      // 7. Move visualmente o card
-      destinoBody.appendChild(draggedCard);
-
-      // 8. Envia alteração para o Django via Fetch API
-      fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-          'X-CSRFToken': csrfToken,
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: new URLSearchParams({
-          status: novoStatus,
-          csrfmiddlewaretoken: csrfToken,
-        }),
-      })
-        .then(function (response) {
-          console.log('Resposta do servidor:', response.status);
-
-          if (!response.ok) {
-            throw new Error('Erro HTTP ' + response.status);
-          }
-
-          return response;
-        })
-        .then(function () {
-          console.log('Ação atualizada com sucesso!');
-          // Recarrega a página para sincronizar contadores e estado do banco
-          window.location.reload();
-        })
-        .catch(function (error) {
-          console.error('Erro ao mover ação:', error);
-          alert('Não foi possível mover a ação.');
-          // Volta para o estado salvo no banco recarregando a página
-          window.location.reload();
-        });
     });
+
+
+    body.addEventListener("dragleave", function (event) {
+
+      if (
+        event.relatedTarget &&
+        body.contains(event.relatedTarget)
+      ) {
+        return;
+      }
+
+      body.classList.remove("drag-over");
+
+    });
+
+
+    body.addEventListener("drop", function (event) {
+
+      event.preventDefault();
+
+      body.classList.remove("drag-over");
+
+      if (!draggedCard) {
+        return;
+      }
+
+      /*
+       * Não permitir mover ação cancelada.
+       */
+      if (draggedCard.closest(".col-cancelado")) {
+        return;
+      }
+
+      /*
+       * Não permitir colocar nenhuma ação em Cancelado
+       * pelo drag and drop.
+       *
+       * O cancelamento continua sendo feito pelo menu
+       * de alteração de status.
+       */
+      if (body.dataset.status === "cancelado") {
+        return;
+      }
+
+      const newStatus = body.dataset.status;
+
+      if (!newStatus) {
+        return;
+      }
+
+      const form = draggedCard.querySelector("form");
+
+      if (!form) {
+        return;
+      }
+
+      const statusInput = form.querySelector('input[name="status"]');
+
+      if (!statusInput) {
+        return;
+      }
+
+      statusInput.value = newStatus;
+
+      form.submit();
+
+    });
+
   });
 
-  /* =====================================================
-     FUNÇÃO AUXILIAR: OBTER CSRF DO COOKIE
-  ===================================================== */
-  function getCookie(name) {
-    let cookieValue = null;
 
-    if (document.cookie && document.cookie !== '') {
-      const cookies = document.cookie.split(';');
+  /* =========================================================
+     BUSCA DE AÇÃO
+     ========================================================= */
 
-      for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
+  const searchInput = document.getElementById("actionSearch");
 
-        if (cookie.substring(0, name.length + 1) === name + '=') {
-          cookieValue = decodeURIComponent(
-            cookie.substring(name.length + 1)
-          );
-          break;
+  /*
+   * Normaliza o texto para facilitar a busca.
+   *
+   * Exemplo:
+   * "AÇÃO 123" também pode ser encontrado digitando "acao 123".
+   */
+  function normalizeText(text) {
+
+    return String(text || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+
+  }
+
+
+  function applyFilters() {
+
+    const searchValue = normalizeText(
+      searchInput ? searchInput.value : ""
+    );
+
+    const eixoValue = eixoFilter
+      ? normalizeText(eixoFilter.value)
+      : "";
+
+
+    document.querySelectorAll(".column").forEach(function (column) {
+
+      const cards = column.querySelectorAll(".task-card");
+
+      cards.forEach(function (card) {
+
+        const searchData = normalizeText(
+          card.dataset.search
+        );
+
+        const cardEixo = normalizeText(
+          card.dataset.eixo
+        );
+
+
+        const matchesSearch =
+          searchValue === "" ||
+          searchData.includes(searchValue);
+
+
+        const matchesEixo =
+          eixoValue === "" ||
+          cardEixo === eixoValue;
+
+
+        if (matchesSearch && matchesEixo) {
+
+          card.style.display = "";
+
+        } else {
+
+          card.style.display = "none";
+
         }
-      }
+
+      });
+
+    });
+
+  }
+
+
+  if (searchInput) {
+
+    searchInput.addEventListener("input", function () {
+      applyFilters();
+    });
+
+  }
+
+
+  /* =========================================================
+     FILTRO POR EIXO
+     ========================================================= */
+
+  const eixoFilter = document.getElementById("eixoFilter");
+
+
+  function populateEixoFilter() {
+
+    if (!eixoFilter) {
+      return;
     }
 
-    return cookieValue;
+    const eixos = new Map();
+
+    document.querySelectorAll(".task-card").forEach(function (card) {
+
+      const eixo = card.dataset.eixo;
+
+      if (!eixo) {
+        return;
+      }
+
+      const value = String(eixo).trim();
+
+      if (!value) {
+        return;
+      }
+
+      const normalized = normalizeText(value);
+
+      if (!eixos.has(normalized)) {
+        eixos.set(normalized, value);
+      }
+
+    });
+
+
+    const sortedEixos = Array.from(eixos.values()).sort(function (a, b) {
+
+      return normalizeText(a).localeCompare(
+        normalizeText(b),
+        "pt-BR"
+      );
+
+    });
+
+
+    sortedEixos.forEach(function (eixo) {
+
+      const option = document.createElement("option");
+
+      option.value = eixo;
+      option.textContent = eixo;
+
+      eixoFilter.appendChild(option);
+
+    });
+
   }
+
+
+  if (eixoFilter) {
+
+    eixoFilter.addEventListener("change", function () {
+      applyFilters();
+    });
+
+  }
+
+
+  populateEixoFilter();
+
+
+  /* =========================================================
+     ATUALIZAÇÃO INICIAL DOS FILTROS
+     ========================================================= */
+
+  applyFilters();
+
 });
