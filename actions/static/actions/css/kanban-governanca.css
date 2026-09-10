@@ -2,7 +2,7 @@
   --bg: #eeece7;
   --sidebar-bg: #ffffff;
   --card-bg: #fff6da;
-  --card-border: #f0deA0;
+  --card-border: #f0dea0;
   --header-planejado: #3e4a89;
   --header-preparacao: #6a6f7a;
   --header-execucao: #d98a1f;
@@ -34,9 +34,14 @@ body {
   padding: 0;
 }
 
+/* =========================================================
+   FRAME
+   ========================================================= */
+
 .frame {
   width: 100%;
   max-width: none;
+  height: 100vh;
   min-height: 100vh;
   background: #fff;
   border-radius: 0;
@@ -46,161 +51,33 @@ body {
   flex-direction: column;
 }
 
-.app {
-  display: flex;
-  background: var(--bg);
-  min-height: 640px;
-  flex: 1;
-}
-
-/* Sidebar */
-.sidebar {
-  width: 60px;
-  background: #fff;
-  border-right: 1px solid var(--border-light);
-  display: flex;
-  flex-direction: column;
-  padding: 18px 0;
-  gap: 4px;
-  transition: width 0.2s ease;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.sidebar.expanded,
-.sidebar.hover-expanded {
-  width: 220px;
-}
-
-.sidebar-brand {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 10px 15px;
-  /* Dá um espaço confortável nas bordas da barra */
-  width: 100%;
-}
-
-.sidebar .logo {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-}
-
-.logo-img {
-  width: 100%;
-  max-width: 300px; /* ajuste esse valor até ficar do tamanho que você quer */
-  height: auto;
-  display: block;
-  margin: 0 auto;
-}
-
-/*
-    .sidebar .logo::after {
-      content: "";
-      width: 16px;
-      height: 16px;
-      background: #fff;
-      border-radius: 50%;
-    } */
-
-.brand-text {
-  display: none;
-  flex-direction: column;
-  line-height: 1.15;
-}
-
-.sidebar.expanded .brand-text,
-.sidebar.hover-expanded .brand-text {
-  display: flex;
-}
-
-.brand-text .brand-name {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: #1c1c1c;
-}
-
-.brand-text .brand-sub {
-  font-size: 8.5px;
-  letter-spacing: 0.3px;
-  color: #8a8a8a;
-  margin-top: 2px;
-}
-
-.sidebar-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 0 8px;
-}
-
-.sidebar.expanded .sidebar-menu,
-.sidebar.hover-expanded .sidebar-menu {
-  padding: 0 10px;
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 8px;
-  border-radius: 6px;
-  color: #8a8a8a;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.menu-item:hover {
-  background: #f4f3ef;
-  color: #444;
-}
-
-.menu-item.active {
-  color: #2b2b2b;
-  font-weight: 600;
-}
-
-.menu-item .icon {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-}
-
-.menu-item .label {
-  display: none;
-  font-size: 13px;
-}
-
-.sidebar.expanded .menu-item .label,
-.sidebar.hover-expanded .menu-item .label {
-  display: inline;
-}
-
-.sidebar.expanded .menu-item,
-.sidebar.hover-expanded .menu-item {
-  justify-content: flex-start;
-}
-
-.sidebar:not(.expanded):not(.hover-expanded) .menu-item {
-  justify-content: center;
-}
-
-/* Main content */
-.main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
+/* =========================================================
+   NAVBAR
+   ========================================================= */
 
 .topbar {
+  height: 64px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
+  padding: 0 24px;
   background: #fff;
   border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.navbar-logo {
+  height: 60px;
+  width: auto;
 }
 
 .topbar h1 {
@@ -239,12 +116,149 @@ body {
   color: #fff;
 }
 
+/* =========================================================
+   ÁREA ABAIXO DA NAVBAR
+   ========================================================= */
+
+.app {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+.sidebar {
+  width: 60px;
+  height: 100%;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  padding: 14px 0;
+  gap: 4px;
+  transition: width 0.2s ease;
+  overflow: hidden;
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 20;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Sidebar aberta */
+.sidebar.expanded,
+.sidebar.hover-expanded {
+  width: 220px;
+}
+
+/* =========================================================
+   MENU DA SIDEBAR
+   ========================================================= */
+
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 8px;
+}
+
+.sidebar.expanded .sidebar-menu,
+.sidebar.hover-expanded .sidebar-menu {
+  padding: 0 10px;
+}
+
+/* =========================================================
+   ITEM DO MENU
+   ========================================================= */
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 8px;
+  border-radius: 6px;
+  color: #8a8a8a;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.menu-item:hover {
+  background: #f4f3ef;
+  color: #444;
+}
+
+.menu-item.active {
+  color: #2b2b2b;
+  font-weight: 600;
+}
+
+/* =========================================================
+   ÍCONES DA SIDEBAR
+   ========================================================= */
+
+.menu-item .icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   TEXTOS DA SIDEBAR
+   ========================================================= */
+
+.menu-item .label {
+  display: none;
+  font-size: 13px;
+}
+
+.sidebar.expanded .menu-item .label,
+.sidebar.hover-expanded .menu-item .label {
+  display: inline;
+}
+
+.sidebar.expanded .menu-item,
+.sidebar.hover-expanded .menu-item {
+  justify-content: flex-start;
+}
+
+/* Sidebar fechada */
+.sidebar:not(.expanded):not(.hover-expanded) .menu-item {
+  justify-content: center;
+}
+
+/* =========================================================
+   CONTEÚDO PRINCIPAL
+   ========================================================= */
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  margin-left: 60px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* =========================================================
+   FILTROS
+   ========================================================= */
+
 .filters {
   display: flex;
   gap: 10px;
   padding: 14px 24px;
   background: var(--bg);
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .filters select,
@@ -260,9 +274,16 @@ body {
 .filters select {
   min-width: 190px;
   appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, #999 50%), linear-gradient(135deg, #999 50%, transparent 50%);
-  background-position: calc(100% - 15px) center, calc(100% - 10px) center;
-  background-size: 5px 5px, 5px 5px;
+  -webkit-appearance: none;
+  background-image: 
+    linear-gradient(45deg, transparent 50%, #999 50%),
+    linear-gradient(135deg, #999 50%, transparent 50%);
+  background-position: 
+    calc(100% - 15px) center,
+    calc(100% - 10px) center;
+  background-size: 
+    5px 5px,
+    5px 5px;
   background-repeat: no-repeat;
   padding-right: 30px;
 }
@@ -273,19 +294,33 @@ body {
   max-width: 320px;
 }
 
-/* Board */
+/* =========================================================
+   BOARD WRAPPER
+   ========================================================= */
+
 .board-wrapper {
   flex: 1;
+  min-height: 0;
   overflow-x: auto;
+  overflow-y: auto;
   padding: 6px 24px 24px 24px;
 }
+
+/* =========================================================
+   BOARD
+   ========================================================= */
 
 .board {
   display: grid;
   grid-template-columns: repeat(6, minmax(160px, 1fr));
   gap: 14px;
   align-items: start;
+  min-width: 100%;
 }
+
+/* =========================================================
+   COLUNAS
+   ========================================================= */
 
 .column {
   display: flex;
@@ -296,6 +331,10 @@ body {
   border: 1px solid var(--border-light);
   overflow: hidden;
 }
+
+/* =========================================================
+   CABEÇALHO DAS COLUNAS
+   ========================================================= */
 
 .column-header {
   display: flex;
@@ -313,6 +352,10 @@ body {
   padding: 1px 7px;
   font-size: 11.5px;
 }
+
+/* =========================================================
+   CORES DAS COLUNAS
+   ========================================================= */
 
 .col-planejado .column-header {
   background: var(--header-planejado);
@@ -338,6 +381,10 @@ body {
   background: var(--header-cancelado);
 }
 
+/* =========================================================
+   CORPO DAS COLUNAS
+   ========================================================= */
+
 .column-body {
   padding: 10px;
   display: flex;
@@ -350,7 +397,10 @@ body {
   text-align: center;
 }
 
-/* 1. Garante que o card serve de referência de posição */
+/* =========================================================
+   CARDS
+   ========================================================= */
+
 .task-card {
   position: relative;
   background: var(--card-bg);
@@ -361,14 +411,16 @@ body {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
+/* =========================================================
+   SELECT DE STATUS
+   ========================================================= */
+
 .status-select {
   position: absolute;
   top: 8px;
   right: 8px;
   width: 18px;
   height: 18px;
-
-  /* Esconde o texto e a caixa nativa */
   appearance: none;
   -webkit-appearance: none;
   background: transparent;
@@ -376,24 +428,25 @@ body {
   outline: none;
   cursor: pointer;
   color: transparent;
-  /* Torna o texto ("Pla") invisível no card */
-
-  /* Injeta o SVG da setinha diretamente no CSS (sem precisar de arquivo local) */
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232b2b2b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
 }
 
-/* Devolve a cor legível para quando o usuário clicar e abrir as opções */
+/* Opções do select */
 .status-select option {
   color: #2b2b2b;
-  background-color: #ffffff;
+  background-color: #fff;
 }
 
 .status-select:hover {
   opacity: 0.7;
 }
+
+/* =========================================================
+   MENSAGEM DE COLUNA VAZIA
+   ========================================================= */
 
 .empty-column-msg {
   font-size: 11px;
@@ -405,9 +458,17 @@ body {
   background: rgba(255, 255, 255, 0.4);
 }
 
+/* =========================================================
+   CARD DESTACADO
+   ========================================================= */
+
 .task-card.highlight {
   border: 2px solid #2f7fd6;
 }
+
+/* =========================================================
+   ID DA AÇÃO
+   ========================================================= */
 
 .task-card .task-id {
   text-align: center;
@@ -418,6 +479,10 @@ body {
   display: block;
 }
 
+/* =========================================================
+   DESCRIÇÃO DA AÇÃO
+   ========================================================= */
+
 .task-card .task-desc {
   text-align: left;
   font-size: 12px;
@@ -425,11 +490,19 @@ body {
   color: #444;
 }
 
+/* =========================================================
+   RESPONSIVIDADE
+   ========================================================= */
+
 @media (max-width: 900px) {
   .board {
     grid-template-columns: repeat(3, minmax(180px, 1fr));
   }
 }
+
+/* =========================================================
+   CELULAR
+   ========================================================= */
 
 @media (max-width: 560px) {
   .board {
@@ -437,6 +510,17 @@ body {
   }
 
   .sidebar {
-    display: none;
+    width: 0;
+    border-right: none;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .sidebar.expanded,
+  .sidebar.hover-expanded {
+    width: 220px;
+    border-right: 1px solid var(--border-light);
+    padding-left: 0;
+    padding-right: 0;
   }
 }
