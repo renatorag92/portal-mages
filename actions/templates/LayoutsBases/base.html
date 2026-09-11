@@ -1,0 +1,100 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <link
+    rel="stylesheet"
+    href="{% static 'actions/css/navbar/base.css' %}"
+  >
+
+  <title>
+    {% block title %}
+      Portal MAGES
+    {% endblock %}
+  </title>
+
+  {% block extra_css %}
+  {% endblock %}
+
+</head>
+
+
+<body>
+
+
+  <!-- ===================================================== -->
+  <!-- FRAME PRINCIPAL -->
+  <!-- ===================================================== -->
+
+  <div class="frame">
+
+
+    <!-- ===================================================== -->
+    <!-- NAVBAR -->
+    <!-- ===================================================== -->
+
+    {% include "LayoutsBases/partials/navbar.html" %}
+
+
+    <!-- ===================================================== -->
+    <!-- ÁREA ABAIXO DA NAVBAR -->
+    <!-- ===================================================== -->
+
+    <div class="app">
+
+
+      <!-- ================================================= -->
+      <!-- SIDEBAR -->
+      <!-- ================================================= -->
+
+      {% include "LayoutsBases/partials/sidebar.html" %}
+
+
+      <!-- ================================================= -->
+      <!-- CONTEÚDO PRINCIPAL -->
+      <!-- ================================================= -->
+
+      <main class="main">
+
+        {% block content %}
+        {% endblock %}
+
+      </main>
+
+
+    </div>
+
+
+  </div>
+
+
+  <!-- ===================================================== -->
+  <!-- JAVASCRIPT GLOBAL -->
+  <!-- ===================================================== -->
+
+  <script
+    src="{% static 'actions/js/navbar/base.js' %}"
+  ></script>
+
+
+  <!-- ===================================================== -->
+  <!-- JAVASCRIPT ESPECÍFICO DA PÁGINA -->
+  <!-- ===================================================== -->
+
+  {% block extra_js %}
+  {% endblock %}
+
+
+</body>
+
+</html>
