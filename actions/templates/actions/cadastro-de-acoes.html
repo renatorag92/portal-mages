@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+{% load static %}
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Cadastro de ações estratégicas</title>
+
+  <link rel="stylesheet" href="{% static 'actions/css/cadastro-de-acoes.css' %}">
+</head>
+
+<body>
+
+  <div class="frame">
+
+    <!-- ===================================================== -->
+    <!-- NAVBAR -->
+    <!-- ===================================================== -->
+
+    <div class="topbar">
+
+      <div class="topbar-left">
+
+        <img src="{% static 'actions/images/portal-mages.png' %}" alt="Logo MAGES" class="navbar-logo">
+
+        <h1>Cadastro de ações estratégicas</h1>
+      </div>
+
+      <div class="topbar-icons">
+
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+
+        <div class="avatar">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" />
+          </svg>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- ÁREA ABAIXO DA NAVBAR -->
+    <!-- ===================================================== -->
+
+    <div class="app">
+
+      <!-- ================================================= -->
+      <!-- SIDEBAR -->
+      <!-- ================================================= -->
+
+      <div class="sidebar" id="sidebar">
+
+        <div class="sidebar-menu">
+
+          <div class="menu-item">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+            <span class="label">Dashboard</span>
+          </div>
+
+          <a class="menu-item active" href="{% url 'cadastro_acoes' %}" style="text-decoration:none;">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="8" y1="6" x2="21" y2="6" />
+              <line x1="8" y1="12" x2="21" y2="12" />
+              <line x1="8" y1="18" x2="21" y2="18" />
+              <line x1="3" y1="6" x2="3.01" y2="6" />
+              <line x1="3" y1="12" x2="3.01" y2="12" />
+              <line x1="3" y1="18" x2="3.01" y2="18" />
+            </svg>
+            <span class="label">Gestão de Ações</span>
+          </a>
+
+          <div class="menu-item">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <span class="label">Plano de Execução</span>
+          </div>
+
+          <a class="menu-item" href="{% url 'kanban' %}" style="text-decoration:none;">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="9" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span class="label">Kanban de Governança</span>
+          </a>
+
+        </div>
+      </div>
+
+
+      <!-- ================================================= -->
+      <!-- CONTEÚDO PRINCIPAL -->
+      <!-- ================================================= -->
+
+      <div class="main">
+
+        <div class="content-wrapper">
+
+          <form id="formCadastroAcao" novalidate>
+
+            <!-- ================================================= -->
+            <!-- CADASTRAR AÇÕES -->
+            <!-- ================================================= -->
+
+            <section class="form-card">
+
+              <h2 class="form-card-title">Cadastrar ações</h2>
+
+              <div class="form-row">
+
+                <div class="form-group">
+                  <label for="eixo">Eixo:</label>
+                  <select id="eixo" name="eixo">
+                    <option value="">Selecione o eixo específico</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="acao">Ações:</label>
+                  <select id="acao" name="acao">
+                    <option value="">Selecione a ação específica</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="prioridade">Prioridade:</label>
+                  <select id="prioridade" name="prioridade">
+                    <option value="">Selecione a prioridade específica</option>
+                  </select>
+                </div>
+
+              </div>
+
+              <div class="form-row">
+
+                <div class="form-group">
+                  <label for="responsavel">Responsável:</label>
+                  <input type="text" id="responsavel" name="responsavel" placeholder="Nome do responsável">
+                </div>
+
+                <div class="form-group">
+                  <label for="dataInicio">Data de início:</label>
+                  <input type="date" id="dataInicio" name="dataInicio">
+                </div>
+
+                <div class="form-group">
+                  <label for="dataFim">Data de fim:</label>
+                  <input type="date" id="dataFim" name="dataFim">
+                </div>
+
+              </div>
+
+            </section>
+
+
+            <!-- ================================================= -->
+            <!-- DEFINIR ETAPAS -->
+            <!-- ================================================= -->
+
+            <section class="form-card form-card-grow">
+
+              <h2 class="form-card-title">Definir etapas</h2>
+
+              <div class="etapas-header">
+                <span>Etapas:</span>
+                <span>Responsável:</span>
+                <span>Data de início:</span>
+                <span>Data de fim:</span>
+                <span>Prioridade:</span>
+                <span class="etapas-header-action"></span>
+              </div>
+
+              <div id="etapasList" class="etapas-list">
+
+                <div class="etapa-row">
+
+                  <input type="text" name="etapaNome[]" placeholder="Nome da etapa">
+
+                  <input type="text" name="etapaResponsavel[]" placeholder="Responsável">
+
+                  <input type="date" name="etapaInicio[]">
+
+                  <input type="date" name="etapaFim[]">
+
+                  <select name="etapaPrioridade[]">
+                    <option value="">Selecione a prioridade específica</option>
+                  </select>
+
+                  <button type="button" class="etapa-add" id="addEtapaBtn" aria-label="Adicionar etapa">
+
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+
+                  </button>
+
+                </div>
+
+              </div>
+
+            </section>
+
+
+            <!-- ================================================= -->
+            <!-- AÇÕES DO FORMULÁRIO -->
+            <!-- ================================================= -->
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-salvar">Salvar</button>
+              <button type="button" class="btn btn-cancelar" id="cancelarBtn">Cancelar</button>
+            </div>
+
+          </form>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ===================================================== -->
+  <!-- JAVASCRIPT -->
+  <!-- ===================================================== -->
+
+  <script src="{% static 'actions/js/cadastro-acoes.js' %}"></script>
+
+</body>
+
+</html>

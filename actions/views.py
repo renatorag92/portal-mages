@@ -17,6 +17,10 @@ def kanban_view(request):
     }
     return render(request, 'actions/kanban-governanca.html', {'kanban': acoes_por_status})
 
+@login_required
+def cadastro_acoes_view(request):
+    return render(request, 'actions/cadastro-de-acoes.html')
+
 def atualizar_status_acao(request, acao_id):
     if request.method == 'POST':
         acao = get_object_or_404(Acao, id=acao_id)

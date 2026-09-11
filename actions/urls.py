@@ -3,6 +3,6 @@ from . import views
 
 urlpatterns = [
     path('', views.kanban_view, name='kanban'),
+    path('cadastro-de-acoes/', views.cadastro_acoes_view, name='cadastro_acoes'),
     path('actions/<int:acao_id>/atualizar_status/', views.atualizar_status_acao, name='atualizar_status_acao'),
 ]
-
