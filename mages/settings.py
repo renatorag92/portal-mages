@@ -48,6 +48,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Adicione esta linha para incluir o middleware
+    'actions.middleware.PrimeiroAcessoMiddleware',  
 ]
 
 ROOT_URLCONF = 'mages.urls'
@@ -103,7 +105,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'pt-br'
 
 TIME_ZONE = 'UTC'
 
@@ -135,3 +137,8 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+# Configurações de Autenticação / Redirecionamento
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'kanban'
+LOGOUT_REDIRECT_URL = 'login'
