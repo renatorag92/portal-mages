@@ -1,0 +1,155 @@
+{% extends "LayoutsBases/base.html" %}
+{% load static %}
+
+{% block title %}
+  Cadastro de ações estratégicas
+{% endblock %}
+
+{% block page_title %}
+  Cadastro de ações estratégicas
+{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'actions/css/cadastro-de-acoes.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="content-wrapper">
+
+    <form id="formCadastroAcao" novalidate>
+
+      <!-- ================================================= -->
+      <!-- CADASTRAR AÇÕES -->
+      <!-- ================================================= -->
+
+      <section class="form-card">
+
+        <h2 class="form-card-title">Cadastrar ações</h2>
+
+        <div class="form-row">
+
+          <div class="form-group">
+            <label for="eixo">Eixo:</label>
+            <select id="eixo" name="eixo">
+              <option value="">Selecione o eixo específico</option>
+              {% for valor, rotulo in eixos %}
+                <option value="{{ valor }}">{{ rotulo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="acao">Ações:</label>
+            <input type="text" id="acao" name="acao" placeholder="Nome da ação">
+          </div>
+
+          <div class="form-group">
+            <label for="prioridade">Prioridade:</label>
+            <select id="prioridade" name="prioridade">
+              <option value="">Selecione a prioridade específica</option>
+              {% for valor, rotulo in prioridades %}
+                <option value="{{ valor }}">{{ rotulo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+        </div>
+
+        <div class="form-row">
+
+          <div class="form-group">
+            <label for="responsavel">Responsável:</label>
+            <input type="text" id="responsavel" name="responsavel" placeholder="Nome do responsável">
+          </div>
+
+          <div class="form-group">
+            <label for="dataInicio">Data de início:</label>
+            <input type="date" id="dataInicio" name="dataInicio">
+          </div>
+
+          <div class="form-group">
+            <label for="dataFim">Data de fim:</label>
+            <input type="date" id="dataFim" name="dataFim">
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ================================================= -->
+      <!-- DEFINIR ETAPAS -->
+      <!-- ================================================= -->
+
+      <section class="form-card form-card-grow">
+
+        <h2 class="form-card-title">Definir etapas</h2>
+
+        <div class="etapas-header">
+          <span>Etapas:</span>
+          <span>Responsável:</span>
+          <span>Data de início:</span>
+          <span>Data de fim:</span>
+          <span>Prioridade:</span>
+          <span class="etapas-header-action"></span>
+        </div>
+
+        <div id="etapasList" class="etapas-list">
+
+          <div class="etapa-row">
+
+            <input type="text" name="etapaNome[]" placeholder="Nome da etapa">
+
+            <input type="text" name="etapaResponsavel[]" placeholder="Responsável">
+
+            <input type="date" name="etapaInicio[]">
+
+            <input type="date" name="etapaFim[]">
+
+            <select name="etapaPrioridade[]">
+              <option value="">Selecione a prioridade específica</option>
+              {% for valor, rotulo in prioridades %}
+                <option value="{{ valor }}">{{ rotulo }}</option>
+              {% endfor %}
+            </select>
+
+            <div class="etapa-actions">
+              <button type="button" class="etapa-add" aria-label="Adicionar etapa">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+
+              <button type="button" class="etapa-remove" aria-label="Remover etapa">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ================================================= -->
+      <!-- AÇÕES DO FORMULÁRIO -->
+      <!-- ================================================= -->
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-salvar">Salvar</button>
+        <button type="button" class="btn btn-cancelar" id="cancelarBtn">Cancelar</button>
+      </div>
+
+    </form>
+
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'actions/js/cadastro-acoes.js' %}"></script>
+{% endblock %}

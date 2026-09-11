@@ -5,17 +5,19 @@ class Status_eixo(models.TextChoices):
     FISCALIZACAO_TRIBUTARIA = 'fiscalizacao_tributaria', 'Fiscalização Tributária'
     ARRECADACAO_E_COBRANCA = 'arrecadacao_e_cobranca', 'Arrecadação e Cobrança'
     MODERNIZACAO_E_TECNOLOGIA = 'modernizacao_e_tecnologia', 'Modernização e Tecnologia'
-    GOVERNANCA_E_LEGISLACAO = 'governanca_e_legislacao', 'Governança e Legislação'       
+    GOVERNANCA_E_LEGISLACAO = 'governanca_e_legislacao', 'Governança e Legislação'
+
 
 class Status_status(models.TextChoices):
-        PLANEJADO = 'planejado', 'Planejado'
-        EM_PREPARACAO = 'preparacao', 'Em preparação'
-        EM_EXECUCAO = 'execucao', 'Em execução'
-        EM_VALIDACAO = 'validacao', 'Em validação'
-        CONCLUIDO = 'concluido', 'Concluído'
-        CANCELADO = 'cancelado', 'Cancelado'
+    PLANEJADO = 'planejado', 'Planejado'
+    EM_PREPARACAO = 'preparacao', 'Em preparação'
+    EM_EXECUCAO = 'execucao', 'Em execução'
+    EM_VALIDACAO = 'validacao', 'Em validação'
+    CONCLUIDO = 'concluido', 'Concluído'
+    CANCELADO = 'cancelado', 'Cancelado'
+
 
 class Status_prioridade(models.TextChoices):
-        BAIXA = 'baixa', 'Baixa'
-        MEDIA = 'media', 'Média'
-        ALTA = 'alta', 'Alta'
+    BAIXA = 'baixa', 'Baixa'
+    MEDIA = 'media', 'Média'
+    ALTA = 'alta', 'Alta'

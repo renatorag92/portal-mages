@@ -1,0 +1,288 @@
+:root {
+  --header-planejado: #3e4a89;
+  --header-preparacao: #6a6f7a;
+  --header-execucao: #d98a1f;
+  --header-validacao: #7b3f9e;
+  --header-concluido: #2e8b57;
+  --header-cancelado: #c0392b;
+
+  --green: #2e8b57;
+  --green-dark: #24704a;
+  --red: #c0392b;
+  --red-dark: #a5301f;
+}
+
+/* =========================================================
+   CONTEÚDO — CADASTRO DE AÇÕES
+   ========================================================= */
+
+.content-wrapper {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 24px 32px;
+}
+
+#formCadastroAcao {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-card {
+  background: #fff;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  flex-shrink: 0;
+}
+
+.form-card-grow {
+  display: flex;
+  flex-direction: column;
+  min-height: 250px;
+}
+
+.form-card-title {
+  margin: 0 0 18px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.form-row:last-child {
+  margin-bottom: 0;
+}
+
+.form-group {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.form-group input,
+.form-group select,
+.etapa-row input,
+.etapa-row select {
+  font-size: 13px;
+  padding: 9px 12px;
+  border-radius: 6px;
+  border: 1px solid #d8d5cc;
+  background: #f5f4f0;
+  color: var(--text-dark);
+  font-family: inherit;
+  width: 100%;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.etapa-row input:focus,
+.etapa-row select:focus {
+  outline: none;
+  border-color: #b7b2a5;
+  background: #fff;
+  color: var(--text-dark);
+}
+
+.form-group select,
+.etapa-row select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #999 50%),
+    linear-gradient(135deg, #999 50%, transparent 50%);
+  background-position:
+    calc(100% - 15px) center,
+    calc(100% - 10px) center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 30px;
+}
+
+.form-group input[type="date"] {
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   DEFINIR ETAPAS
+   ========================================================= */
+
+.etapas-header {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr) 76px;
+  gap: 14px;
+  margin-bottom: 8px;
+  padding-right: 6px;
+}
+
+.etapas-header span {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.etapas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 180px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.etapa-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr) 76px;
+  gap: 14px;
+  align-items: center;
+}
+
+.etapa-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.etapa-add,
+.etapa-remove {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid #d8d5cc;
+  background: #f2f1ec;
+  color: #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.etapa-add:hover,
+.etapa-remove:hover {
+  background: #e7e5de;
+  border-color: #c9c5b9;
+}
+
+.etapa-add:active,
+.etapa-remove:active {
+  transform: scale(0.95);
+}
+
+.etapa-add svg,
+.etapa-remove svg {
+  width: 16px;
+  height: 16px;
+}
+
+.etapa-remove {
+  color: var(--red);
+}
+
+/* =========================================================
+   AÇÕES DO FORMULÁRIO
+   ========================================================= */
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 4px 4px 0;
+  flex-shrink: 0;
+}
+
+.btn {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 11px 30px;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-salvar {
+  background: var(--green);
+}
+
+.btn-salvar:hover {
+  background: var(--green-dark);
+}
+
+.btn-cancelar {
+  background: var(--red);
+}
+
+.btn-cancelar:hover {
+  background: var(--red-dark);
+}
+
+/* =========================================================
+   RESPONSIVO
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+  .etapas-header {
+    display: none;
+  }
+
+  .etapa-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .etapa-row .etapa-actions {
+    grid-column: span 2;
+    justify-self: end;
+  }
+
+}
+
+@media (max-width: 560px) {
+
+  .form-row {
+    flex-direction: column;
+  }
+
+  .etapa-row {
+    grid-template-columns: 1fr;
+  }
+
+  .etapa-row .etapa-actions {
+    grid-column: span 1;
+  }
+
+  .form-actions {
+    justify-content: stretch;
+  }
+
+  .btn {
+    flex: 1;
+  }
+
+}

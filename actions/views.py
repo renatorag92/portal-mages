@@ -1,12 +1,12 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import authenticate, login  # IMPORTAÇÃO NECESSÁRIA
-from django.contrib.auth.views import LoginView
-from django.contrib.auth.views import PasswordChangeView
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.urls import reverse_lazy
-from django.contrib import messages                   # IMPORTAÇÃO NECESSÁRIA
+from django.contrib import messages
 from .models import Acao
-from .choices import Status_status
+# Importando explicitamente as classes do seu choices.py
+from .choices import Status_status, Status_eixo, Status_prioridade
 
 @login_required
 def kanban_view(request):
@@ -22,6 +22,15 @@ def kanban_view(request):
     }
     return render(request, 'actions/kanban-governanca.html', {'kanban': acoes_por_status})
 
+@login_required
+def cadastro_acoes_view(request):
+    context = {
+        # Chamando .choices diretamente da classe TextChoices
+        'eixos': Status_eixo.choices,
+        'prioridades': Status_prioridade.choices,
+    }
+    return render(request, 'actions/cadastro-de-acoes.html', context)
+
 def atualizar_status_acao(request, acao_id):
     if request.method == 'POST':
         acao = get_object_or_404(Acao, id=acao_id)
@@ -34,28 +43,21 @@ def atualizar_status_acao(request, acao_id):
     return redirect('kanban')
 
 class CustomLoginView(LoginView):
-    template_name = 'actions/login.html' # Nome do template de login
-    redirect_authenticated_user = True # Redireciona para o kanban se o usuário estiver logado
+    template_name = 'actions/login.html'
+    redirect_authenticated_user = True
     
     def get_success_url(self):
-        user = self.request.user # Pega o usuário que acabou de logar
-                   
-        # 
-        if hasattr(user, 'perfilusuario') and user.perfilusuario.primeiro_acesso: # Verifica se é o primeiro acesso do usuário
-            return reverse_lazy('password-change')  # Redireciona para redefinir a senha
-     
-        return reverse_lazy('kanban')  # Rota padrão para o sistema
-            
+        user = self.request.user
+        if hasattr(user, 'perfilusuario') and user.perfilusuario.primeiro_acesso:
+            return reverse_lazy('password-change')
+        return reverse_lazy('kanban')
 
 class CustomPasswordChangeView(PasswordChangeView):
     template_name = 'actions/password-change.html'
-    success_url = reverse_lazy('kanban')  # Redireciona para a página do Kanban após a alteração da senha
+    success_url = reverse_lazy('kanban')
 
     def form_valid(self, form):
-        response = super().form_valid(form)  # Chama o método form_valid da classe pai para processar a alteração da senha
-        
-        # Atualiza o campo primeiro_acesso para False após a alteração da senha
+        response = super().form_valid(form)
         self.request.user.perfil.primeiro_acesso = False
         self.request.user.perfil.save()
-        
         return response

@@ -254,7 +254,8 @@ body {
    ITEM DO MENU
    ========================================================= */
 
-.menu-item {
+.sidebar-menu a.menu-item,
+.sidebar-menu .menu-item {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -263,19 +264,24 @@ body {
     color: #8a8a8a;
     cursor: pointer;
     white-space: nowrap;
+    text-decoration: none !important;
+    font-weight: 400 !important;
     transition:
         background 0.15s ease,
         color 0.15s ease;
 }
 
-.menu-item:hover {
+.sidebar-menu a.menu-item:hover,
+.sidebar-menu .menu-item:hover {
     background: #f4f3ef;
     color: #444;
+    text-decoration: none !important;
 }
 
-.menu-item.active {
-    color: #2b2b2b;
-    font-weight: 600;
+.sidebar-menu a.menu-item.active,
+.sidebar-menu .menu-item.active {
+    color: #2b2b2b !important;
+    font-weight: 700 !important;
 }
 
 
@@ -283,7 +289,8 @@ body {
    ÍCONES DA SIDEBAR
    ========================================================= */
 
-.menu-item .icon {
+.menu-item .icon,
+.menu-item svg {
     width: 20px;
     height: 20px;
     flex-shrink: 0;
