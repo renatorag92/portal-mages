@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import User
 from .models import Acao, Etapa, PerfilUsuario, Prefeitura
 
 @admin.register(Acao) # Registra o modelo Acao no admin do Django
@@ -20,9 +22,18 @@ class PrefeituraAdmin(admin.ModelAdmin):
     list_display = ('nome', 'sigla', 'cidade')
     search_fields = ('nome', 'sigla', 'cidade')
     
-@admin.register(PerfilUsuario)
-class PerfilUsuarioAdmin(admin.ModelAdmin):
-    list_display = ('usuario', 'prefeitura', 'cargo')
-    search_fields = ('usuario__username', 'prefeitura__nome', 'cargo')
-    search_fields = ('usuario__username', 'prefeitura__nome', 'cargo')
+# 1. Inline que insere o PerfilUsuario dentro do formulário do User
+class PerfilUsuarioInline(admin.StackedInline):
+    model = PerfilUsuario
+    can_delete = False
+    verbose_name_plural = 'Persil Usuário'
+    fields = ('prefeitura', 'cargo', 'primeiro_acesso')
+    
+    # Adicionamos o Inline na Admnistração do User
+class UserAdmin(BaseUserAdmin):
+        inlines = (PerfilUsuarioInline,)  
+        
+# Substituímos a administração padrão do Django pela nossa versão unificada
+admin.site.unregister(User)
+admin.site.register(User, UserAdmin)   
     

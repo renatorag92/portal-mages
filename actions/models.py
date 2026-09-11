@@ -1,5 +1,9 @@
 from django.db import models
-from django.contrib.auth.models import User # Importa o modelo de usuário do Django
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.contrib.auth.views import PasswordChangeView
+from django.urls import reverse_lazy # Importa o modelo de usuário do Django
+from django.dispatch import receiver # Importa o sinal para criar o perfil do usuário automaticamente
 from .choices import Status_status, Status_prioridade, Status_eixo
 
 class Acao(models.Model):
@@ -52,14 +56,36 @@ class Prefeitura(models.Model):
 class PerfilUsuario(models.Model):
     # Conecta o modelo PerfilUsuario com o modelo User do Django
     # OneToOneField garante que cada usuário tenha apenas um perfil
-    usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil') 
+    usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
+    primeiro_acesso = models.BooleanField(default=True) # Indica se é o primeiro acesso do usuário 
     prefeitura = models.ForeignKey(Prefeitura, on_delete=models.CASCADE, related_name='usuarios', default=None, null=True, blank=True)
     cargo = models.CharField(max_length=100) # ex.: Gestor, Secretário, etc.
     
     def __str__(self):
         return f"{self.usuario.username} - {self.cargo}"
+        
+class CustomPasswordChangeView(PasswordChangeView):
+    template_name = 'actions/password-change.html'
+    success_url = reverse_lazy('kanban') # Redireciona para a página do Kanban após a alteração da senha
+    def form_valid(self, form):
+        response = super().form_valid(form) # Chama o método form_valid da classe pai para processar a alteração da senha
+       
+        # Atualiza o campo primeiro_acesso para False após a alteração da senha
+        self.request.user.perfil.primeiro_acesso = False
+        self.request.user.perfil.save()
+        
+        return response
     
-     
+
+# @receiver(post_save, sender=User)
+# def criar_ou_atualizar_perfil_usuario(sender, instance, created, **_kwargs):
+#     if created:
+#         PerfilUsuario.objects.get_or_create(usuario=instance)
+#     else:
+#         if hasattr(instance, 'perfilusuario'):
+#             instance.perfilusuario.save()
+        
+
         
         
         

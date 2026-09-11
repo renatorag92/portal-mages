@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -7,17 +8,27 @@
 </head>
 <body class="min-vh-100 d-flex justify-content-center align-items-center bg-light">
     <div class="pt-4 pb-5 px-5 rounded-3 shadow-sm" style="width: 100%; max-width: 560px;background-color: #C4C4C4;">
-        <form>
+        <!-- Formulário apontando para a rota de login via POST -->
+        <form method="POST">
+            {% csrf_token %} <!-- Adicione o token CSRF para segurança -->
+
             <img src="../../static/actions/images/portal-mages.png" class="d-block mx-auto" style="width: 330px;">
             <h5 class="mt-4 mb-5 fw-bold fs-5 text-center">Autenticação</h5>
+            <!-- Campo de número do contrato -->
             <div class="mb-3 mx-5">
-                <label for="exampleInputNumber1" class="form-label fw-bold" style="color: #686762;">Nº do Documento</label>
-                <input type="number" class="form-control border border-black" id="exampleInputNumber1" style="background-color: #D9D9D9;">
+                <label for="exampleInputNumber1" class="form-label fw-bold" style="color: #686762;">Nº do Contrato</label>
+                <input type="text" name="username" id="username" class="form-control border border-black" id="exampleInputNumber1" style="background-color: #D9D9D9;" required>
             </div>
+            <!-- Campo de senha -->
             <div class="mb-3 mx-5">
                 <label for="exampleInputPassword1" class="form-label fw-bold" style="color: #686762;">Senha</label>
-                <input type="password" class="form-control border border-black" id="exampleInputPassword1" style="background-color: #D9D9D9;">
+                <input type="password" name="password" id="password" class="form-control border border-black" id="exampleInputPassword1" style="background-color: #D9D9D9;" required>
             </div>
+
+            {% if form.errors %}
+            <p class="text-danger text-center mt-3">Número do contrato ou senha inválidos.</p>
+            {% endif %}
+
             <button type="submit" class="btn text-white d-block mx-auto" style="background-color: #299281; width: 200px; margin-top: 60px; margin-bottom: 20px;">Entrar</button>
         </form>
     </div>
