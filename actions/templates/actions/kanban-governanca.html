@@ -1,779 +1,371 @@
-{% extends "LayoutsBases/base.html" %}
+{% extends 'LayoutsBases/base.html' %}
 {% load static %}
 
+<!-- 
+  O bloco "title" define o título exibido na aba do navegador.
+  Cada página pode sobrescrever esse bloco com seu próprio título.
+ -->
 
 {% block title %}
   Kanban de Governança
 {% endblock %}
 
-
+<!-- 
+  O bloco "page_title" define o título que será exibido
+  visualmente na barra de navegação (navbar).
+ -->
 {% block page_title %}
   Kanban de Governança
 {% endblock %}
-
 
 {% block menu_kanban_active %}
   active
 {% endblock %}
 
-
 {% block extra_css %}
-
-  <link
-    rel="stylesheet"
-    href="{% static 'actions/css/kanban-governanca.css' %}"
-  >
-
+  <link rel="stylesheet" href="{% static 'actions/css/kanban-governanca.css' %}" />
 {% endblock %}
 
-
-
 {% block content %}
-
-
-  <!-- =========================================================
+  <!--  =========================================================
        FILTROS
-       ========================================================= -->
+       =========================================================  -->
 
   <div class="filters">
-
     <select id="eixoFilter">
-
-      <option value="">
-        Selecione o eixo específico
-      </option>
-
+      <option value="">Selecione o eixo específico</option>
     </select>
 
-
-    <input
-      id="actionSearch"
-      class="search"
-      type="text"
-      placeholder="🔍 Buscar ação..."
-      autocomplete="off"
-    >
-
+    <input id="actionSearch" class="search" type="text" placeholder="🔍 Buscar ação..." autocomplete="off" />
   </div>
 
-
-
-  <!-- =========================================================
+  <!--  =========================================================
        BOARD
-       ========================================================= -->
+       =========================================================  -->
 
   <div class="board-wrapper">
-
     <div class="board">
-
-
-      <!-- =====================================================
+      <!--  =====================================================
            PLANEJADO
-           ===================================================== -->
+           =====================================================  -->
 
       <div class="column col-planejado">
-
         <div class="column-header">
+          <span class="title">Planejado</span>
 
-          <span class="title">
-            Planejado
-          </span>
-
-          <span class="count">
-            {{ kanban.planejado|length }}
-          </span>
-
+          <span class="count">{{ kanban.planejado|length }}</span>
         </div>
 
-
-        <div
-          class="column-body"
-          data-status="planejado"
-        >
-
+        <div class="column-body" data-status="planejado">
           {% for acao in kanban.planejado %}
-
-
-            <div
-              class="task-card"
-              draggable="true"
-              data-eixo="{{ acao.eixo }}"
-              data-search="{{ acao.codigo }} {{ acao.nome }}"
-            >
-
-
+            <div class="task-card" draggable="true" data-eixo="{{ acao.eixo }}" data-search="{{ acao.codigo }} {{ acao.nome }}">
               <!-- BOTÃO DO MENU -->
 
-              <button
-                type="button"
-                class="status-menu-toggle"
-                aria-label="Abrir informações da ação"
-              >
-
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-
-                  <polyline
-                    points="6 9 12 15 18 9"
-                  ></polyline>
-
+              <button type="button" class="status-menu-toggle" aria-label="Abrir informações da ação">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
-
               </button>
-
 
               <!-- IDENTIFICAÇÃO -->
 
-              <span class="task-id">
-                AÇÃO {{ acao.codigo }}
-              </span>
-
+              <span class="task-id">AÇÃO {{ acao.codigo }}</span>
 
               <!-- NOME -->
 
-              <div class="task-desc">
-                {{ acao.nome }}
-              </div>
-
+              <div class="task-desc">{{ acao.nome }}</div>
 
               <!-- FORMULÁRIO DE STATUS -->
 
-              <form
-                action="{% url 'atualizar_status_acao' acao.id %}"
-                method="post"
-              >
-
+              <form action="{% url 'atualizar_status_acao' acao.id %}" method="post">
                 {% csrf_token %}
 
-                <input
-                  type="hidden"
-                  name="status"
-                  value="planejado"
-                >
-
+                <input type="hidden" name="status" value="planejado" />
               </form>
 
-
-              <!-- =================================================
+              <!--  =================================================
                    MENU DE DETALHES
-                   ================================================= -->
+                   =================================================  -->
 
               <div class="action-menu">
-
-
                 <div class="action-menu-header">
-
                   <div>
+                    <span class="action-menu-label">DETALHES DA AÇÃO</span>
 
-                    <span class="action-menu-label">
-                      DETALHES DA AÇÃO
-                    </span>
-
-                    <strong>
-                      AÇÃO {{ acao.codigo }}
-                    </strong>
-
+                    <strong>AÇÃO {{ acao.codigo }}</strong>
                   </div>
-
                 </div>
-
-
 
                 <div class="action-info-grid">
-
-
                   <div class="action-info-item">
+                    <span>Código</span>
 
-                    <span>
-                      Código
-                    </span>
-
-                    <strong>
-                      {{ acao.codigo }}
-                    </strong>
-
+                    <strong>{{ acao.codigo }}</strong>
                   </div>
-
 
                   <div class="action-info-item action-info-full">
+                    <span>Nome</span>
 
-                    <span>
-                      Nome
-                    </span>
-
-                    <strong>
-                      {{ acao.nome|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.nome|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Eixo</span>
 
-                    <span>
-                      Eixo
-                    </span>
-
-                    <strong>
-                      {{ acao.eixo|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.eixo|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Prioridade</span>
 
-                    <span>
-                      Prioridade
-                    </span>
-
-                    <strong>
-                      {{ acao.prioridade|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.prioridade|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Responsável</span>
 
-                    <span>
-                      Responsável
-                    </span>
-
-                    <strong>
-                      {{ acao.responsavel|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.responsavel|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Prefeitura</span>
 
-                    <span>
-                      Prefeitura
-                    </span>
-
-                    <strong>
-                      {{ acao.prefeitura|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.prefeitura|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
-
-                    <span>
-                      Data início
-                    </span>
+                    <span>Data início</span>
 
                     <strong>
-
                       {% if acao.data_inicio %}
-
-                        {{ acao.data_inicio|date:"d/m/Y" }}
-
+                        {{ acao.data_inicio|date:'d/m/Y' }}
                       {% else %}
-
                         Não informado
-
                       {% endif %}
-
                     </strong>
-
                   </div>
 
-
                   <div class="action-info-item">
-
-                    <span>
-                      Data fim
-                    </span>
+                    <span>Data fim</span>
 
                     <strong>
-
                       {% if acao.data_fim %}
-
-                        {{ acao.data_fim|date:"d/m/Y" }}
-
+                        {{ acao.data_fim|date:'d/m/Y' }}
                       {% else %}
-
                         Não informado
-
                       {% endif %}
-
                     </strong>
-
                   </div>
 
-
                   <div class="action-info-item">
-
-                    <span>
-                      Custo
-                    </span>
+                    <span>Custo</span>
 
                     <strong>
-
                       {% if acao.custo %}
-
                         R$ {{ acao.custo }}
-
                       {% else %}
-
                         Não informado
-
                       {% endif %}
-
                     </strong>
-
                   </div>
-
 
                   <div class="action-info-item">
+                    <span>Status</span>
 
-                    <span>
-                      Status
-                    </span>
-
-                    <strong class="status-badge status-planejado">
-                      Planejado
-                    </strong>
-
+                    <strong class="status-badge status-planejado">Planejado</strong>
                   </div>
-
 
                   <div class="action-info-item action-info-full">
+                    <span>Observação</span>
 
-                    <span>
-                      Observação
-                    </span>
-
-                    <strong class="action-observation">
-                      {{ acao.observacao|default:"Nenhuma observação informada." }}
-                    </strong>
-
+                    <strong class="action-observation">{{ acao.observacao|default:'Nenhuma observação informada.' }}</strong>
                   </div>
-
-
                 </div>
-
-
 
                 <!-- ALTERAÇÃO DE STATUS -->
 
                 <div class="action-status-section">
-
                   <div class="action-status-title">
-
-                    <span>
-                      Alterar status
-                    </span>
-
+                    <span>Alterar status</span>
                   </div>
 
-
                   <div class="status-options">
-
-
-                    <button
-                      type="button"
-                      class="status-option status-option-planejado"
-                      data-status="planejado"
-                    >
-
+                    <button type="button" class="status-option status-option-planejado" data-status="planejado">
                       <span class="status-dot"></span>
 
                       Planejado
-
                     </button>
 
-
-                    <button
-                      type="button"
-                      class="status-option status-option-preparacao"
-                      data-status="preparacao"
-                    >
-
+                    <button type="button" class="status-option status-option-preparacao" data-status="preparacao">
                       <span class="status-dot"></span>
 
                       Em preparação
-
                     </button>
 
-
-                    <button
-                      type="button"
-                      class="status-option status-option-execucao"
-                      data-status="execucao"
-                    >
-
+                    <button type="button" class="status-option status-option-execucao" data-status="execucao">
                       <span class="status-dot"></span>
 
                       Em execução
-
                     </button>
 
-
-                    <button
-                      type="button"
-                      class="status-option status-option-validacao"
-                      data-status="validacao"
-                    >
-
+                    <button type="button" class="status-option status-option-validacao" data-status="validacao">
                       <span class="status-dot"></span>
 
                       Em validação
-
                     </button>
 
-
-                    <button
-                      type="button"
-                      class="status-option status-option-concluido"
-                      data-status="concluido"
-                    >
-
+                    <button type="button" class="status-option status-option-concluido" data-status="concluido">
                       <span class="status-dot"></span>
 
                       Concluído
-
                     </button>
 
-
-                    <button
-                      type="button"
-                      class="status-option status-option-cancelado"
-                      data-status="cancelado"
-                    >
-
+                    <button type="button" class="status-option status-option-cancelado" data-status="cancelado">
                       <span class="status-dot"></span>
 
                       Cancelado
-
                     </button>
-
-
                   </div>
-
                 </div>
-
-
               </div>
-
             </div>
-
-
           {% empty %}
-
-            <div class="empty-column-msg">
-              Nenhuma ação nesta fase.
-            </div>
-
+            <div class="empty-column-msg">Nenhuma ação nesta fase.</div>
           {% endfor %}
-
         </div>
-
       </div>
 
-
-
-      <!-- =====================================================
+      <!--  =====================================================
            EM PREPARAÇÃO
-           ===================================================== -->
+           =====================================================  -->
 
       <div class="column col-preparacao">
-
         <div class="column-header">
+          <span class="title">Em preparação</span>
 
-          <span class="title">
-            Em preparação
-          </span>
-
-          <span class="count">
-            {{ kanban.preparacao|length }}
-          </span>
-
+          <span class="count">{{ kanban.preparacao|length }}</span>
         </div>
 
-
-        <div
-          class="column-body"
-          data-status="preparacao"
-        >
-
+        <div class="column-body" data-status="preparacao">
           {% for acao in kanban.preparacao %}
-
-
-            <div
-              class="task-card"
-              draggable="true"
-              data-eixo="{{ acao.eixo }}"
-              data-search="{{ acao.codigo }} {{ acao.nome }}"
-            >
-
-
-              <button
-                type="button"
-                class="status-menu-toggle"
-                aria-label="Abrir informações da ação"
-              >
-
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-
-                  <polyline
-                    points="6 9 12 15 18 9"
-                  ></polyline>
-
+            <div class="task-card" draggable="true" data-eixo="{{ acao.eixo }}" data-search="{{ acao.codigo }} {{ acao.nome }}">
+              <button type="button" class="status-menu-toggle" aria-label="Abrir informações da ação">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
-
               </button>
 
+              <span class="task-id">AÇÃO {{ acao.codigo }}</span>
 
-              <span class="task-id">
-                AÇÃO {{ acao.codigo }}
-              </span>
+              <div class="task-desc">{{ acao.nome }}</div>
 
-
-              <div class="task-desc">
-                {{ acao.nome }}
-              </div>
-
-
-              <form
-                action="{% url 'atualizar_status_acao' acao.id %}"
-                method="post"
-              >
-
+              <form action="{% url 'atualizar_status_acao' acao.id %}" method="post">
                 {% csrf_token %}
 
-                <input
-                  type="hidden"
-                  name="status"
-                  value="preparacao"
-                >
-
+                <input type="hidden" name="status" value="preparacao" />
               </form>
 
-
               <div class="action-menu">
-
-
                 <div class="action-menu-header">
-
                   <div>
+                    <span class="action-menu-label">DETALHES DA AÇÃO</span>
 
-                    <span class="action-menu-label">
-                      DETALHES DA AÇÃO
-                    </span>
-
-                    <strong>
-                      AÇÃO {{ acao.codigo }}
-                    </strong>
-
+                    <strong>AÇÃO {{ acao.codigo }}</strong>
                   </div>
-
                 </div>
-
 
                 <div class="action-info-grid">
-
-
                   <div class="action-info-item">
+                    <span>Código</span>
 
-                    <span>
-                      Código
-                    </span>
-
-                    <strong>
-                      {{ acao.codigo }}
-                    </strong>
-
+                    <strong>{{ acao.codigo }}</strong>
                   </div>
-
 
                   <div class="action-info-item action-info-full">
+                    <span>Nome</span>
 
-                    <span>
-                      Nome
-                    </span>
-
-                    <strong>
-                      {{ acao.nome|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.nome|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Eixo</span>
 
-                    <span>
-                      Eixo
-                    </span>
-
-                    <strong>
-                      {{ acao.eixo|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.eixo|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Prioridade</span>
 
-                    <span>
-                      Prioridade
-                    </span>
-
-                    <strong>
-                      {{ acao.prioridade|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.prioridade|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Responsável</span>
 
-                    <span>
-                      Responsável
-                    </span>
-
-                    <strong>
-                      {{ acao.responsavel|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.responsavel|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Prefeitura</span>
 
-                    <span>
-                      Prefeitura
-                    </span>
-
-                    <strong>
-                      {{ acao.prefeitura|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.prefeitura|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
-
-                    <span>
-                      Data início
-                    </span>
+                    <span>Data início</span>
 
                     <strong>
-
                       {% if acao.data_inicio %}
-
-                        {{ acao.data_inicio|date:"d/m/Y" }}
-
+                        {{ acao.data_inicio|date:'d/m/Y' }}
                       {% else %}
-
                         Não informado
-
                       {% endif %}
-
                     </strong>
-
                   </div>
 
-
                   <div class="action-info-item">
-
-                    <span>
-                      Data fim
-                    </span>
+                    <span>Data fim</span>
 
                     <strong>
-
                       {% if acao.data_fim %}
-
-                        {{ acao.data_fim|date:"d/m/Y" }}
-
+                        {{ acao.data_fim|date:'d/m/Y' }}
                       {% else %}
-
                         Não informado
-
                       {% endif %}
-
                     </strong>
-
                   </div>
 
-
                   <div class="action-info-item">
-
-                    <span>
-                      Custo
-                    </span>
+                    <span>Custo</span>
 
                     <strong>
-
                       {% if acao.custo %}
-
                         R$ {{ acao.custo }}
-
                       {% else %}
-
                         Não informado
-
                       {% endif %}
-
                     </strong>
-
                   </div>
-
 
                   <div class="action-info-item">
+                    <span>Status</span>
 
-                    <span>
-                      Status
-                    </span>
-
-                    <strong class="status-badge status-preparacao">
-                      Em preparação
-                    </strong>
-
+                    <strong class="status-badge status-preparacao">Em preparação</strong>
                   </div>
-
 
                   <div class="action-info-item action-info-full">
+                    <span>Observação</span>
 
-                    <span>
-                      Observação
-                    </span>
-
-                    <strong class="action-observation">
-                      {{ acao.observacao|default:"Nenhuma observação informada." }}
-                    </strong>
-
+                    <strong class="action-observation">{{ acao.observacao|default:'Nenhuma observação informada.' }}</strong>
                   </div>
-
-
                 </div>
 
-
                 <div class="action-status-section">
-
                   <div class="action-status-title">
-                    <span>
-                      Alterar status
-                    </span>
+                    <span>Alterar status</span>
                   </div>
 
-
                   <div class="status-options">
-
                     <button type="button" class="status-option status-option-planejado" data-status="planejado">
                       <span class="status-dot"></span>
                       Planejado
@@ -803,324 +395,147 @@
                       <span class="status-dot"></span>
                       Cancelado
                     </button>
-
                   </div>
-
                 </div>
-
-
               </div>
-
             </div>
-
-
           {% empty %}
-
-            <div class="empty-column-msg">
-              Nenhuma ação nesta fase.
-            </div>
-
+            <div class="empty-column-msg">Nenhuma ação nesta fase.</div>
           {% endfor %}
-
         </div>
-
       </div>
 
-
-
-      <!-- =====================================================
+      <!--  =====================================================
            EM EXECUÇÃO
-           ===================================================== -->
+           =====================================================  -->
 
       <div class="column col-execucao">
-
         <div class="column-header">
+          <span class="title">Em execução</span>
 
-          <span class="title">
-            Em execução
-          </span>
-
-          <span class="count">
-            {{ kanban.execucao|length }}
-          </span>
-
+          <span class="count">{{ kanban.execucao|length }}</span>
         </div>
 
-
-        <div
-          class="column-body"
-          data-status="execucao"
-        >
-
+        <div class="column-body" data-status="execucao">
           {% for acao in kanban.execucao %}
-
-
-            <div
-              class="task-card"
-              draggable="true"
-              data-eixo="{{ acao.eixo }}"
-              data-search="{{ acao.codigo }} {{ acao.nome }}"
-            >
-
-
-              <button
-                type="button"
-                class="status-menu-toggle"
-                aria-label="Abrir informações da ação"
-              >
-
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-
-                  <polyline
-                    points="6 9 12 15 18 9"
-                  ></polyline>
-
+            <div class="task-card" draggable="true" data-eixo="{{ acao.eixo }}" data-search="{{ acao.codigo }} {{ acao.nome }}">
+              <button type="button" class="status-menu-toggle" aria-label="Abrir informações da ação">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
-
               </button>
 
+              <span class="task-id">AÇÃO {{ acao.codigo }}</span>
 
-              <span class="task-id">
-                AÇÃO {{ acao.codigo }}
-              </span>
+              <div class="task-desc">{{ acao.nome }}</div>
 
-
-              <div class="task-desc">
-                {{ acao.nome }}
-              </div>
-
-
-              <form
-                action="{% url 'atualizar_status_acao' acao.id %}"
-                method="post"
-              >
-
+              <form action="{% url 'atualizar_status_acao' acao.id %}" method="post">
                 {% csrf_token %}
 
-                <input
-                  type="hidden"
-                  name="status"
-                  value="execucao"
-                >
-
+                <input type="hidden" name="status" value="execucao" />
               </form>
 
-
               <div class="action-menu">
-
-
                 <div class="action-menu-header">
-
                   <div>
+                    <span class="action-menu-label">DETALHES DA AÇÃO</span>
 
-                    <span class="action-menu-label">
-                      DETALHES DA AÇÃO
-                    </span>
-
-                    <strong>
-                      AÇÃO {{ acao.codigo }}
-                    </strong>
-
+                    <strong>AÇÃO {{ acao.codigo }}</strong>
                   </div>
-
                 </div>
-
 
                 <div class="action-info-grid">
-
-
                   <div class="action-info-item">
+                    <span>Código</span>
 
-                    <span>
-                      Código
-                    </span>
-
-                    <strong>
-                      {{ acao.codigo }}
-                    </strong>
-
+                    <strong>{{ acao.codigo }}</strong>
                   </div>
-
 
                   <div class="action-info-item action-info-full">
+                    <span>Nome</span>
 
-                    <span>
-                      Nome
-                    </span>
-
-                    <strong>
-                      {{ acao.nome|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.nome|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Eixo</span>
 
-                    <span>
-                      Eixo
-                    </span>
-
-                    <strong>
-                      {{ acao.eixo|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.eixo|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Prioridade</span>
 
-                    <span>
-                      Prioridade
-                    </span>
-
-                    <strong>
-                      {{ acao.prioridade|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.prioridade|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Responsável</span>
 
-                    <span>
-                      Responsável
-                    </span>
-
-                    <strong>
-                      {{ acao.responsavel|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.responsavel|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Prefeitura</span>
 
-                    <span>
-                      Prefeitura
-                    </span>
-
-                    <strong>
-                      {{ acao.prefeitura|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.prefeitura|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
-
-                    <span>
-                      Data início
-                    </span>
+                    <span>Data início</span>
 
                     <strong>
-
                       {% if acao.data_inicio %}
-
-                        {{ acao.data_inicio|date:"d/m/Y" }}
-
+                        {{ acao.data_inicio|date:'d/m/Y' }}
                       {% else %}
-
                         Não informado
-
                       {% endif %}
-
                     </strong>
-
                   </div>
 
-
                   <div class="action-info-item">
-
-                    <span>
-                      Data fim
-                    </span>
+                    <span>Data fim</span>
 
                     <strong>
-
                       {% if acao.data_fim %}
-
-                        {{ acao.data_fim|date:"d/m/Y" }}
-
+                        {{ acao.data_fim|date:'d/m/Y' }}
                       {% else %}
-
                         Não informado
-
                       {% endif %}
-
                     </strong>
-
                   </div>
 
-
                   <div class="action-info-item">
-
-                    <span>
-                      Custo
-                    </span>
+                    <span>Custo</span>
 
                     <strong>
-
                       {% if acao.custo %}
-
                         R$ {{ acao.custo }}
-
                       {% else %}
-
                         Não informado
-
                       {% endif %}
-
                     </strong>
-
                   </div>
-
 
                   <div class="action-info-item">
+                    <span>Status</span>
 
-                    <span>
-                      Status
-                    </span>
-
-                    <strong class="status-badge status-execucao">
-                      Em execução
-                    </strong>
-
+                    <strong class="status-badge status-execucao">Em execução</strong>
                   </div>
-
 
                   <div class="action-info-item action-info-full">
+                    <span>Observação</span>
 
-                    <span>
-                      Observação
-                    </span>
-
-                    <strong class="action-observation">
-                      {{ acao.observacao|default:"Nenhuma observação informada." }}
-                    </strong>
-
+                    <strong class="action-observation">{{ acao.observacao|default:'Nenhuma observação informada.' }}</strong>
                   </div>
-
-
                 </div>
 
-
                 <div class="action-status-section">
-
                   <div class="action-status-title">
-                    <span>
-                      Alterar status
-                    </span>
+                    <span>Alterar status</span>
                   </div>
 
-
                   <div class="status-options">
-
                     <button type="button" class="status-option status-option-planejado" data-status="planejado">
                       <span class="status-dot"></span>
                       Planejado
@@ -1150,324 +565,147 @@
                       <span class="status-dot"></span>
                       Cancelado
                     </button>
-
                   </div>
-
                 </div>
-
-
               </div>
-
             </div>
-
-
           {% empty %}
-
-            <div class="empty-column-msg">
-              Nenhuma ação nesta fase.
-            </div>
-
+            <div class="empty-column-msg">Nenhuma ação nesta fase.</div>
           {% endfor %}
-
         </div>
-
       </div>
 
-
-
-      <!-- =====================================================
+      <!--  =====================================================
            EM VALIDAÇÃO
-           ===================================================== -->
+           =====================================================  -->
 
       <div class="column col-validacao">
-
         <div class="column-header">
+          <span class="title">Em validação</span>
 
-          <span class="title">
-            Em validação
-          </span>
-
-          <span class="count">
-            {{ kanban.validacao|length }}
-          </span>
-
+          <span class="count">{{ kanban.validacao|length }}</span>
         </div>
 
-
-        <div
-          class="column-body"
-          data-status="validacao"
-        >
-
+        <div class="column-body" data-status="validacao">
           {% for acao in kanban.validacao %}
-
-
-            <div
-              class="task-card"
-              draggable="true"
-              data-eixo="{{ acao.eixo }}"
-              data-search="{{ acao.codigo }} {{ acao.nome }}"
-            >
-
-
-              <button
-                type="button"
-                class="status-menu-toggle"
-                aria-label="Abrir informações da ação"
-              >
-
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-
-                  <polyline
-                    points="6 9 12 15 18 9"
-                  ></polyline>
-
+            <div class="task-card" draggable="true" data-eixo="{{ acao.eixo }}" data-search="{{ acao.codigo }} {{ acao.nome }}">
+              <button type="button" class="status-menu-toggle" aria-label="Abrir informações da ação">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
-
               </button>
 
+              <span class="task-id">AÇÃO {{ acao.codigo }}</span>
 
-              <span class="task-id">
-                AÇÃO {{ acao.codigo }}
-              </span>
+              <div class="task-desc">{{ acao.nome }}</div>
 
-
-              <div class="task-desc">
-                {{ acao.nome }}
-              </div>
-
-
-              <form
-                action="{% url 'atualizar_status_acao' acao.id %}"
-                method="post"
-              >
-
+              <form action="{% url 'atualizar_status_acao' acao.id %}" method="post">
                 {% csrf_token %}
 
-                <input
-                  type="hidden"
-                  name="status"
-                  value="validacao"
-                >
-
+                <input type="hidden" name="status" value="validacao" />
               </form>
 
-
               <div class="action-menu">
-
-
                 <div class="action-menu-header">
-
                   <div>
+                    <span class="action-menu-label">DETALHES DA AÇÃO</span>
 
-                    <span class="action-menu-label">
-                      DETALHES DA AÇÃO
-                    </span>
-
-                    <strong>
-                      AÇÃO {{ acao.codigo }}
-                    </strong>
-
+                    <strong>AÇÃO {{ acao.codigo }}</strong>
                   </div>
-
                 </div>
-
 
                 <div class="action-info-grid">
-
-
                   <div class="action-info-item">
+                    <span>Código</span>
 
-                    <span>
-                      Código
-                    </span>
-
-                    <strong>
-                      {{ acao.codigo }}
-                    </strong>
-
+                    <strong>{{ acao.codigo }}</strong>
                   </div>
-
 
                   <div class="action-info-item action-info-full">
+                    <span>Nome</span>
 
-                    <span>
-                      Nome
-                    </span>
-
-                    <strong>
-                      {{ acao.nome|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.nome|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Eixo</span>
 
-                    <span>
-                      Eixo
-                    </span>
-
-                    <strong>
-                      {{ acao.eixo|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.eixo|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Prioridade</span>
 
-                    <span>
-                      Prioridade
-                    </span>
-
-                    <strong>
-                      {{ acao.prioridade|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.prioridade|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Responsável</span>
 
-                    <span>
-                      Responsável
-                    </span>
-
-                    <strong>
-                      {{ acao.responsavel|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.responsavel|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Prefeitura</span>
 
-                    <span>
-                      Prefeitura
-                    </span>
-
-                    <strong>
-                      {{ acao.prefeitura|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.prefeitura|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
-
-                    <span>
-                      Data início
-                    </span>
+                    <span>Data início</span>
 
                     <strong>
-
                       {% if acao.data_inicio %}
-
-                        {{ acao.data_inicio|date:"d/m/Y" }}
-
+                        {{ acao.data_inicio|date:'d/m/Y' }}
                       {% else %}
-
                         Não informado
-
                       {% endif %}
-
                     </strong>
-
                   </div>
 
-
                   <div class="action-info-item">
-
-                    <span>
-                      Data fim
-                    </span>
+                    <span>Data fim</span>
 
                     <strong>
-
                       {% if acao.data_fim %}
-
-                        {{ acao.data_fim|date:"d/m/Y" }}
-
+                        {{ acao.data_fim|date:'d/m/Y' }}
                       {% else %}
-
                         Não informado
-
                       {% endif %}
-
                     </strong>
-
                   </div>
 
-
                   <div class="action-info-item">
-
-                    <span>
-                      Custo
-                    </span>
+                    <span>Custo</span>
 
                     <strong>
-
                       {% if acao.custo %}
-
                         R$ {{ acao.custo }}
-
                       {% else %}
-
                         Não informado
-
                       {% endif %}
-
                     </strong>
-
                   </div>
-
 
                   <div class="action-info-item">
+                    <span>Status</span>
 
-                    <span>
-                      Status
-                    </span>
-
-                    <strong class="status-badge status-validacao">
-                      Em validação
-                    </strong>
-
+                    <strong class="status-badge status-validacao">Em validação</strong>
                   </div>
-
 
                   <div class="action-info-item action-info-full">
+                    <span>Observação</span>
 
-                    <span>
-                      Observação
-                    </span>
-
-                    <strong class="action-observation">
-                      {{ acao.observacao|default:"Nenhuma observação informada." }}
-                    </strong>
-
+                    <strong class="action-observation">{{ acao.observacao|default:'Nenhuma observação informada.' }}</strong>
                   </div>
-
-
                 </div>
 
-
                 <div class="action-status-section">
-
                   <div class="action-status-title">
-                    <span>
-                      Alterar status
-                    </span>
+                    <span>Alterar status</span>
                   </div>
 
-
                   <div class="status-options">
-
                     <button type="button" class="status-option status-option-planejado" data-status="planejado">
                       <span class="status-dot"></span>
                       Planejado
@@ -1497,324 +735,147 @@
                       <span class="status-dot"></span>
                       Cancelado
                     </button>
-
                   </div>
-
                 </div>
-
-
               </div>
-
             </div>
-
-
           {% empty %}
-
-            <div class="empty-column-msg">
-              Nenhuma ação nesta fase.
-            </div>
-
+            <div class="empty-column-msg">Nenhuma ação nesta fase.</div>
           {% endfor %}
-
         </div>
-
       </div>
 
-
-
-      <!-- =====================================================
+      <!--  =====================================================
            CONCLUÍDO
-           ===================================================== -->
+           =====================================================  -->
 
       <div class="column col-concluido">
-
         <div class="column-header">
+          <span class="title">Concluído</span>
 
-          <span class="title">
-            Concluído
-          </span>
-
-          <span class="count">
-            {{ kanban.concluido|length }}
-          </span>
-
+          <span class="count">{{ kanban.concluido|length }}</span>
         </div>
 
-
-        <div
-          class="column-body"
-          data-status="concluido"
-        >
-
+        <div class="column-body" data-status="concluido">
           {% for acao in kanban.concluido %}
-
-
-            <div
-              class="task-card"
-              draggable="true"
-              data-eixo="{{ acao.eixo }}"
-              data-search="{{ acao.codigo }} {{ acao.nome }}"
-            >
-
-
-              <button
-                type="button"
-                class="status-menu-toggle"
-                aria-label="Abrir informações da ação"
-              >
-
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-
-                  <polyline
-                    points="6 9 12 15 18 9"
-                  ></polyline>
-
+            <div class="task-card" draggable="true" data-eixo="{{ acao.eixo }}" data-search="{{ acao.codigo }} {{ acao.nome }}">
+              <button type="button" class="status-menu-toggle" aria-label="Abrir informações da ação">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
-
               </button>
 
+              <span class="task-id">AÇÃO {{ acao.codigo }}</span>
 
-              <span class="task-id">
-                AÇÃO {{ acao.codigo }}
-              </span>
+              <div class="task-desc">{{ acao.nome }}</div>
 
-
-              <div class="task-desc">
-                {{ acao.nome }}
-              </div>
-
-
-              <form
-                action="{% url 'atualizar_status_acao' acao.id %}"
-                method="post"
-              >
-
+              <form action="{% url 'atualizar_status_acao' acao.id %}" method="post">
                 {% csrf_token %}
 
-                <input
-                  type="hidden"
-                  name="status"
-                  value="concluido"
-                >
-
+                <input type="hidden" name="status" value="concluido" />
               </form>
 
-
               <div class="action-menu">
-
-
                 <div class="action-menu-header">
-
                   <div>
+                    <span class="action-menu-label">DETALHES DA AÇÃO</span>
 
-                    <span class="action-menu-label">
-                      DETALHES DA AÇÃO
-                    </span>
-
-                    <strong>
-                      AÇÃO {{ acao.codigo }}
-                    </strong>
-
+                    <strong>AÇÃO {{ acao.codigo }}</strong>
                   </div>
-
                 </div>
-
 
                 <div class="action-info-grid">
-
-
                   <div class="action-info-item">
+                    <span>Código</span>
 
-                    <span>
-                      Código
-                    </span>
-
-                    <strong>
-                      {{ acao.codigo }}
-                    </strong>
-
+                    <strong>{{ acao.codigo }}</strong>
                   </div>
-
 
                   <div class="action-info-item action-info-full">
+                    <span>Nome</span>
 
-                    <span>
-                      Nome
-                    </span>
-
-                    <strong>
-                      {{ acao.nome|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.nome|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Eixo</span>
 
-                    <span>
-                      Eixo
-                    </span>
-
-                    <strong>
-                      {{ acao.eixo|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.eixo|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Prioridade</span>
 
-                    <span>
-                      Prioridade
-                    </span>
-
-                    <strong>
-                      {{ acao.prioridade|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.prioridade|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Responsável</span>
 
-                    <span>
-                      Responsável
-                    </span>
-
-                    <strong>
-                      {{ acao.responsavel|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.responsavel|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Prefeitura</span>
 
-                    <span>
-                      Prefeitura
-                    </span>
-
-                    <strong>
-                      {{ acao.prefeitura|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.prefeitura|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
-
-                    <span>
-                      Data início
-                    </span>
+                    <span>Data início</span>
 
                     <strong>
-
                       {% if acao.data_inicio %}
-
-                        {{ acao.data_inicio|date:"d/m/Y" }}
-
+                        {{ acao.data_inicio|date:'d/m/Y' }}
                       {% else %}
-
                         Não informado
-
                       {% endif %}
-
                     </strong>
-
                   </div>
 
-
                   <div class="action-info-item">
-
-                    <span>
-                      Data fim
-                    </span>
+                    <span>Data fim</span>
 
                     <strong>
-
                       {% if acao.data_fim %}
-
-                        {{ acao.data_fim|date:"d/m/Y" }}
-
+                        {{ acao.data_fim|date:'d/m/Y' }}
                       {% else %}
-
                         Não informado
-
                       {% endif %}
-
                     </strong>
-
                   </div>
 
-
                   <div class="action-info-item">
-
-                    <span>
-                      Custo
-                    </span>
+                    <span>Custo</span>
 
                     <strong>
-
                       {% if acao.custo %}
-
                         R$ {{ acao.custo }}
-
                       {% else %}
-
                         Não informado
-
                       {% endif %}
-
                     </strong>
-
                   </div>
-
 
                   <div class="action-info-item">
+                    <span>Status</span>
 
-                    <span>
-                      Status
-                    </span>
-
-                    <strong class="status-badge status-concluido">
-                      Concluído
-                    </strong>
-
+                    <strong class="status-badge status-concluido">Concluído</strong>
                   </div>
-
 
                   <div class="action-info-item action-info-full">
+                    <span>Observação</span>
 
-                    <span>
-                      Observação
-                    </span>
-
-                    <strong class="action-observation">
-                      {{ acao.observacao|default:"Nenhuma observação informada." }}
-                    </strong>
-
+                    <strong class="action-observation">{{ acao.observacao|default:'Nenhuma observação informada.' }}</strong>
                   </div>
-
-
                 </div>
 
-
                 <div class="action-status-section">
-
                   <div class="action-status-title">
-                    <span>
-                      Alterar status
-                    </span>
+                    <span>Alterar status</span>
                   </div>
 
-
                   <div class="status-options">
-
                     <button type="button" class="status-option status-option-planejado" data-status="planejado">
                       <span class="status-dot"></span>
                       Planejado
@@ -1844,387 +905,170 @@
                       <span class="status-dot"></span>
                       Cancelado
                     </button>
-
                   </div>
-
                 </div>
-
-
               </div>
-
             </div>
-
-
           {% empty %}
-
-            <div class="empty-column-msg">
-              Nenhuma ação nesta fase.
-            </div>
-
+            <div class="empty-column-msg">Nenhuma ação nesta fase.</div>
           {% endfor %}
-
         </div>
-
       </div>
 
-
-
-      <!-- =====================================================
+      <!--  =====================================================
            CANCELADO
-           ===================================================== -->
+           =====================================================  -->
 
       <div class="column col-cancelado">
-
         <div class="column-header">
+          <span class="title">Cancelado</span>
 
-          <span class="title">
-            Cancelado
-          </span>
-
-          <span class="count">
-            {{ kanban.cancelado|length }}
-          </span>
-
+          <span class="count">{{ kanban.cancelado|length }}</span>
         </div>
 
-
-        <div
-          class="column-body"
-          data-status="cancelado"
-        >
-
+        <div class="column-body" data-status="cancelado">
           {% for acao in kanban.cancelado %}
-
-
-            <div
-              class="task-card highlight"
-              draggable="false"
-              data-eixo="{{ acao.eixo }}"
-              data-search="{{ acao.codigo }} {{ acao.nome }}"
-            >
-
-
-              <button
-                type="button"
-                class="status-menu-toggle"
-                aria-label="Abrir informações da ação"
-              >
-
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-
-                  <polyline
-                    points="6 9 12 15 18 9"
-                  ></polyline>
-
+            <div class="task-card highlight" draggable="false" data-eixo="{{ acao.eixo }}" data-search="{{ acao.codigo }} {{ acao.nome }}">
+              <button type="button" class="status-menu-toggle" aria-label="Abrir informações da ação">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
-
               </button>
 
+              <span class="task-id">AÇÃO {{ acao.codigo }}</span>
 
-              <span class="task-id">
-                AÇÃO {{ acao.codigo }}
-              </span>
+              <div class="task-desc">{{ acao.nome }}</div>
 
-
-              <div class="task-desc">
-                {{ acao.nome }}
-              </div>
-
-
-              <!--
+              <!-- 
                 Não existe formulário de alteração de status
                 para ações canceladas.
-              -->
-
+               -->
 
               <div class="action-menu">
-
-
                 <div class="action-menu-header">
-
                   <div>
+                    <span class="action-menu-label">DETALHES DA AÇÃO</span>
 
-                    <span class="action-menu-label">
-                      DETALHES DA AÇÃO
-                    </span>
-
-                    <strong>
-                      AÇÃO {{ acao.codigo }}
-                    </strong>
-
+                    <strong>AÇÃO {{ acao.codigo }}</strong>
                   </div>
-
                 </div>
-
 
                 <div class="action-info-grid">
-
-
                   <div class="action-info-item">
+                    <span>Código</span>
 
-                    <span>
-                      Código
-                    </span>
-
-                    <strong>
-                      {{ acao.codigo }}
-                    </strong>
-
+                    <strong>{{ acao.codigo }}</strong>
                   </div>
-
 
                   <div class="action-info-item action-info-full">
+                    <span>Nome</span>
 
-                    <span>
-                      Nome
-                    </span>
-
-                    <strong>
-                      {{ acao.nome|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.nome|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Eixo</span>
 
-                    <span>
-                      Eixo
-                    </span>
-
-                    <strong>
-                      {{ acao.eixo|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.eixo|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Prioridade</span>
 
-                    <span>
-                      Prioridade
-                    </span>
-
-                    <strong>
-                      {{ acao.prioridade|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.prioridade|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Responsável</span>
 
-                    <span>
-                      Responsável
-                    </span>
-
-                    <strong>
-                      {{ acao.responsavel|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.responsavel|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
+                    <span>Prefeitura</span>
 
-                    <span>
-                      Prefeitura
-                    </span>
-
-                    <strong>
-                      {{ acao.prefeitura|default:"Não informado" }}
-                    </strong>
-
+                    <strong>{{ acao.prefeitura|default:'Não informado' }}</strong>
                   </div>
 
-
                   <div class="action-info-item">
-
-                    <span>
-                      Data início
-                    </span>
+                    <span>Data início</span>
 
                     <strong>
-
                       {% if acao.data_inicio %}
-
-                        {{ acao.data_inicio|date:"d/m/Y" }}
-
+                        {{ acao.data_inicio|date:'d/m/Y' }}
                       {% else %}
-
                         Não informado
-
                       {% endif %}
-
                     </strong>
-
                   </div>
 
-
                   <div class="action-info-item">
-
-                    <span>
-                      Data fim
-                    </span>
+                    <span>Data fim</span>
 
                     <strong>
-
                       {% if acao.data_fim %}
-
-                        {{ acao.data_fim|date:"d/m/Y" }}
-
+                        {{ acao.data_fim|date:'d/m/Y' }}
                       {% else %}
-
                         Não informado
-
                       {% endif %}
-
                     </strong>
-
                   </div>
 
-
                   <div class="action-info-item">
-
-                    <span>
-                      Custo
-                    </span>
+                    <span>Custo</span>
 
                     <strong>
-
                       {% if acao.custo %}
-
                         R$ {{ acao.custo }}
-
                       {% else %}
-
                         Não informado
-
                       {% endif %}
-
                     </strong>
-
                   </div>
-
 
                   <div class="action-info-item">
+                    <span>Status</span>
 
-                    <span>
-                      Status
-                    </span>
-
-                    <strong class="status-badge status-cancelado">
-                      Cancelado
-                    </strong>
-
+                    <strong class="status-badge status-cancelado">Cancelado</strong>
                   </div>
-
 
                   <div class="action-info-item action-info-full">
+                    <span>Observação</span>
 
-                    <span>
-                      Observação
-                    </span>
-
-                    <strong class="action-observation">
-                      {{ acao.observacao|default:"Nenhuma observação informada." }}
-                    </strong>
-
+                    <strong class="action-observation">{{ acao.observacao|default:'Nenhuma observação informada.' }}</strong>
                   </div>
-
-
                 </div>
 
-
-                <!-- =================================================
+                <!--  =================================================
                      AVISO DE CANCELAMENTO
-                     ================================================= -->
+                     =================================================  -->
 
                 <div class="cancelled-warning">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="9"></circle>
 
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
 
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="9"
-                    ></circle>
-
-                    <line
-                      x1="12"
-                      y1="8"
-                      x2="12"
-                      y2="12"
-                    ></line>
-
-                    <line
-                      x1="12"
-                      y1="16"
-                      x2="12.01"
-                      y2="16"
-                    ></line>
-
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
                   </svg>
 
-
                   <div>
+                    <strong>Ação cancelada</strong>
 
-                    <strong>
-                      Ação cancelada
-                    </strong>
-
-                    <span>
-                      Esta ação não pode mais ser movimentada para outra etapa.
-                    </span>
-
+                    <span>Esta ação não pode mais ser movimentada para outra etapa.</span>
                   </div>
-
-
                 </div>
-
-
               </div>
-
             </div>
-
-
           {% empty %}
-
-            <div class="empty-column-msg">
-              Nenhuma ação nesta fase.
-            </div>
-
+            <div class="empty-column-msg">Nenhuma ação nesta fase.</div>
           {% endfor %}
-
         </div>
-
       </div>
-
-
     </div>
-
   </div>
-
-
 {% endblock %}
 
-
-
 {% block extra_js %}
-
-  <script
-    src="{% static 'actions/js/kanban-governanca.js' %}"
-  ></script>
-
+  <script src="{% static 'actions/js/kanban-governanca.js' %}"></script>
 {% endblock %}

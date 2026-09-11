@@ -2,99 +2,83 @@
 
 <!DOCTYPE html>
 <html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
 
-<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <meta charset="UTF-8">
+    <link rel="stylesheet" href="{% static 'actions/css/navbar/base.css' %}" />
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+    <title>
+      {% block title %}
+        Portal MAGES
+      {% endblock %}
+    </title>
 
-  <link
-    rel="stylesheet"
-    href="{% static 'actions/css/navbar/base.css' %}"
-  >
+    {% block extra_css %}
 
-  <title>
-    {% block title %}
-      Portal MAGES
     {% endblock %}
-  </title>
+  </head>
 
-  {% block extra_css %}
-  {% endblock %}
-
-</head>
-
-
-<body>
-
-
-  <!-- ===================================================== -->
-  <!-- FRAME PRINCIPAL -->
-  <!-- ===================================================== -->
-
-  <div class="frame">
-
-
+  <body>
     <!-- ===================================================== -->
-    <!-- NAVBAR -->
+    <!-- TÍTULO DA PÁGINA PARA A NAVBAR -->
     <!-- ===================================================== -->
 
-    {% include "LayoutsBases/partials/navbar.html" %}
-
-
-    <!-- ===================================================== -->
-    <!-- ÁREA ABAIXO DA NAVBAR -->
-    <!-- ===================================================== -->
-
-    <div class="app">
-
-
-      <!-- ================================================= -->
-      <!-- SIDEBAR -->
-      <!-- ================================================= -->
-
-      {% include "LayoutsBases/partials/sidebar.html" %}
-
-
-      <!-- ================================================= -->
-      <!-- CONTEÚDO PRINCIPAL -->
-      <!-- ================================================= -->
-
-      <main class="main">
-
-        {% block content %}
-        {% endblock %}
-
-      </main>
-
-
+    <div id="page-title-source" style="display: none;">
+      {% block page_title %}
+        Portal MAGES
+      {% endblock %}
     </div>
 
+    <!-- ===================================================== -->
+    <!-- FRAME PRINCIPAL -->
+    <!-- ===================================================== -->
 
-  </div>
+    <div class="frame">
+      <!-- ===================================================== -->
+      <!-- NAVBAR -->
+      <!-- ===================================================== -->
 
+      <nav class="navbar">
+        {% include 'LayoutsBases/partials/navbar.html' %}
+      </nav>
 
-  <!-- ===================================================== -->
-  <!-- JAVASCRIPT GLOBAL -->
-  <!-- ===================================================== -->
+      <!-- ===================================================== -->
+      <!-- ÁREA ABAIXO DA NAVBAR -->
+      <!-- ===================================================== -->
 
-  <script
-    src="{% static 'actions/js/navbar/base.js' %}"
-  ></script>
+      <div class="app">
+        <!-- ================================================= -->
+        <!-- SIDEBAR -->
+        <!-- ================================================= -->
 
+        {% include 'LayoutsBases/partials/sidebar.html' %}
 
-  <!-- ===================================================== -->
-  <!-- JAVASCRIPT ESPECÍFICO DA PÁGINA -->
-  <!-- ===================================================== -->
+        <!-- ================================================= -->
+        <!-- CONTEÚDO PRINCIPAL -->
+        <!-- ================================================= -->
 
-  {% block extra_js %}
-  {% endblock %}
+        <main class="main">
+          {% block content %}
 
+          {% endblock %}
+        </main>
+      </div>
+    </div>
 
-</body>
+    <!-- ===================================================== -->
+    <!-- JAVASCRIPT GLOBAL -->
+    <!-- ===================================================== -->
 
+    <script src="{% static 'actions/js/navbar/base.js' %}"></script>
+
+    <!-- ===================================================== -->
+    <!-- JAVASCRIPT ESPECÍFICO DA PÁGINA -->
+    <!-- ===================================================== -->
+
+    {% block extra_js %}
+
+    {% endblock %}
+  </body>
 </html>

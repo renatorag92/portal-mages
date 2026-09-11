@@ -56,4 +56,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
     }
 
+
+    /* =========================================================
+       TÍTULO DA PÁGINA NA NAVBAR
+       ========================================================= */
+
+    const pageTitleSource = document.getElementById("page-title-source");
+    const pageTitle = document.getElementById("page-title");
+
+    if (pageTitleSource && pageTitle) {
+
+        pageTitle.textContent = pageTitleSource.textContent.trim();
+
+    }
+
 });
