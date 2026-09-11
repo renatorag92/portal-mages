@@ -1,5 +1,10 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login  # IMPORTAÇÃO NECESSÁRIA
+from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import PasswordChangeView
+from django.urls import reverse_lazy
+from django.contrib import messages                   # IMPORTAÇÃO NECESSÁRIA
 from .models import Acao
 from .choices import Status_status
 
@@ -26,4 +31,31 @@ def atualizar_status_acao(request, acao_id):
             acao.status = novo_status
             acao.save()
             
-    return redirect('kanban')  # Redireciona para a lista de ações após a atualização
+    return redirect('kanban')
+
+class CustomLoginView(LoginView):
+    template_name = 'actions/login.html' # Nome do template de login
+    redirect_authenticated_user = True # Redireciona para o kanban se o usuário estiver logado
+    
+    def get_success_url(self):
+        user = self.request.user # Pega o usuário que acabou de logar
+                   
+        # 
+        if hasattr(user, 'perfilusuario') and user.perfilusuario.primeiro_acesso: # Verifica se é o primeiro acesso do usuário
+            return reverse_lazy('password-change')  # Redireciona para redefinir a senha
+     
+        return reverse_lazy('kanban')  # Rota padrão para o sistema
+            
+
+class CustomPasswordChangeView(PasswordChangeView):
+    template_name = 'actions/password-change.html'
+    success_url = reverse_lazy('kanban')  # Redireciona para a página do Kanban após a alteração da senha
+
+    def form_valid(self, form):
+        response = super().form_valid(form)  # Chama o método form_valid da classe pai para processar a alteração da senha
+        
+        # Atualiza o campo primeiro_acesso para False após a alteração da senha
+        self.request.user.perfil.primeiro_acesso = False
+        self.request.user.perfil.save()
+        
+        return response
