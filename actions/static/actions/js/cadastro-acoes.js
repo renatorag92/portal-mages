@@ -27,14 +27,20 @@ document.addEventListener("DOMContentLoaded", function () {
      ========================================================= */
 
   const etapasList = document.getElementById("etapasList");
-  const addEtapaBtn = document.getElementById("addEtapaBtn");
 
   const iconRemoveSvg = `
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
-      <line x1="5" y1="12" x2="19" y2="12" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="3 6 5 6 21 6"></polyline>
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
     </svg>
   `;
 
+  const iconAddSvg = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  `;
 
   function createEtapaRow() {
 
@@ -52,27 +58,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
       <select name="etapaPrioridade[]">
         <option value="">Selecione a prioridade específica</option>
+        <option value="baixa">Baixa</option>
+        <option value="media">Média</option>
+        <option value="alta">Alta</option>
       </select>
 
-      <button type="button" class="etapa-remove" aria-label="Remover etapa">
-        ${iconRemoveSvg}
-      </button>
+      <div class="etapa-actions">
+        <button type="button" class="etapa-remove" aria-label="Remover etapa">
+          ${iconRemoveSvg}
+        </button>
+
+        <button type="button" class="etapa-add" aria-label="Adicionar etapa">
+          ${iconAddSvg}
+        </button>
+      </div>
     `;
 
     return row;
-  }
-
-
-  if (addEtapaBtn && etapasList) {
-
-    addEtapaBtn.addEventListener("click", function () {
-
-      const newRow = createEtapaRow();
-
-      etapasList.appendChild(newRow);
-
-    });
-
   }
 
 
@@ -80,16 +82,32 @@ document.addEventListener("DOMContentLoaded", function () {
 
     etapasList.addEventListener("click", function (event) {
 
+      const addBtn = event.target.closest(".etapa-add");
       const removeBtn = event.target.closest(".etapa-remove");
 
-      if (!removeBtn) {
+      // Adicionar nova linha
+      if (addBtn) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const newRow = createEtapaRow();
+        etapasList.appendChild(newRow);
+        etapasList.scrollTop = etapasList.scrollHeight;
         return;
       }
 
-      const row = removeBtn.closest(".etapa-row");
+      // Remover exatamente a linha clicada
+      if (removeBtn) {
+        event.preventDefault();
+        event.stopPropagation();
 
-      if (row) {
-        row.remove();
+        const rows = etapasList.querySelectorAll(".etapa-row");
+        if (rows.length > 1) {
+          const rowToRemove = removeBtn.closest(".etapa-row");
+          if (rowToRemove) {
+            rowToRemove.remove();
+          }
+        }
       }
 
     });

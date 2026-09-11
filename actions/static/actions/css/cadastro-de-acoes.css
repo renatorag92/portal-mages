@@ -39,7 +39,6 @@ body {
 
 /* =========================================================
    FRAME / TOPBAR / SIDEBAR
-   (mesma base visual do Kanban de Governança)
    ========================================================= */
 
 .frame {
@@ -229,17 +228,25 @@ body {
   padding: 20px 24px 32px;
 }
 
+#formCadastroAcao {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .form-card {
   background: #fff;
   border: 1px solid var(--border-light);
   border-radius: 10px;
   padding: 20px 22px;
-  margin-bottom: 16px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  flex-shrink: 0;
 }
 
 .form-card-grow {
-  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  min-height: 250px;
 }
 
 .form-card-title {
@@ -283,7 +290,7 @@ body {
   border-radius: 6px;
   border: 1px solid #d8d5cc;
   background: #f5f4f0;
-  color: var(--text-muted);
+  color: var(--text-dark);
   font-family: inherit;
   width: 100%;
 }
@@ -323,9 +330,10 @@ body {
 
 .etapas-header {
   display: grid;
-  grid-template-columns: repeat(5, 1fr) 36px;
+  grid-template-columns: repeat(5, 1fr) 76px;
   gap: 14px;
   margin-bottom: 8px;
+  padding-right: 6px;
 }
 
 .etapas-header span {
@@ -338,13 +346,22 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  max-height: 180px;
+  overflow-y: auto;
+  padding-right: 6px;
 }
 
 .etapa-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr) 36px;
+  grid-template-columns: repeat(5, 1fr) 76px;
   gap: 14px;
   align-items: center;
+}
+
+.etapa-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .etapa-add,
@@ -393,6 +410,7 @@ body {
   justify-content: flex-end;
   gap: 12px;
   padding: 4px 4px 0;
+  flex-shrink: 0;
 }
 
 .btn {
@@ -443,8 +461,7 @@ body {
     border-bottom: 1px solid var(--border-light);
   }
 
-  .etapa-row .etapa-add,
-  .etapa-row .etapa-remove {
+  .etapa-row .etapa-actions {
     grid-column: span 2;
     justify-self: end;
   }
@@ -476,8 +493,7 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .etapa-row .etapa-add,
-  .etapa-row .etapa-remove {
+  .etapa-row .etapa-actions {
     grid-column: span 1;
   }
 
