@@ -1,14 +1,15 @@
 :root {
   --bg: #eeece7;
-  --sidebar-bg: #ffffff;
   --card-bg: #fff6da;
   --card-border: #f0dea0;
+
   --header-planejado: #3e4a89;
   --header-preparacao: #6a6f7a;
   --header-execucao: #d98a1f;
   --header-validacao: #7b3f9e;
   --header-concluido: #2e8b57;
   --header-cancelado: #c0392b;
+
   --text-dark: #2b2b2b;
   --text-muted: #6b6b6b;
   --border-light: #e0ddd4;
@@ -18,197 +19,10 @@
   box-sizing: border-box;
 }
 
-html {
-  height: 100%;
-}
 
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: #000;
-  display: flex;
-  justify-content: center;
-  align-items: stretch;
-  width: 100%;
-  min-height: 100vh;
-  padding: 0;
-}
-
-.frame {
-  width: 100%;
-  max-width: none;
-  height: 100vh;
-  min-height: 100vh;
-  background: #fff;
-  border-radius: 0;
-  overflow: hidden;
-  box-shadow: none;
-  display: flex;
-  flex-direction: column;
-}
-
-.topbar {
-  height: 64px;
-  min-height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  background: #fff;
-  border-bottom: 1px solid var(--border-light);
-  flex-shrink: 0;
-  position: relative;
-  z-index: 100;
-}
-
-.topbar-left {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.navbar-logo {
-  height: 60px;
-  width: auto;
-}
-
-.topbar h1 {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-dark);
-  margin: 0;
-}
-
-.topbar-icons {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-
-.topbar-icons .icon {
-  width: 20px;
-  height: 20px;
-  color: #888;
-  cursor: pointer;
-}
-
-.avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #c9c9c9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.avatar svg {
-  width: 16px;
-  height: 16px;
-  color: #fff;
-}
-
-.app {
-  position: relative;
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  background: var(--bg);
-  overflow: hidden;
-}
-
-.sidebar {
-  width: 60px;
-  height: 100%;
-  background: var(--sidebar-bg);
-  border-right: 1px solid var(--border-light);
-  display: flex;
-  flex-direction: column;
-  padding: 14px 0;
-  gap: 4px;
-  transition: width 0.2s ease;
-  overflow: hidden;
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 20;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08);
-}
-
-.sidebar.expanded,
-.sidebar.hover-expanded {
-  width: 220px;
-}
-
-.sidebar-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 0 8px;
-}
-
-.sidebar.expanded .sidebar-menu,
-.sidebar.hover-expanded .sidebar-menu {
-  padding: 0 10px;
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 8px;
-  border-radius: 6px;
-  color: #8a8a8a;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.menu-item:hover {
-  background: #f4f3ef;
-  color: #444;
-}
-
-.menu-item.active {
-  color: #2b2b2b;
-  font-weight: 600;
-}
-
-.menu-item .icon {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-}
-
-.menu-item .label {
-  display: none;
-  font-size: 13px;
-}
-
-.sidebar.expanded .menu-item .label,
-.sidebar.hover-expanded .menu-item .label {
-  display: inline;
-}
-
-.sidebar.expanded .menu-item,
-.sidebar.hover-expanded .menu-item {
-  justify-content: flex-start;
-}
-
-.sidebar:not(.expanded):not(.hover-expanded) .menu-item {
-  justify-content: center;
-}
-
-.main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  margin-left: 60px;
-  background: var(--bg);
-  overflow: hidden;
-}
+/* =========================================================
+   FILTROS
+   ========================================================= */
 
 .filters {
   display: flex;
@@ -233,15 +47,19 @@ body {
   min-width: 190px;
   appearance: none;
   -webkit-appearance: none;
+
   background-image:
     linear-gradient(45deg, transparent 50%, #999 50%),
     linear-gradient(135deg, #999 50%, transparent 50%);
+
   background-position:
     calc(100% - 15px) center,
     calc(100% - 10px) center;
+
   background-size:
     5px 5px,
     5px 5px;
+
   background-repeat: no-repeat;
   padding-right: 30px;
 }
@@ -251,6 +69,11 @@ body {
   min-width: 200px;
   max-width: 320px;
 }
+
+
+/* =========================================================
+   BOARD
+   ========================================================= */
 
 .board-wrapper {
   flex: 1;
@@ -280,13 +103,20 @@ body {
   overflow: hidden;
 }
 
+
+/* =========================================================
+   CABEÇALHO DAS COLUNAS
+   ========================================================= */
+
 .column-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   color: #fff;
   font-size: 12.5px;
   font-weight: 700;
+
   padding: 9px 12px;
 }
 
@@ -321,16 +151,51 @@ body {
   background: var(--header-cancelado);
 }
 
+
+/* =========================================================
+   CORPO DAS COLUNAS
+   ========================================================= */
+
 .column-body {
   padding: 10px;
+
   display: flex;
   flex-direction: column;
   gap: 10px;
+
   flex: 1;
   min-height: 0;
+
   overflow-y: auto;
   overflow-x: hidden;
 }
+
+.column-body::-webkit-scrollbar {
+  width: 7px;
+}
+
+.column-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.column-body::-webkit-scrollbar-thumb {
+  background: #c5c5c5;
+  border-radius: 10px;
+}
+
+.column-body::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+.column-body.drag-over {
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 6px;
+}
+
+
+/* =========================================================
+   TÍTULO
+   ========================================================= */
 
 .title {
   text-align: center;
@@ -338,19 +203,32 @@ body {
 
 
 /* =========================================================
-   CORES DOS CARDS POR COLUNA
-   Mesmas cores dos respectivos "DETALHES DA AÇÃO"
+   CARDS
    ========================================================= */
 
 .task-card {
   position: relative;
+
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 6px;
+
   padding: 10px 11px;
   padding-right: 30px;
+
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  cursor: grab;
+
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
+
+
+/* =========================================================
+   CORES DOS CARDS POR COLUNA
+   ========================================================= */
 
 /* Planejado */
 .col-planejado .task-card {
@@ -388,23 +266,84 @@ body {
   border-color: #edcbc6;
 }
 
+
+/* =========================================================
+   TEXTO DOS CARDS
+   ========================================================= */
+
+.task-card .task-id {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dark);
+
+  margin-bottom: 4px;
+  display: block;
+}
+
+.task-card .task-desc {
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #444;
+}
+
+
+/* =========================================================
+   ESTADO DO DRAG
+   ========================================================= */
+
+.task-card:active {
+  cursor: grabbing;
+}
+
+.task-card.dragging {
+  opacity: 0.45;
+  transform: scale(0.98);
+}
+
+.task-card.menu-open {
+  cursor: default;
+}
+
+.task-card.highlight {
+  border: 1px solid #edcbc6;
+}
+
+
+/* =========================================================
+   BOTÃO DO MENU DE STATUS
+   ========================================================= */
+
 .status-menu-toggle {
   position: absolute;
+
   top: 8px;
   right: 7px;
+
   width: 20px;
   height: 20px;
+
   padding: 2px;
+
   border: none;
   background: transparent;
+
   color: #2b2b2b;
+
   cursor: pointer;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   border-radius: 4px;
+
   z-index: 3;
-  transition: background 0.15s ease, transform 0.15s ease;
+
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
 }
 
 .status-menu-toggle:hover {
@@ -414,6 +353,7 @@ body {
 .status-menu-toggle svg {
   width: 16px;
   height: 16px;
+
   transition: transform 0.2s ease;
 }
 
@@ -421,20 +361,34 @@ body {
   transform: rotate(180deg);
 }
 
+
+/* =========================================================
+   MENU DE DETALHES DA AÇÃO
+   ========================================================= */
+
 .action-menu {
   display: none;
+
   position: fixed;
+
   width: 330px;
   max-height: none;
+
   overflow-y: visible;
+
   background: #ffffff;
+
   border: 1px solid #ddd9cf;
   border-radius: 12px;
+
   box-shadow:
     0 12px 35px rgba(0, 0, 0, 0.18),
     0 3px 10px rgba(0, 0, 0, 0.08);
+
   z-index: 10000;
+
   padding: 0;
+
   animation: actionMenuOpen 0.16s ease-out;
 }
 
@@ -454,12 +408,20 @@ body {
   }
 }
 
+
+/* =========================================================
+   CABEÇALHO DO MENU
+   ========================================================= */
+
 .action-menu-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   padding: 15px 16px;
+
   background: #f7f6f2;
+
   border-bottom: 1px solid #e6e2d9;
   border-radius: 12px 12px 0 0;
 }
@@ -481,6 +443,11 @@ body {
   font-size: 14px;
   color: #2b2b2b;
 }
+
+
+/* =========================================================
+   COR DO CABEÇALHO DO MENU POR STATUS
+   ========================================================= */
 
 .action-menu:has(.status-badge.status-planejado) .action-menu-header {
   background: #e8ebf7;
@@ -512,18 +479,28 @@ body {
   border-bottom-color: #edcbc6;
 }
 
+
+/* =========================================================
+   INFORMAÇÕES DA AÇÃO
+   ========================================================= */
+
 .action-info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
+
   gap: 0;
+
   padding: 6px 0;
 }
 
 .action-info-item {
   display: flex;
   flex-direction: column;
+
   gap: 3px;
+
   padding: 9px 14px;
+
   min-width: 0;
 }
 
@@ -546,22 +523,42 @@ body {
   font-size: 11.5px;
   color: #343434;
   font-weight: 600;
+
   word-break: break-word;
 }
 
 .action-observation {
   font-weight: 400 !important;
   line-height: 1.45;
+
   max-height: 55px;
   overflow-y: auto;
 }
 
+.action-observation::-webkit-scrollbar {
+  width: 4px;
+}
+
+.action-observation::-webkit-scrollbar-thumb {
+  background: #c8c6c0;
+  border-radius: 10px;
+}
+
+
+/* =========================================================
+   BADGES DE STATUS
+   ========================================================= */
+
 .status-badge {
   display: inline-flex;
   align-items: center;
+
   width: fit-content;
+
   padding: 3px 8px;
+
   border-radius: 20px;
+
   font-size: 10px !important;
   font-weight: 700 !important;
 }
@@ -596,39 +593,59 @@ body {
   background: rgba(192, 57, 43, 0.13);
 }
 
+
+/* =========================================================
+   SEÇÃO DE ALTERAÇÃO DE STATUS
+   ========================================================= */
+
 .action-status-section {
   border-top: 1px solid #e7e3db;
+
   padding: 12px 14px 14px;
+
   background: #faf9f6;
+
   border-radius: 0 0 12px 12px;
 }
 
 .action-status-title {
   font-size: 10px;
   font-weight: 700;
+
   color: #77736c;
+
   margin-bottom: 8px;
 }
 
 .status-options {
   display: grid;
+
   grid-template-columns: 1fr 1fr;
+
   gap: 5px;
 }
 
 .status-option {
   display: flex;
   align-items: center;
+
   gap: 7px;
+
   width: 100%;
+
   padding: 7px 8px;
+
   border: 1px solid transparent;
   border-radius: 6px;
+
   background: #fff;
   color: #444;
+
   font-size: 10.5px;
   text-align: left;
+
   cursor: pointer;
+
   transition:
     background 0.15s ease,
     border-color 0.15s ease,
@@ -638,6 +655,7 @@ body {
 .status-option:hover {
   background: #f2f1ed;
   border-color: #d9d5cc;
+
   transform: translateY(-1px);
 }
 
@@ -645,10 +663,17 @@ body {
   transform: translateY(0);
 }
 
+
+/* =========================================================
+   PONTOS DOS STATUS
+   ========================================================= */
+
 .status-dot {
   width: 7px;
   height: 7px;
+
   min-width: 7px;
+
   border-radius: 50%;
 }
 
@@ -676,13 +701,23 @@ body {
   background: var(--header-cancelado);
 }
 
+
+/* =========================================================
+   AVISO DE AÇÃO CANCELADA
+   ========================================================= */
+
 .cancelled-warning {
   display: flex;
   align-items: flex-start;
+
   gap: 9px;
+
   margin: 4px 14px 14px;
+
   padding: 10px;
+
   border-radius: 7px;
+
   background: rgba(192, 57, 43, 0.07);
   border: 1px solid rgba(192, 57, 43, 0.16);
 }
@@ -690,13 +725,16 @@ body {
 .cancelled-warning svg {
   width: 18px;
   height: 18px;
+
   min-width: 18px;
+
   color: #c0392b;
 }
 
 .cancelled-warning div {
   display: flex;
   flex-direction: column;
+
   gap: 2px;
 }
 
@@ -711,35 +749,52 @@ body {
   color: #777;
 }
 
+
+/* =========================================================
+   COLUNA VAZIA
+   ========================================================= */
+
 .empty-column-msg {
   font-size: 11px;
+
   color: var(--text-muted);
+
   text-align: center;
+
   padding: 12px 8px;
+
   border: 1px dashed var(--border-light);
   border-radius: 6px;
+
   background: rgba(255, 255, 255, 0.4);
 }
 
-.task-card.highlight {
-  border: 1px solid #edcbc6;
+
+/* =========================================================
+   SCROLL DO MENU
+   ========================================================= */
+
+.action-menu::-webkit-scrollbar {
+  width: 6px;
 }
 
-.task-card .task-id {
-  text-align: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-dark);
-  margin-bottom: 4px;
-  display: block;
+.action-menu::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.task-card .task-desc {
-  text-align: left;
-  font-size: 12px;
-  line-height: 1.4;
-  color: #444;
+.action-menu::-webkit-scrollbar-thumb {
+  background: #d0cec8;
+  border-radius: 10px;
 }
+
+.action-menu::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+
+/* =========================================================
+   RESPONSIVIDADE
+   ========================================================= */
 
 @media (max-width: 900px) {
 
@@ -749,25 +804,11 @@ body {
 
 }
 
+
 @media (max-width: 560px) {
 
   .board {
     grid-template-columns: repeat(2, minmax(180px, 1fr));
-  }
-
-  .sidebar {
-    width: 0;
-    border-right: none;
-    padding-left: 0;
-    padding-right: 0;
-  }
-
-  .sidebar.expanded,
-  .sidebar.hover-expanded {
-    width: 220px;
-    border-right: 1px solid var(--border-light);
-    padding-left: 0;
-    padding-right: 0;
   }
 
   .action-menu {
@@ -788,70 +829,4 @@ body {
     grid-template-columns: 1fr;
   }
 
-}
-
-.task-card {
-  cursor: grab;
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-
-.task-card:active {
-  cursor: grabbing;
-}
-
-.task-card.dragging {
-  opacity: 0.45;
-  transform: scale(0.98);
-}
-
-.task-card.menu-open {
-  cursor: default;
-}
-
-.column-body.drag-over {
-  background: rgba(0, 0, 0, 0.04);
-  border-radius: 6px;
-}
-
-.column-body::-webkit-scrollbar {
-  width: 7px;
-}
-
-.column-body::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.column-body::-webkit-scrollbar-thumb {
-  background: #c5c5c5;
-  border-radius: 10px;
-}
-
-.column-body::-webkit-scrollbar-thumb:hover {
-  background: #999;
-}
-
-.action-menu::-webkit-scrollbar {
-  width: 6px;
-}
-
-.action-menu::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.action-menu::-webkit-scrollbar-thumb {
-  background: #d0cec8;
-  border-radius: 10px;
-}
-
-.action-menu::-webkit-scrollbar-thumb:hover {
-  background: #aaa;
-}
-
-.action-observation::-webkit-scrollbar {
-  width: 4px;
-}
-
-.action-observation::-webkit-scrollbar-thumb {
-  background: #c8c6c0;
-  border-radius: 10px;
 }
