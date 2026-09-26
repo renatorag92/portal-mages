@@ -1,39 +1,43 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.contrib.auth.models import User
-from .models import Acao, Etapa, PerfilUsuario, Prefeitura
+from .models import Prefeitura, Consultoria, Funcionario, Secretario, Eixo, Status, Acao, Etapa, PerfilUsuario
 
-@admin.register(Acao) # Registra o modelo Acao no admin do Django
+@admin.register(Prefeitura)
+class PrefeituraAdmin(admin.ModelAdmin):
+    list_display = ('nome_fantasia', 'cnpj', 'nome_juridico')
+    search_fields = ('nome_fantasia', 'cnpj')
+
+@admin.register(Consultoria)
+class ConsultoriaAdmin(admin.ModelAdmin):
+    list_display = ('nome_fantasia', 'cnpj', 'prefeitura')
+
+@admin.register(Funcionario)
+class FuncionarioAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'cpf', 'email', 'cargo')
+    search_fields = ('nome', 'cpf')
+
+@admin.register(Secretario)
+class SecretarioAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'cpf', 'email')
+
+@admin.register(Eixo)
+class EixoAdmin(admin.ModelAdmin):
+    list_display = ('id', 'nome', 'descricao')
+
+@admin.register(Status)
+class StatusAdmin(admin.ModelAdmin):
+    list_display = ('id', 'nome')
+
+@admin.register(Acao)
 class AcaoAdmin(admin.ModelAdmin):
-    list_display = ('codigo', 'nome', 'eixo', 'prioridade', 'responsavel', 'data_inicio', 'data_fim', 'status', 'custo')
-    # Campo de pesquisa 
-    search_fields = ('codigo', 'nome', 'eixo', 'responsavel')
-    # Filtro
-    list_filter = ('eixo','prioridade', 'status')
+    list_display = ('codigo', 'nome', 'eixo', 'status', 'secretario', 'prioridade')
+    list_filter = ('status', 'eixo', 'prioridade')
+    search_fields = ('codigo', 'nome')
 
 @admin.register(Etapa)
 class EtapaAdmin(admin.ModelAdmin):
-    list_display = ('acao', 'etapa', 'responsavel', 'data_inicio', 'data_fim', 'status', 'prioridade')
-    search_fields = ('acao__nome', 'etapa', 'responsavel')
-    list_filter = ('status', 'prioridade')
-    
-@admin.register(Prefeitura)
-class PrefeituraAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'sigla', 'cidade')
-    search_fields = ('nome', 'sigla', 'cidade')
-    
-# 1. Inline que insere o PerfilUsuario dentro do formulário do User
-class PerfilUsuarioInline(admin.StackedInline):
-    model = PerfilUsuario
-    can_delete = False
-    verbose_name_plural = 'Persil Usuário'
-    fields = ('prefeitura', 'cargo', 'primeiro_acesso')
-    
-    # Adicionamos o Inline na Admnistração do User
-class UserAdmin(BaseUserAdmin):
-        inlines = (PerfilUsuarioInline,)  
-        
-# Substituímos a administração padrão do Django pela nossa versão unificada
-admin.site.unregister(User)
-admin.site.register(User, UserAdmin)   
-    
+    list_display = ('id', 'nome', 'acao', 'status', 'responsavel')
+    list_filter = ('status',)
+
+@admin.register(PerfilUsuario)
+class PerfilUsuarioAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'prefeitura', 'cargo', 'primeiro_acesso')
