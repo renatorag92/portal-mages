@@ -1,12 +1,13 @@
+import json
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.urls import reverse_lazy
 from django.contrib import messages
-from .models import Acao
-# Importando explicitamente as classes do seu choices.py
-from .choices import Status_status, Status_eixo, Status_prioridade
+from django.http import JsonResponse
+from .models import Acao, Etapa
+from .choices import Status_status, Status_eixo, Status_prioridade, Acoes_estrategicas
 
 @login_required
 def kanban_view(request):
@@ -24,10 +25,49 @@ def kanban_view(request):
 
 @login_required
 def cadastro_acoes_view(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            prefeitura_do_usuario = request.user.perfil.prefeitura
+            
+            nome_acao = data.get('nova_acao_texto') or data.get('acao')
+            
+            acao = Acao.objects.create(
+                prefeitura=prefeitura_do_usuario,
+                eixo=data.get('eixo'),
+                nome=nome_acao,
+                acao=data.get('acao', ''),
+                nova_acao_texto=data.get('nova_acao_texto', ''),
+                prioridade=data.get('prioridade'),
+                custo=data.get('custo'),
+                data_inicio=data.get('dataInicio'),
+                data_fim=data.get('dataFim'),
+                observacoes=data.get('observacoes', ''),
+                status=Status_status.PLANEJADO
+            )
+            
+            etapas = data.get('etapas', [])
+            for etapa in etapas:
+                Etapa.objects.create(
+                    acao=acao,
+                    etapa=etapa.get('nome'),
+                    responsavel_cpf=etapa.get('cpf'),
+                    data_inicio=etapa.get('inicio'),
+                    data_fim=etapa.get('fim'),
+                    prioridade=etapa.get('prioridade'),
+                    observacao=etapa.get('observacoes', '')
+                )
+                
+            return JsonResponse({'status': 'success', 'message': 'Ação cadastrada com sucesso!'}, status=200)
+        
+        except Exception as e:
+            print("ERRO NO CADASTRO:", str(e))
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
     context = {
-        # Chamando .choices diretamente da classe TextChoices
         'eixos': Status_eixo.choices,
         'prioridades': Status_prioridade.choices,
+        'acoes': Acoes_estrategicas.choices,
     }
     return render(request, 'actions/cadastro-de-acoes.html', context)
 
