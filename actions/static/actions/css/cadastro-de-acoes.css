@@ -12,10 +12,7 @@
   --red-dark: #a5301f;
 }
 
-/* =========================================================
-   CONTEÚDO — CADASTRO DE AÇÕES
-   ========================================================= */
-
+/* ------- Formulários ------- */
 .content-wrapper {
   flex: 1;
   min-height: 0;
@@ -31,7 +28,7 @@
 
 .form-card {
   background: #fff;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--border-light, #e0e0e0);
   border-radius: 10px;
   padding: 20px 22px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
@@ -48,13 +45,13 @@
   margin: 0 0 18px;
   font-size: 14px;
   font-weight: 700;
-  color: var(--text-dark);
+  color: var(--text-dark, #333);
 }
 
 .form-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
-  flex-wrap: wrap;
   margin-bottom: 18px;
 }
 
@@ -63,21 +60,35 @@
 }
 
 .form-group {
-  flex: 1;
-  min-width: 180px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0; 
 }
 
 .form-group label {
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--text-dark);
+  color: var(--text-dark, #333);
+}
+
+.form-group label.required::after,
+.etapas-header span.required::after {
+  content: " *";
+  color: var(--red);    /* Asterisco vermelho automático nos campos obrigatórios */
+}
+
+.custom-select-container {
+  position: relative;
+}
+
+.form-group-full {
+  grid-column: 1 / -1;
 }
 
 .form-group input,
 .form-group select,
+.form-group textarea,
 .etapa-row input,
 .etapa-row select {
   font-size: 13px;
@@ -85,19 +96,24 @@
   border-radius: 6px;
   border: 1px solid #d8d5cc;
   background: #f5f4f0;
-  color: var(--text-dark);
+  color: var(--text-dark, #333);
   font-family: inherit;
   width: 100%;
 }
 
+.form-group textarea {
+  resize: none;   /* Bloqueia Redimensionamento do Campo Observações */
+}
+
 .form-group input:focus,
 .form-group select:focus,
+.form-group textarea:focus,
 .etapa-row input:focus,
 .etapa-row select:focus {
   outline: none;
   border-color: #b7b2a5;
   background: #fff;
-  color: var(--text-dark);
+  color: var(--text-dark, #333);
 }
 
 .form-group select,
@@ -115,18 +131,81 @@
   padding-right: 30px;
 }
 
-.form-group input[type="date"] {
-  color: var(--text-muted);
+/* ------- Cores e PlaceHolders (Selects e Datas) ------- */
+::placeholder {
+  color: #999 !important;
+  opacity: 1;
 }
 
-/* =========================================================
-   DEFINIR ETAPAS
-   ========================================================= */
+select.placeholder-ativo {
+  color: #999 !important;
+}
 
+select option {
+  color: #333 !important;
+  background-color: #fff !important;
+}
+
+/* ------- Lista Suspensa (Pesquisa de Ações) ------- */
+.custom-dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #d8d5cc;
+  border-radius: 8px;
+  margin-top: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 1000;
+  list-style: none;
+  padding: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  display: none;
+}
+
+.custom-dropdown-list::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-dropdown-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-dropdown-list::-webkit-scrollbar-thumb {
+  background: #d8d5cc;
+  border-radius: 10px;
+}
+.custom-dropdown-list::-webkit-scrollbar-thumb:hover {
+  background: #b7b2a5;
+}
+
+.custom-dropdown-list li {
+  padding: 10px 14px;
+  cursor: pointer;
+  color: var(--text-dark, #333);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.2s ease;
+  line-height: 1.4;
+}
+
+.custom-dropdown-list li:last-child {
+  margin-bottom: 0;
+}
+
+.custom-dropdown-list li:hover {
+  background-color: #f2f1ec;
+  color: var(--green);
+  padding-left: 18px;
+}
+
+/* ------- Etapas ------- */
 .etapas-header {
   display: grid;
-  grid-template-columns: repeat(5, 1fr) 76px;
-  gap: 14px;
+  grid-template-columns: repeat(6, 1fr) 76px;
+  gap: 12px;
   margin-bottom: 8px;
   padding-right: 6px;
 }
@@ -134,7 +213,7 @@
 .etapas-header span {
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--text-dark);
+  color: var(--text-dark, #333);
 }
 
 .etapas-list {
@@ -148,8 +227,8 @@
 
 .etapa-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr) 76px;
-  gap: 14px;
+  grid-template-columns: repeat(6, 1fr) 76px;
+  gap: 12px;
   align-items: center;
 }
 
@@ -163,6 +242,7 @@
 .etapa-remove {
   width: 34px;
   height: 34px;
+  font-size: 18px;
   border-radius: 50%;
   border: 1px solid #d8d5cc;
   background: #f2f1ec;
@@ -186,19 +266,11 @@
   transform: scale(0.95);
 }
 
-.etapa-add svg,
-.etapa-remove svg {
-  width: 16px;
-  height: 16px;
-}
-
 .etapa-remove {
   color: var(--red);
 }
 
-/* =========================================================
-   AÇÕES DO FORMULÁRIO
-   ========================================================= */
+/* ------- Ações do Formulário ------- */
 
 .form-actions {
   display: flex;
@@ -239,50 +311,51 @@
   background: var(--red-dark);
 }
 
-/* =========================================================
-   RESPONSIVO
-   ========================================================= */
-
-@media (max-width: 900px) {
-
+/* ------- Responsividade ------- */
+@media (max-width: 1000px) {
+  .form-row, .form-row:first-of-type {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
   .etapas-header {
     display: none;
   }
-
   .etapa-row {
     grid-template-columns: 1fr 1fr;
     gap: 10px;
     padding-bottom: 12px;
-    border-bottom: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light, #e0e0e0);
   }
-
   .etapa-row .etapa-actions {
     grid-column: span 2;
     justify-self: end;
   }
-
 }
 
 @media (max-width: 560px) {
-
-  .form-row {
+  .form-row, .form-row:first-of-type {
+    display: flex;
     flex-direction: column;
   }
-
+  .form-group-full {
+    grid-column: auto;
+  }
   .etapa-row {
     grid-template-columns: 1fr;
   }
-
   .etapa-row .etapa-actions {
     grid-column: span 1;
   }
-
   .form-actions {
     justify-content: stretch;
   }
-
   .btn {
     flex: 1;
   }
 
+  .form-group label.required::after,
+  .etapas-header span.required::after {
+    content: " *";
+    color: var(--red);
+  }
 }
