@@ -5,7 +5,6 @@ from django.contrib.auth.views import PasswordChangeView
 from django.urls import reverse_lazy # Importa o modelo de usuário do Django
 from django.dispatch import receiver # Importa o sinal para criar o perfil do usuário automaticamente
 from django.db import models
-from .choices import Status_status, Status_prioridade, Status_eixo
 
 # Entidades base (Prefeitura e Consultoria)
 class Prefeitura(models.Model):
@@ -25,6 +24,10 @@ class Consultoria(models.Model):
     # Relação 1:1 com a Prefeitura
     prefeitura = models.OneToOneField(Prefeitura, on_delete=models.CASCADE, related_name='consultoria')
 
+    class Meta:
+        verbose_name = 'Consultoria'
+        verbose_name_plural = 'Consultorias'
+
     def __str__(self): 
         return self.nome_fantasia
 
@@ -36,12 +39,20 @@ class Funcionario(models.Model):
     telefone = models.CharField(max_length=45)
     endereco = models.CharField(max_length=45)
     cargo = models.CharField(max_length=45)
+
+    class Meta:
+        verbose_name = 'Funcionário'
+        verbose_name_plural = 'Funcionários'
     
     def __str__(self):
         return self.nome
 
 class Secretario(Funcionario):
     senha = models.CharField(max_length=128, blank=True, null=False)
+
+    class Meta:
+        verbose_name = 'Secretário'
+        verbose_name_plural = 'Secretários'
 
     def __str__(self):
         return self.nome
@@ -58,22 +69,51 @@ class Status(models.Model):
     id = models.AutoField(primary_key=True)
     nome = models.CharField(max_length=45)
 
+    class Meta:
+        verbose_name = 'Status'
+        verbose_name_plural = 'Status'
+
     def __str__(self):
         return self.nome
 
+# Tabela de Catálogo de Ações padronizada
+class AcaoCatalogo(models.Model):
+    id = models.AutoField(primary_key=True)
+    nome = models.CharField(max_length=100)
+    eixo = models.ForeignKey(Eixo, on_delete=models.PROTECT, related_name='acoes')
+
+    class Meta:
+        verbose_name = 'Ação do Catálogo'
+        verbose_name_plural = 'Catálogo de Ações'
+
+        def __str__(self):
+            return f"{self.eixo.nome} - {self.nome}"
+
 # Núcleo do sistema (Açõe e Etapas)
 class Acao(models.Model):
+    class Status_Prioridade(models.TextChoices):
+        alta = 'Alta'
+        media = 'Média'
+        baixa = 'Baixa'
+
     codigo = models.CharField(primary_key=True)
-    nome = models.CharField(max_length=45)
+
+    # Ação selecionada do Catálogo
+    acao_catalogo = models.ForeignKey(
+        AcaoCatalogo,
+        on_delete=models.PROTECT,
+        related_name='instancias', null=True, blank=True)
+
+    # Ação digitada pelo usuário
     nova_acao_texto = models.CharField(max_length=45, blank=True, null=True)
-    prioridade = models.CharField(max_length=20, choices=Status_prioridade)
+    
+    prioridade = models.CharField(max_length=20, choices=Status_Prioridade, default='')
     data_inicio = models.DateField()
     data_fim = models.DateField()
     custo = models.FloatField()
-    observacao = models.CharField(blank=True, null=True)
+    observacoes = models.CharField(blank=True, null=True)
 
     # Chaves estrangeiras do DER
-    eixo = models.ForeignKey(Eixo, on_delete=models.PROTECT, related_name='acoes')
     status = models.ForeignKey(Status, on_delete=models.PROTECT, related_name='acoes')
 
     # Secretário Responsavel (FK apontando para Funcionario)
@@ -89,7 +129,7 @@ class Acao(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.codigo:
-            ultima_acao = Acao.objects.all().order_by('id').last()
+            ultima_acao = Acao.objects.all().order_by('codigo').last()
             if ultima_acao and ultima_acao.codigo and ultima_acao.codigo.isdigit():
                 self.codigo = str(int(ultima_acao.codigo) + 1)
             else:
@@ -97,15 +137,14 @@ class Acao(models.Model):
         super().save(*args, **kwargs)
         
     def __str__(self):
-        return f"{self.codigo} - {self.nome}"
+        return f"{self.codigo} - {self.acao_catalogo.nome}"
 
 class Etapa(models.Model):   
     id = models.AutoField(primary_key=True)
     nome = models.CharField(max_length=45)
     data_inicio = models.DateField()
     data_fim = models.DateField()
-    status = models.CharField(max_length=20, choices=Status_status, default='planejado')
-    observacao = models.TextField(blank=True, null=True)
+    observacoes = models.TextField(blank=True, null=True)
 
     # Chaves estrangeiras
     acao = models.ForeignKey(

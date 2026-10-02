@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  document.addEventListener("change", function(event) {
+  document.addEventListener("change", function (event) {
     if (event.target.tagName === "SELECT" || event.target.type === "date") {
       atualizarCorCampo(event.target);
     }
@@ -39,24 +39,19 @@ document.addEventListener("DOMContentLoaded", function () {
     const todasAsAcoes = Array.from(selectAcao.options);
     let acoesPermitidas = [];
 
-    const mapaEixos = {
-      'cadastro_tributario': ['cad_'],
-      'fiscalizacao_tributaria': ['fisc_'],
-      'arrecadacao_e_cobranca': ['arrec_'],
-      'modernizacao_e_tecnologia': ['mod_'],
-      'governanca_e_legislacao': ['gov_']
-    };
-
     function atualizarAcoesPermitidas() {
-      const eixoSelecionado = selectEixo ? selectEixo.value : "";
-      const prefixosPermitidos = mapaEixos[eixoSelecionado];
-      
+      // Converte para String e remove espaços extras
+      const eixoSelecionado = selectEixo && selectEixo.value ? String(selectEixo.value).trim() : "";
+
       acoesPermitidas = [];
       todasAsAcoes.forEach(opcao => {
         const val = opcao.value;
+        // Pega o data-eixo e limpa espaços
+        const eixoDaAcao = opcao.getAttribute("data-eixo") ? String(opcao.getAttribute("data-eixo")).trim() : "";
+
         if (val !== "outra" && !val.startsWith("divisor_")) {
-          const ehPadraoDoEixo = eixoSelecionado && prefixosPermitidos && prefixosPermitidos.some(p => val.startsWith(p));
-          if (ehPadraoDoEixo) {
+          // Faz a comparação direta sem restrição de tipo estrito
+          if (eixoSelecionado && eixoDaAcao === eixoSelecionado) {
             acoesPermitidas.push({ valor: val, rotulo: opcao.text });
           }
         }
@@ -64,93 +59,84 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function renderizarLista(filtro = "") {
+      if (!customAcoesList) return;
+
+      // Limpa a lista atual
       customAcoesList.innerHTML = "";
-      
+
+      // Se não houver eixo selecionado, mostra o aviso
       if (!selectEixo || !selectEixo.value) {
         const li = document.createElement("li");
         li.textContent = "⚠️ Selecione um Eixo primeiro";
         li.style.color = "#888";
-        li.style.pointerEvents = "none";
-        li.style.backgroundColor = "transparent";
+        li.style.padding = "10px";
         customAcoesList.appendChild(li);
         customAcoesList.style.display = "block";
         return;
       }
 
-      const termo = filtro.toLowerCase();
-      const filtradas = acoesPermitidas.filter(acao => acao.rotulo.toLowerCase().includes(termo));
+      const termo = filtro.toLowerCase().trim();
 
-      if (filtradas.length === 0) {
-        const li = document.createElement("li");
-        li.textContent = "Ação não encontrada. O texto será salvo como nova ação.";
-        li.style.color = "#2e8b57";
-        li.style.fontWeight = "bold";
-        li.style.pointerEvents = "none";
-        li.style.backgroundColor = "transparent";
-        customAcoesList.appendChild(li);
-        customAcoesList.style.display = "block";
-        return;
-      }
+      // Cria cada item da lista suspensa (<li>) com base nas ações permitidas
+      acoesPermitidas.forEach(acao => {
+        if (acao.rotulo.toLowerCase().includes(termo) || acao.valor === "outra") {
+          const li = document.createElement("li");
+          li.textContent = acao.rotulo;
+          li.style.padding = "8px 12px";
+          li.style.cursor = "pointer";
+          li.style.borderBottom = "1px solid #f0f0f0";
 
-      filtradas.forEach(acao => {
-        const li = document.createElement("li");
-        li.textContent = acao.rotulo;
-        
-        li.addEventListener("click", function(event) {
-          event.stopPropagation();
-          acaoTexto.value = acao.rotulo;
-          selectAcao.value = acao.valor;
-          if(inputNovaAcao) inputNovaAcao.value = "";
-          customAcoesList.style.display = "none";
-        });
+          // Ação ao clicar no item da lista
+          li.addEventListener("click", function () {
+            if (acaoTexto) acaoTexto.value = acao.rotulo; // Preenche o texto
+            if (selectAcao) selectAcao.value = acao.valor; // Atualiza o <select> original
+            customAcoesList.style.display = "none"; // Esconde a lista
+            if (typeof sincronizarValores === "function") sincronizarValores();
+          });
 
-        customAcoesList.appendChild(li);
+          customAcoesList.appendChild(li);
+        }
       });
 
+      // Mostra a lista final
       customAcoesList.style.display = "block";
-    }
-
-    function sincronizarValores() {
-      const textoDigitado = acaoTexto.value.trim();
-      const acaoEncontrada = acoesPermitidas.find(a => a.rotulo === textoDigitado);
-
-      if (acaoEncontrada) {
-        selectAcao.value = acaoEncontrada.valor;
-        if(inputNovaAcao) inputNovaAcao.value = "";
-      } else {
-        selectAcao.value = "outra";
-        if(inputNovaAcao) inputNovaAcao.value = textoDigitado;
-      }
     }
 
     if (selectEixo) {
       selectEixo.addEventListener("change", function () {
+        // Atualiza a lista de ações com base no eixo escolhido
         atualizarAcoesPermitidas();
-        acaoTexto.value = ""; 
+
+        // Limpa o texto da caixa de pesquisa
+        if (acaoTexto) acaoTexto.value = "";
+
+        // Reseta os valores e esconde a lista suspensa
         sincronizarValores();
-        customAcoesList.style.display = "none";
+        if (customAcoesList) customAcoesList.style.display = "none";
       });
     }
 
-    acaoTexto.addEventListener("input", function() {
-      renderizarLista(this.value);
-      sincronizarValores();
-    });
+    if (acaoTexto) {
+      // Quando o utilizador clica na caixa de texto -> Renderiza e abre a lista
+      acaoTexto.addEventListener("click", function () {
+        renderizarLista(this.value);
+      });
 
-    acaoTexto.addEventListener("click", function() {
-      renderizarLista(this.value);
-    });
-
-    document.addEventListener("click", function(event) {
-      if (!acaoTexto.contains(event.target) && !customAcoesList.contains(event.target)) {
-        customAcoesList.style.display = "none";
+      // Quando o utilizador digita algo na caixa de texto -> Filtra a lista em tempo real
+      acaoTexto.addEventListener("input", function () {
+        renderizarLista(this.value);
         sincronizarValores();
+      });
+    }
+
+    // Oculta a lista suspensa se o utilizador clicar fora da caixa
+    document.addEventListener("click", function (e) {
+      if (customAcoesList && acaoTexto && !acaoTexto.contains(e.target) && !customAcoesList.contains(e.target)) {
+        customAcoesList.style.display = "none";
       }
     });
 
-    atualizarAcoesPermitidas();
   }
-
   /* Definir etapas - adicionar/remover linhas */
   const etapasList = document.getElementById("etapasList");
   if (etapasList) {
@@ -164,16 +150,16 @@ document.addEventListener("DOMContentLoaded", function () {
         const firstRow = etapasList.querySelector(".etapa-row");
         if (firstRow) {
           const newRow = firstRow.cloneNode(true);
-          
+
           newRow.querySelectorAll("input").forEach(input => {
             input.value = "";
-            if(input.type === "date") input.style.color = "#999";
+            if (input.type === "date") input.style.color = "#999";
           });
           newRow.querySelectorAll("select").forEach(select => {
             select.selectedIndex = 0;
             select.classList.add("placeholder-ativo");
           });
-          
+
           etapasList.appendChild(newRow);
           etapasList.scrollTop = etapasList.scrollHeight;
         }
@@ -201,14 +187,14 @@ document.addEventListener("DOMContentLoaded", function () {
   function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
         }
+      }
     }
     return cookieValue;
   }
@@ -284,25 +270,25 @@ document.addEventListener("DOMContentLoaded", function () {
       fetch(window.location.href, {
         method: "POST",
         headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": csrftoken
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrftoken
         },
         body: JSON.stringify(dadosFormulario)
       })
-      .then(response => {
-        if (response.ok) {
+        .then(response => {
+          if (response.ok) {
             alert("Ação cadastrada com sucesso!");
             form.reset();
             if (selectEixo) selectEixo.dispatchEvent(new Event("change"));
             inicializarCoresVazias();
-        } else {
+          } else {
             alert("Ocorreu um erro ao guardar a ação. Verifique os dados introduzidos.");
-        }
-      })
-      .catch(error => {
-        console.error("Erro na requisição:", error);
-        alert("Erro de ligação com o servidor.");
-      });
+          }
+        })
+        .catch(error => {
+          console.error("Erro na requisição:", error);
+          alert("Erro de ligação com o servidor.");
+        });
     });
   }
 
@@ -326,7 +312,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (e.target && e.target.name === "etapaResponsavelCpf[]") {    /* Verifica se o input que está recebendo texto é um CPF de etapa */
         let value = e.target.value.replace(/\D/g, "");
         if (value.length > 11) value = value.slice(0, 11);
-        
+
         if (value.length > 9) {
           value = value.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, "$1.$2.$3-$4");
         } else if (value.length > 6) {
@@ -347,7 +333,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     inputCusto.addEventListener("input", function (e) {
       let value = e.target.value.replace(/\D/g, "");
-      
+
       if (!value) {
         e.target.value = "";
         return;
@@ -358,8 +344,9 @@ document.addEventListener("DOMContentLoaded", function () {
       let partes = numero.split(".");
       let inteiro = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
       let decimal = partes[1];
-      
+
       e.target.value = inteiro + "," + decimal;
     });
   }
 });
+
