@@ -57,27 +57,27 @@ active
 
   <div class="board">
 
-    {% for status_nome, acoes_lista in kanban.items %}
+    {% for status in kanban %}
     <!-- =====================================================
-         COLUNA DINÂMICA: {{ status_nome }}
+         COLUNA DINÂMICA: {{ status.nome }}
          ===================================================== -->
-    <div class="column col-{{ status_nome|slugify }}">
+    <div class="column col-{{ status.nome|slugify }}">
 
-      <div class="column-header">
+      <div class="column-header" style="background-color: {{ status.cor }};">
         <span class="title">
-          {{ status_nome }}
+          {{ status.nome }}
         </span>
         <span class="count">
-          {{ acoes_lista|length }}
+          {{ status.acoes_lista|length }}
         </span>
       </div>
 
-      <div class="column-body" data-status="{{ status_nome|slugify }}">
+      <div class="column-body" data-status="{{ status.id }}">
 
-        {% for acao in acoes_lista %}
+        {% for acao in status.acoes_lista %}
 
-        <div class="task-card {% if status_nome|slugify == 'cancelado' %}highlight{% endif %}"
-          draggable="{% if status_nome|slugify == 'cancelado' %}false{% else %}true{% endif %}"
+        <div class="task-card {% if status.nome|slugify == 'cancelado' %}highlight{% endif %}"
+          draggable="{% if status.nome|slugify == 'cancelado' %}false{% else %}true{% endif %}"
           data-eixo="{{ acao.eixo.nome }}" data-search="{{ acao.codigo }} {{ acao.nome }}">
 
           <!-- BOTÃO DO MENU -->
@@ -97,11 +97,11 @@ active
             {{ acao.nome }}
           </div>
 
-          {% if status_nome|slugify != 'cancelado' %}
+          {% if status.nome|slugify != 'cancelado' %}
           <!-- FORMULÁRIO DE STATUS -->
           <form action="{% url 'atualizar_status_acao' acao.codigo %}" method="post">
             {% csrf_token %}
-            <input type="hidden" name="status" value="{{ status_nome|slugify }}">
+            <input type="hidden" name="status" value="{{ status.id }}">
           </form>
           {% endif %}
 
@@ -184,8 +184,8 @@ active
 
               <div class="action-info-item">
                 <span>Status</span>
-                <strong class="status-badge status-{{ status_nome|slugify }}">
-                  {{ status_nome }}
+                <strong class="status-badge status-{{ status.nome|slugify }}">
+                  {{ status.nome }}
                 </strong>
               </div>
 
@@ -199,7 +199,7 @@ active
             </div>
 
             <!-- ALTERAÇÃO DE STATUS / AVISO -->
-            {% if status_nome|slugify == 'cancelado' %}
+            {% if status.nome|slugify == 'cancelado' %}
             <div class="cancelled-warning">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="9"></circle>
@@ -217,11 +217,11 @@ active
                 <span>Alterar status</span>
               </div>
               <div class="status-options">
-                {% for op_status, _ in kanban.items %}
-                <button type="button" class="status-option status-option-{{ op_status|slugify }}"
-                  data-status="{{ op_status|slugify }}">
+                {% for op_status in kanban %}
+                <button type="button" class="status-option status-option-{{ op_status.nome|slugify }}"
+                  data-status="{{ op_status.id }}">
                   <span class="status-dot"></span>
-                  {{ op_status }}
+                  {{ op_status.nome }}
                 </button>
                 {% endfor %}
               </div>
