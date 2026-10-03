@@ -1,12 +1,63 @@
 import json
+import webcolors
+from django import forms
+from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Count
+from django.db.models.deletion import ProtectedError
 from django.http import JsonResponse
+from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.urls import reverse_lazy
 from .models import AcaoCatalogo, Acao, Etapa, Eixo, Status
+
+PT_EN = dict(zip(
+    'azul vermelho verde amarelo laranja roxo rosa preto branco cinza marrom ciano dourado prata turquesa bege lilás violeta magenta índigo salmão coral vinho lima'.split(),
+    'blue red green yellow orange purple pink black white gray brown cyan gold silver turquoise beige lavender violet magenta indigo salmon coral maroon lime'.split(),
+))
+
+
+class StatusForm(forms.ModelForm):
+    cor = forms.CharField(
+        max_length=45,
+    )
+
+    class Meta:
+        model = Status
+        fields = ('nome', 'cor')
+
+    def clean_cor(self):
+        cor = self.cleaned_data['cor'].strip().lower()
+        cor = PT_EN.get(cor, cor)
+        try:
+            cor = webcolors.name_to_hex(cor)
+        except ValueError:
+            try:
+                cor = webcolors.normalize_hex(cor)
+            except ValueError:
+                raise ValidationError(
+                    'Cor inválida. Use um nome (ex.: amarelo) ou hexadecimal (ex.: #ffff00).'
+                )
+        return cor
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if 'nome' in cleaned_data:
+            cleaned_data['nome'] = cleaned_data['nome'].strip()
+        mensagens = {
+            'nome': 'Já existe um status com esse nome.',
+            'cor': 'Essa cor já está cadastrada em outro status.',
+        }
+        for campo, msg in mensagens.items():
+            valor = cleaned_data.get(campo)
+            if valor and Status.objects.filter(
+                **{f'{campo}__iexact': valor}
+            ).exclude(pk=self.instance.pk).exists():
+                self.add_error(campo, msg)
+        return cleaned_data
 
 
 class CustomLoginView(LoginView):
@@ -60,6 +111,7 @@ class CustomPasswordChangeView(PasswordChangeView):
 def cadastro_acoes_view(request):
     eixos = Eixo.objects.all()
     acoes_catalogo = AcaoCatalogo.objects.select_related('eixo').all()
+    status_lista = Status.objects.order_by('ordem', 'id')
 
     # Passa a lista pura de dicionários Python (o template tratará com json_script)
     acoes_catalogo_list = [{'id': a.id, 'nome': a.nome, 'eixo_id': a.eixo.id} for a in acoes_catalogo]
@@ -68,6 +120,7 @@ def cadastro_acoes_view(request):
         'eixos': [(e.id, e.nome) for e in eixos],
         'acoes_catalogo_objetos': acoes_catalogo,
         'acoes_catalogo_list': acoes_catalogo_list,
+        'status_lista': status_lista,
         'prioridades': Acao.Status_Prioridade.choices,
     }
     return render(request, 'actions/cadastro-de-acoes.html', context)
@@ -76,17 +129,64 @@ def cadastro_acoes_view(request):
 @login_required
 def kanban_view(request):
     prefeitura_logada = request.user.perfil.prefeitura
-    todos_status = Status.objects.all()
+    todos_status = Status.objects.order_by('ordem', 'id')
 
     acoes = Acao.objects.filter(
         secretario__prefeitura=prefeitura_logada
     ).select_related('acao_catalogo__eixo', 'acao_catalogo', 'status', 'secretario')
 
-    kanban_data = {}
     for st in todos_status:
-        kanban_data[st.nome] = [a for a in acoes if a.status_id == st.id]
+        st.acoes_lista = [a for a in acoes if a.status_id == st.id]
 
-    return render(request, 'actions/kanban-governanca.html', {'kanban': kanban_data})
+    return render(request, 'actions/kanban-governanca.html', {'kanban': todos_status})
+
+
+@login_required
+def gerenciar_status_view(request, status_id=None):
+    status = get_object_or_404(Status, pk=status_id) if status_id else None
+
+    if request.method == 'POST':
+        form = StatusForm(request.POST, instance=status)
+        if form.is_valid():
+            form.save()
+            if status:
+                messages.success(request, 'Status atualizado com sucesso.', extra_tags='status-updated')
+            else:
+                messages.success(request, 'Status cadastrado com sucesso.', extra_tags='status-created')
+            return redirect('gerenciar_status')
+    else:
+        form = StatusForm(instance=status)
+
+    status_lista = Status.objects.annotate(total_acoes=Count('acoes')).order_by('ordem', 'id')
+    return render(request, 'actions/gerenciar-status.html', {
+        'form': form,
+        'status_lista': status_lista,
+        'status_edicao': status,
+    })
+
+
+@login_required
+@require_POST
+def excluir_status_view(request, status_id):
+    status = get_object_or_404(Status, pk=status_id)
+    if status.acoes.exists():
+        messages.error(
+            request,
+            'Este status não pode ser excluído porque está vinculado a uma ou mais ações.',
+            extra_tags='status-delete-blocked',
+        )
+        return redirect('gerenciar_status')
+
+    try:
+        status.delete()
+        messages.success(request, 'Status excluído com sucesso.', extra_tags='status-deleted')
+    except ProtectedError:
+        messages.error(
+            request,
+            'Este status não pode ser excluído porque está vinculado a uma ou mais ações.',
+            extra_tags='status-delete-blocked',
+        )
+    return redirect('gerenciar_status')
 
 
 def atualizar_status_acao(request, acao_id):

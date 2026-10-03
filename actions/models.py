@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.validators import RegexValidator
 from django.db.models.signals import post_save
 from django.contrib.auth.views import PasswordChangeView
 from django.urls import reverse_lazy # Importa o modelo de usuário do Django
@@ -68,6 +69,12 @@ class Eixo(models.Model):
 class Status(models.Model):
     id = models.AutoField(primary_key=True)
     nome = models.CharField(max_length=45)
+    cor = models.CharField(
+        max_length=7,
+        default='#3b3b8c',
+        validators=[RegexValidator(r'^#[0-9A-Fa-f]{6}$', 'Informe uma cor hexadecimal no formato #RRGGBB.')],
+    )
+    ordem = models.IntegerField(default=0)
 
     class Meta:
         verbose_name = 'Status'

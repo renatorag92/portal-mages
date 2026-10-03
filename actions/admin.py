@@ -25,7 +25,7 @@ class EixoAdmin(admin.ModelAdmin):
 
 @admin.register(Status)
 class StatusAdmin(admin.ModelAdmin):
-    list_display = ('id', 'nome')
+    list_display = ('id', 'nome', 'cor')
 
 @admin.register(AcaoCatalogo)
 class AcaoCatalogoAdmin(admin.ModelAdmin):
@@ -55,4 +55,3 @@ class EtapaAdmin(admin.ModelAdmin):
 @admin.register(PerfilUsuario)
 class PerfilUsuarioAdmin(admin.ModelAdmin):
     list_display = ('usuario', 'prefeitura', 'cargo', 'primeiro_acesso')
-
