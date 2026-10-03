@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Portal MAGES – Login</title>
 <link rel="stylesheet" href="{% static 'actions/css/login.css' %}">
-
 </head>
 <body>
 
@@ -31,27 +30,27 @@
       <form action="{% url 'login' %}" method="post" novalidate>
         {% csrf_token %}
         <div class="campos">
+
           <div class="campo">
             <label for="contrato">Nº do Contrato</label>
             <input id="contrato" name="contrato" type="text" placeholder="Ex.: 0001"
                    autocomplete="username" required
                    value="{{ contrato_digitado }}"
                    {% if erro_login %}class="invalido" aria-invalid="true"{% endif %}>
+            <p class="erro-campo" id="erro-contrato" hidden></p>
           </div>
+
           <div class="campo">
             <label for="senha">Senha</label>
             <input id="senha" name="senha" type="password" placeholder="Digite sua senha"
                    autocomplete="current-password" required
                    {% if erro_login %}class="invalido" aria-invalid="true"{% endif %}>
+            <p class="erro-campo" id="erro-senha" {% if not erro_login %}hidden{% endif %}>Número do contrato ou senha inválidos.</p>
             <a class="esqueci" href="#">Esqueci minha senha</a>
           </div>
         </div>
-
-        <p class="erro" id="erro" {% if not erro_login %}hidden{% endif %}>Número do contrato ou senha inválidos.</p>
-
         <button type="submit">Entrar</button>
       </form>
-
     </div>
   </main>
   <script src="{% static 'actions/js/login.js' %}"></script>

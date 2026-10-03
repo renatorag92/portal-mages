@@ -1,38 +1,43 @@
 const form = document.querySelector('form');
-const campos = Array.from(form.querySelectorAll('input[name="contrato"], input[name="senha"]'));
-const erro = document.getElementById('erro');
 
-function limpar() {
-    campos.forEach(function (c) {
-    c.classList.remove('invalido');
-    c.removeAttribute('aria-invalid');
-    });
-    erro.hidden = true;
+const contrato = form.querySelector('input[name="contrato"]');
+const senha = form.querySelector('input[name="senha"]');
+const campos = [contrato, senha];
+
+function mensagemDe(campo) {
+  return document.getElementById('erro-' + campo.name);
 }
 
+function mostrarErro(campo, texto) {
+  campo.classList.add('invalido');
+  campo.setAttribute('aria-invalid', 'true');
+  const msg = mensagemDe(campo);
+  msg.textContent = texto;
+  msg.hidden = false;
+}
+
+function limparErro(campo) {
+  campo.classList.remove('invalido');
+  campo.removeAttribute('aria-invalid');
+  mensagemDe(campo).hidden = true;
+}
+
+// Ao enviar: se tiver campo vazio, não envia e mostra o aviso embaixo do campo
 form.addEventListener('submit', function (e) {
-    const vazios = campos.filter(function (c) { return !c.value.trim(); });
-    if (vazios.length === 0) return; // tudo preenchido: envia normalmente
+  campos.forEach(limparErro);
 
-    e.preventDefault();
-    limpar();
+  const erros = []; // [campo, mensagem]
+  if (!contrato.value.trim()) erros.push([contrato, 'Preencha o número do contrato.']);
+  if (!senha.value) erros.push([senha, 'Preencha a senha.']);
 
-    vazios.forEach(function (c) {
-    c.classList.add('invalido');
-    c.setAttribute('aria-invalid', 'true');
-    });
+  if (erros.length === 0) return; // tudo preenchido: envia normalmente
 
-    if (vazios.length === 2) {
-    erro.textContent = 'Preencha o número do contrato e a senha.';
-    } else if (vazios[0].name === 'contrato') {
-    erro.textContent = 'Preencha o número do contrato.';
-    } else {
-    erro.textContent = 'Preencha a senha.';
-    }
-    erro.hidden = false;
-    vazios[0].focus();
+  e.preventDefault();
+  erros.forEach(function (item) { mostrarErro(item[0], item[1]); });
+  erros[0][0].focus();
 });
 
-campos.forEach(function (c) {
-    c.addEventListener('input', limpar);
+// Ao digitar em um campo, o vermelho some só dele
+campos.forEach(function (campo) {
+  campo.addEventListener('input', function () { limparErro(campo); });
 });

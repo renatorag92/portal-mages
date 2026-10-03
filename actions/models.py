@@ -13,7 +13,11 @@ class Prefeitura(models.Model):
     nome_juridico = models.CharField(max_length=45) # ex.: Prefeitura Municipal de Nova Cruz
     nome_fantasia = models.CharField(max_length=45)
     endereco = models.CharField(max_length=45)
-        
+
+    class Meta:
+        verbose_name = "Prefeitura"
+        verbose_name_plural = "Prefeitura"  # Deixa o nome "prefeitura" no singular
+
     def __str__(self):
         return self.nome_fantasia
 
@@ -22,12 +26,13 @@ class Consultoria(models.Model):
     nome_juridico = models.CharField(max_length=45)
     nome_fantasia = models.CharField(max_length=45)
     endereco = models.CharField(max_length=45)
+
     # Relação 1:1 com a Prefeitura
     prefeitura = models.OneToOneField(Prefeitura, on_delete=models.CASCADE, related_name='consultoria')
 
     class Meta:
         verbose_name = 'Consultoria'
-        verbose_name_plural = 'Consultorias'
+        verbose_name_plural = 'Consultoria'
 
     def __str__(self): 
         return self.nome_fantasia

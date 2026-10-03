@@ -28,7 +28,7 @@
         <p>Este é o seu primeiro acesso. Crie uma nova senha para continuar.</p>
       </div>
 
-      <form method="post">
+      <form method="post" novalidate>
         {% csrf_token %}
 
         {% if form.non_field_errors %}
@@ -42,9 +42,7 @@
             <input id="{{ form.old_password.id_for_label }}" name="{{ form.old_password.html_name }}"
                    type="password" autocomplete="current-password" required
                    {% if form.old_password.errors %}class="invalido" aria-invalid="true"{% endif %}>
-            {% if form.old_password.errors %}
-              <p class="erro-campo">{{ form.old_password.errors.0 }}</p>
-            {% endif %}
+            <p class="erro-campo" id="erro-{{ form.old_password.html_name }}" {% if not form.old_password.errors %}hidden{% endif %}>{{ form.old_password.errors.0 }}</p>
           </div>
 
           <div class="campo">
@@ -52,11 +50,8 @@
             <input id="{{ form.new_password1.id_for_label }}" name="{{ form.new_password1.html_name }}"
                    type="password" autocomplete="new-password" required
                    {% if form.new_password1.errors %}class="invalido" aria-invalid="true"{% endif %}>
-            {% if form.new_password1.errors %}
-              <p class="erro-campo">{{ form.new_password1.errors.0 }}</p>
-            {% else %}
-              <div class="dica">{{ form.new_password1.help_text|safe }}</div>
-            {% endif %}
+            <p class="erro-campo" id="erro-{{ form.new_password1.html_name }}" {% if not form.new_password1.errors %}hidden{% endif %}>{{ form.new_password1.errors.0 }}</p>
+            <div class="dica">{{ form.new_password1.help_text|safe }}</div>
           </div>
 
           <div class="campo">
@@ -64,18 +59,13 @@
             <input id="{{ form.new_password2.id_for_label }}" name="{{ form.new_password2.html_name }}"
                    type="password" autocomplete="new-password" required
                    {% if form.new_password2.errors %}class="invalido" aria-invalid="true"{% endif %}>
-            {% if form.new_password2.errors %}
-              <p class="erro-campo">{{ form.new_password2.errors.0 }}</p>
-            {% endif %}
+            <p class="erro-campo" id="erro-{{ form.new_password2.html_name }}" {% if not form.new_password2.errors %}hidden{% endif %}>{{ form.new_password2.errors.0 }}</p>
           </div>
-
         </div>
-
         <button type="submit">Atualizar senha</button>
       </form>
-
     </div>
   </main>
-
+  <script src="{% static 'actions/js/redefinir-senha.js' %}"></script>
 </body>
 </html>
