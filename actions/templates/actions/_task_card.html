@@ -1,0 +1,137 @@
+{# Card de uma ação com menu de detalhes atualizado #}
+<div class="task-card {% if status.nome|slugify == 'cancelado' %}highlight{% endif %}"
+  draggable="{% if status.nome|slugify == 'cancelado' %}false{% else %}true{% endif %}"
+  data-eixo="{{ acao.acao_catalogo.eixo.nome }}" data-search="{{ acao.codigo }} {{ acao.acao_catalogo.nome }}">
+
+  <!-- BOTÃO DO MENU -->
+  <button type="button" class="status-menu-toggle" aria-label="Abrir informações da ação">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  </button>
+
+  <!-- IDENTIFICAÇÃO -->
+  <span class="task-id">AÇÃO {{ acao.codigo }}</span>
+
+  <!-- NOME -->
+  <div class="task-desc">{{ acao.acao_catalogo.nome }}</div>
+
+  {% if status.nome|slugify != 'cancelado' %}
+  <!-- FORMULÁRIO DE STATUS -->
+  <form action="{% url 'atualizar_status_acao' acao.codigo %}" method="post">
+    {% csrf_token %}
+    <input type="hidden" name="status" value="{{ status.id }}">
+  </form>
+  {% endif %}
+
+  <!-- MENU DE DETALHES -->
+  <div class="action-menu">
+
+    <div class="action-menu-header">
+      <div>
+        <span class="action-menu-label">DETALHES DA AÇÃO</span>
+        <strong>AÇÃO {{ acao.codigo }}</strong>
+      </div>
+    </div>
+
+    <div class="action-info-grid">
+
+      <div class="action-info-item">
+        <span>Código</span>
+        <strong>{{ acao.codigo }}</strong>
+      </div>
+
+      <div class="action-info-item action-info-full">
+        <span>Nome</span>
+        <strong>{{ acao.acao_catalogo.nome|default:"Não informado" }}</strong>
+      </div>
+
+      <div class="action-info-item">
+        <span>Eixo</span>
+        <strong>{{ acao.acao_catalogo.eixo.nome|default:"Não informado" }}</strong>
+      </div>
+
+      <div class="action-info-item">
+        <span>Prioridade</span>
+        <strong>{{ acao.prioridade|default:"Não informado" }}</strong>
+      </div>
+
+      <div class="action-info-item">
+        <span>Responsável</span>
+        <strong>{{ acao.secretario.nome|default:"Não informado" }}</strong>
+      </div>
+
+      <div class="action-info-item">
+        <span>Data início</span>
+        <strong>
+          {% if acao.data_inicio %}{{ acao.data_inicio|date:"d/m/Y" }}{% else %}Não informado{% endif %}
+        </strong>
+      </div>
+
+      <div class="action-info-item">
+        <span>Data fim</span>
+        <strong>
+          {% if acao.data_fim %}{{ acao.data_fim|date:"d/m/Y" }}{% else %}Não informado{% endif %}
+        </strong>
+      </div>
+
+      <div class="action-info-item">
+        <span>Custo</span>
+        <strong>
+          {% if acao.custo %}R$ {{ acao.custo }}{% else %}Não informado{% endif %}
+        </strong>
+      </div>
+
+      <div class="action-info-item">
+        <span>Status</span>
+        <strong class="status-badge status-{{ status.nome|slugify }}">{{ status.nome }}</strong>
+      </div>
+
+      <div class="action-info-item action-info-full">
+        <span>Observação</span>
+        <strong class="action-observation">
+          {{ acao.observacoes|default:"Nenhuma observação informada." }}
+        </strong>
+      </div>
+
+    </div>
+
+    <!-- LISTA DE ETAPAS CADASTRADAS DA AÇÃO -->
+    <div class="etapas-detalhes-section" style="margin-top: 15px; border-top: 1px solid #e0ddd4; padding-top: 12px;">
+      <div class="action-status-title" style="margin-bottom: 10px; font-weight: 700; font-size: 13px;">
+        <span>ETAPAS DA AÇÃO</span>
+      </div>
+
+      {% if acao.etapas.all %}
+        <div class="etapas-detalhes-lista" style="display: flex; flex-direction: column; gap: 10px;">
+          {% for etapa in acao.etapas.all %}
+          <div class="etapa-detalhe-item" style="background: #f8f7f4; padding: 10px; border-radius: 6px; border: 1px solid #e5e2d9; font-size: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <!-- Botão de Check para concluir etapa -->
+              <input type="checkbox" class="etapa-check-btn" data-etapa-id="{{ etapa.id }}" {% if etapa.concluida %}checked{% endif %} style="width: 16px; height: 16px; cursor: pointer;">
+              <strong class="etapa-nome-titulo {% if etapa.concluida %}etapa-concluida{% endif %}" style="font-size: 13px;">{{ etapa.nome }}</strong>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; color: #555;">
+              <div><strong>Responsável (CPF):</strong> {{ etapa.responsavel.cpf|default:"Não informado" }}</div>
+              <div><strong>Prioridade:</strong> {{ acao.prioridade|default:"Padrão" }}</div>
+              <div><strong>Início:</strong> {{ etapa.data_inicio|date:"d/m/Y" }}</div>
+              <div><strong>Fim:</strong> {{ etapa.data_fim|date:"d/m/Y" }}</div>
+            </div>
+
+            {% if etapa.observacoes %}
+            <div style="margin-top: 6px; font-style: italic; color: #666;">
+              <strong>Obs:</strong> {{ etapa.observacoes }}
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p style="font-size: 12px; color: #888; margin: 0;">Nenhuma etapa cadastrada para esta ação.</p>
+      {% endif %}
+    </div>
+
+  </div>
+
+</div>

@@ -12,7 +12,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.urls import reverse_lazy
-from .models import AcaoCatalogo, Acao, Etapa, Eixo, Status
+from .models import AcaoCatalogo, Acao, Etapa, Eixo, Status, Funcionario
 
 PT_EN = dict(zip(
     'azul vermelho verde amarelo laranja roxo rosa preto branco cinza marrom ciano dourado prata turquesa bege lilás violeta magenta índigo salmão coral vinho lima'.split(),
@@ -138,7 +138,20 @@ def kanban_view(request):
     for st in todos_status:
         st.acoes_lista = [a for a in acoes if a.status_id == st.id]
 
-    return render(request, 'actions/kanban-governanca.html', {'kanban': todos_status})
+    # Dados adicionais necessários para popular o modal de cadastro de ação
+    eixos = Eixo.objects.all()
+    acoes_catalogo = AcaoCatalogo.objects.select_related('eixo').all()
+    acoes_catalogo_list = [{'id': a.id, 'nome': a.nome, 'eixo_id': a.eixo.id} for a in acoes_catalogo]
+
+    context = {
+        'kanban': todos_status,
+        'eixos': eixos,
+        'acoes_catalogo_objetos': acoes_catalogo,
+        'acoes_catalogo_list': acoes_catalogo_list,
+        'prioridades': Acao.Status_Prioridade.choices,
+    }
+
+    return render(request, 'actions/kanban-governanca.html', context)
 
 
 @login_required
@@ -191,11 +204,12 @@ def excluir_status_view(request, status_id):
 
 def atualizar_status_acao(request, acao_id):
     if request.method == 'POST':
-        acao = get_object_or_404(Acao, id=acao_id)
+        # Busca pela chave primária 'codigo' em vez de 'id'
+        acao = get_object_or_404(Acao, codigo=acao_id)
         novo_status = request.POST.get('status')
 
         if novo_status:
-            acao.status_id = novo_status  # Atribuição via status_id
+            acao.status_id = novo_status
             acao.save()
 
     return redirect('kanban')
@@ -215,12 +229,27 @@ def criar_acao_kanban_view(request):
 
         status_id = data.get('status')
         prioridade = data.get('prioridade')
-        custo = data.get('custo')
-        data_inicio = data.get('dataInicio')
-        data_fim = data.get('dataFim')
+
+        # Tratamento do custo
+        custo_raw = str(data.get('custo', '0')).replace('.', '').replace(',', '.')
+        try:
+            custo = float(custo_raw)
+        except ValueError:
+            custo = 0.0
+
+        data_inicio = data.get('dataInicio') or data.get('data_inicio')
+        data_fim = data.get('dataFim') or data.get('data_fim')
         observacoes = data.get('observacoes')
 
-        secretario = request.user.perfil.secretario
+        # Obtém o funcionário/secretário padrão da prefeitura do usuário logado
+        prefeitura_logada = request.user.perfil.prefeitura
+        secretario = Funcionario.objects.filter(prefeitura=prefeitura_logada).first()
+
+        if not secretario:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Cadastre pelo menos um Secretário/Funcionário no Admin antes de criar ações.'
+            }, status=400)
 
         with transaction.atomic():
             eixo_obj = Eixo.objects.get(id=eixo_id)
@@ -237,31 +266,57 @@ def criar_acao_kanban_view(request):
                 secretario=secretario,
                 status=status_obj,
                 prioridade=prioridade,
-                custo=custo or 0,
+                custo=custo,
                 data_inicio=data_inicio,
                 data_fim=data_fim,
                 observacoes=observacoes,
             )
 
-            # Grava etapas iniciais caso tenham sido informadas na criação
+            # --- CRIAÇÃO DAS ETAPAS (Responsável fixado no secretário) ---
             if request.content_type == 'application/json':
                 etapas_data = data.get('etapas', [])
                 for item in etapas_data:
-                    if item.get('nome'):
-                        Etapa.objects.create(acao=nova_acao, nome=item.get('nome'))
+                    nome_etapa = item.get('nome') or item.get('etapaNome')
+                    if nome_etapa:
+                        e_inicio = item.get('data_inicio') or item.get('dataInicio') or item.get('etapaInicio') or data_inicio
+                        e_fim = item.get('data_fim') or item.get('dataFim') or item.get('etapaFim') or data_fim
+
+                        Etapa.objects.create(
+                            acao=nova_acao,
+                            nome=nome_etapa,
+                            responsavel=secretario,
+                            data_inicio=e_inicio,
+                            data_fim=e_fim,
+                            observacoes=item.get('observacoes', '')
+                        )
             else:
                 nomes = request.POST.getlist('etapaNome[]')
-                for nome in nomes:
+                inicios = request.POST.getlist('etapaInicio[]')
+                fims = request.POST.getlist('etapaFim[]')
+                obs_list = request.POST.getlist('etapaObservacoes[]')
+
+                for i, nome in enumerate(nomes):
                     if nome.strip():
-                        Etapa.objects.create(acao=nova_acao, nome=nome.strip())
+                        d_inicio = inicios[i] if (i < len(inicios) and inicios[i]) else data_inicio
+                        d_fim = fims[i] if (i < len(fims) and fims[i]) else data_fim
+                        obs = obs_list[i] if i < len(obs_list) else ''
+
+                        Etapa.objects.create(
+                            acao=nova_acao,
+                            nome=nome.strip(),
+                            responsavel=secretario,
+                            data_inicio=d_inicio,
+                            data_fim=d_fim,
+                            observacoes=obs
+                        )
 
         return JsonResponse({
             'success': True,
             'message': 'Ação criada com sucesso!',
             'card': {
-                'id': nova_acao.id,
-                'nome': nova_acao.acao_catalogo.nome,
-                'eixo': nova_acao.acao_catalogo.eixo.nome,
+                'id': nova_acao.codigo,  # Usa o campo 'codigo' que é a chave primária do modelo Acao
+                'nome': nova_acao.acao_catalogo.nome if nova_acao.acao_catalogo else nova_acao.nova_acao_texto,
+                'eixo': nova_acao.acao_catalogo.eixo.nome if nova_acao.acao_catalogo else '',
                 'prioridade': nova_acao.get_prioridade_display() if hasattr(nova_acao, 'get_prioridade_display') else nova_acao.prioridade,
                 'status_id': nova_acao.status.id,
                 'status_nome': nova_acao.status.nome,

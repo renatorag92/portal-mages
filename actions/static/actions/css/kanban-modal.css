@@ -1,0 +1,446 @@
+/* =========================================================
+   BOTÃO "CADASTRAR AÇÃO" NAS COLUNAS
+   ========================================================= */
+
+.add-action-btn {
+  width: 100%;
+  padding: 10px 8px;
+  margin-bottom: 8px; /* Adicionado espaçamento inferior */
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-muted, #6b6b6b);
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px dashed #c9c5b9;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.add-action-btn:hover {
+  background: #fff;
+  color: var(--text-dark, #2b2b2b);
+  border-color: #b7b2a5;
+}
+
+.add-action-btn:focus-visible {
+  outline: 2px solid #3e4a89;
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   POP-UP
+   ========================================================= */
+
+.acao-modal-overlay {
+  pointer-events: auto;
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(30, 30, 30, 0.35);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.acao-modal-overlay.open {
+  display: flex;
+}
+
+.acao-modal-dialog {
+  pointer-events: auto;
+  max-width: 1200px;
+  margin: 0;
+  --green: #2e8b57;
+  --green-dark: #24704a;
+  --red: #c0392b;
+  --red-dark: #a5301f;
+
+  width: min(1200px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  padding: 16px;
+  background: var(--bg, #eeece7);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.acao-modal-dialog #formCadastroAcao {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+
+/* ------- Cards e linhas ------- */
+
+.acao-modal-dialog .form-card {
+  background: #fff;
+  border: 1px solid var(--border-light, #e0ddd4);
+  border-radius: 10px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  flex-shrink: 0;
+}
+
+.acao-modal-dialog .form-card-title {
+  margin: 0 0 18px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark, #333);
+}
+
+.acao-modal-dialog .form-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 18px;
+}
+
+.acao-modal-dialog .form-row:last-child {
+  margin-bottom: 0;
+}
+
+.acao-modal-dialog .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.acao-modal-dialog .form-group-full {
+  grid-column: 1 / -1;
+}
+
+.acao-modal-dialog .custom-select-container {
+  position: relative;
+}
+
+.acao-modal-dialog label,
+.acao-modal-dialog .etapas-header span {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-dark, #333);
+}
+
+.acao-modal-dialog .required::after {
+  content: " *";
+  color: var(--red);
+}
+
+
+/* ------- Campos ------- */
+
+.acao-modal-dialog input,
+.acao-modal-dialog select,
+.acao-modal-dialog textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 9px 12px;
+  border-radius: 6px;
+  border: 1px solid #d8d5cc;
+  background: #f5f4f0;
+  color: var(--text-dark, #333);
+}
+
+.acao-modal-dialog textarea {
+  resize: none;
+}
+
+.acao-modal-dialog input:focus,
+.acao-modal-dialog select:focus,
+.acao-modal-dialog textarea:focus {
+  outline: none;
+  border-color: #b7b2a5;
+  background: #fff;
+}
+
+.acao-modal-dialog select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 30px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #999 50%),
+    linear-gradient(135deg, #999 50%, transparent 50%);
+  background-position: calc(100% - 15px) center, calc(100% - 10px) center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.acao-modal-dialog ::placeholder {
+  color: #999;
+  opacity: 1;
+}
+
+.acao-modal-dialog select.placeholder-ativo {
+  color: #999;
+}
+
+.acao-modal-dialog select option {
+  color: #333;
+  background-color: #fff;
+}
+
+
+/* ------- Lista suspensa de ações ------- */
+
+.acao-modal-dialog .custom-dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: none;
+  max-height: 260px;
+  overflow-y: auto;
+  margin-top: 6px;
+  padding: 6px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #d8d5cc;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.acao-modal-dialog .custom-dropdown-list li {
+  padding: 10px 14px;
+  margin-bottom: 2px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-dark, #333);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.acao-modal-dialog .custom-dropdown-list li:last-child {
+  margin-bottom: 0;
+}
+
+.acao-modal-dialog .custom-dropdown-list li:not(.dropdown-hint):hover {
+  background: #f2f1ec;
+  color: var(--green);
+}
+
+.acao-modal-dialog .custom-dropdown-list li.dropdown-hint {
+  color: #888;
+  cursor: default;
+}
+
+
+/* ------- Etapas ------- */
+
+.acao-modal-dialog .etapas-header,
+.acao-modal-dialog .etapa-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr) 76px;
+  gap: 12px;
+}
+
+.acao-modal-dialog .etapas-header {
+  margin-bottom: 8px;
+  padding-right: 12px;
+}
+
+.acao-modal-dialog .etapa-row {
+  align-items: center;
+}
+
+/* Altura fixa para 3 linhas (3 x 38px + 2 x 12px de espaço).
+   Da 4ª etapa em diante, só esta lista rola. */
+.acao-modal-dialog .etapas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 138px;
+  overflow-y: auto;
+  padding-right: 6px;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+
+.acao-modal-dialog .etapas-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.acao-modal-dialog .etapas-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.acao-modal-dialog .etapas-list::-webkit-scrollbar-thumb {
+  background: #d0cec8;
+  border-radius: 10px;
+}
+
+.acao-modal-dialog .etapas-list::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+.acao-modal-dialog .etapa-row {
+  flex-shrink: 0;
+}
+
+.acao-modal-dialog .etapa-row input,
+.acao-modal-dialog .etapa-row select {
+  height: 38px;
+}
+
+.acao-modal-dialog .etapa-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.acao-modal-dialog .etapa-add,
+.acao-modal-dialog .etapa-remove {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #555;
+  background: #f2f1ec;
+  border: 1px solid #d8d5cc;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
+}
+
+.acao-modal-dialog .etapa-remove {
+  color: var(--red);
+}
+
+.acao-modal-dialog .etapa-add:hover,
+.acao-modal-dialog .etapa-remove:hover {
+  background: #e7e5de;
+  border-color: #c9c5b9;
+}
+
+.acao-modal-dialog .etapa-add:active,
+.acao-modal-dialog .etapa-remove:active {
+  transform: scale(0.95);
+}
+
+
+/* ------- Erro e botões ------- */
+
+.acao-modal-dialog .form-erro {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--red-dark);
+  background: rgba(192, 57, 43, 0.08);
+  border: 1px solid rgba(192, 57, 43, 0.25);
+  border-radius: 7px;
+}
+
+.acao-modal-dialog .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 0 4px;
+}
+
+.acao-modal-dialog .acao-modal-btn {
+  padding: 11px 30px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.acao-modal-dialog .acao-modal-btn:active {
+  transform: translateY(1px);
+}
+
+.acao-modal-dialog .acao-modal-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.acao-modal-dialog .acao-modal-btn-salvar {
+  background: var(--green);
+}
+
+.acao-modal-dialog .acao-modal-btn-salvar:hover:not(:disabled) {
+  background: var(--green-dark);
+}
+
+.acao-modal-dialog .acao-modal-btn-cancelar {
+  background: var(--red);
+}
+
+.acao-modal-dialog .acao-modal-btn-cancelar:hover:not(:disabled) {
+  background: var(--red-dark);
+}
+
+
+/* ------- Responsividade ------- */
+
+@media (max-width: 1150px) {
+  .acao-modal-dialog .etapas-header {
+    display: none;
+  }
+
+  .acao-modal-dialog .etapas-list {
+    height: auto;
+    max-height: 260px;
+  }
+
+  .acao-modal-dialog .etapa-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light, #e0ddd4);
+  }
+
+  .acao-modal-dialog .etapa-actions {
+    grid-column: span 2;
+    justify-self: end;
+  }
+}
+
+@media (max-width: 900px) {
+  .acao-modal-dialog .form-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .acao-modal-overlay {
+    padding: 8px;
+  }
+
+  .acao-modal-dialog .form-row,
+  .acao-modal-dialog .etapa-row {
+    grid-template-columns: 1fr;
+  }
+
+  .acao-modal-dialog .etapa-actions {
+    grid-column: auto;
+  }
+
+  .acao-modal-dialog .form-actions {
+    justify-content: stretch;
+  }
+
+  .acao-modal-dialog .acao-modal-btn {
+    flex: 1;
+  }
+}
+
+.etapa-nome-titulo.etapa-concluida {
+  text-decoration: line-through;
+  color: #888;
+}
