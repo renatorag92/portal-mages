@@ -1,0 +1,247 @@
+:root {
+  --azul: #0b2545;
+  --azul-medio: #134e5e;
+  --verde: #1f7a68;
+  --verde-hover: #17695a;
+  --verde-claro: #9fd8cb;
+  --fundo: #f8fafc;
+  --texto-suave: #475569;
+  --borda: #94a3b8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  background: var(--fundo);
+  color: var(--azul);
+  font-family: "Source Sans 3", sans-serif;
+}
+
+/* ---------- Lado esquerdo: marca ---------- */
+.painel {
+  position: relative;
+  overflow: hidden;
+  flex: 1 1 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 64px 72px;
+  background: var(--azul);
+  color: #fff;
+}
+
+/* texto alinhado à esquerda */
+.painel-conteudo {
+  position: relative; /* fica por cima dos círculos */
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 20px;
+}
+
+.logo {
+  width: 200px;
+  height: 200px;
+}
+
+.logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.35));
+}
+
+.painel h1 {
+  margin: 0;
+  font-family: Montserrat, sans-serif;
+  font-weight: 700;
+  font-size: 40px;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  color: #fff;
+}
+
+.painel .texto {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.5;
+  color: #b7cddd;
+}
+
+/* ---------- Lado direito: formulário ---------- */
+.lado-form {
+  flex: 1 1 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  padding: 48px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(11, 37, 69, 0.10);
+}
+
+.titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.titulo h2 {
+  margin: 0;
+  font-family: Montserrat, sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+}
+
+.titulo p {
+  margin: 0;
+  font-size: 16px;
+  color: var(--texto-suave);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.campos {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+label {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+input {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  font: inherit;
+  font-size: 16px;
+  color: var(--azul);
+  background: #fff;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+
+}
+
+input:focus {
+  outline: 3px solid var(--verde-claro);
+  border-color: var(--verde);
+}
+
+.esqueci {
+  align-self: flex-end;
+  font-size: 14px;
+  color: var(--verde);
+}
+
+.esqueci:hover { color: var(--azul); }
+
+button {
+  width: 100%;
+  height: 48px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--verde);
+  color: #fff;
+  font-family: Montserrat, sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.erro {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #fdecea;
+  color: #b3261e;
+  font-size: 14px;
+  text-align: center;
+}
+
+.erro[hidden] { display: none; }
+
+@keyframes tremer {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(6px); }
+  60%      { transform: translateX(-4px); }
+  80%      { transform: translateX(4px); }
+}
+
+input.invalido {
+  border: 2px solid #d62d20;
+  background: #fff5f4;
+  animation: tremer 0.35s ease-in-out;
+
+}
+
+input.invalido:focus {
+  outline: 3px solid rgba(214, 45, 32, 0.25);
+  border-color: #d62d20;
+}
+
+@keyframes erro-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.erro {
+  animation: erro-entrada 0.3s ease-out;
+}
+
+button:hover { background: var(--verde-hover); }
+button:focus-visible { outline: 3px solid var(--verde-claro); outline-offset: 2px; }
+
+/* ---------- Celular / tela pequena: empilha ---------- */
+@media (max-width: 800px) {
+  body { flex-direction: column; }
+  .painel { flex: none; padding: 40px 24px; }
+  .painel .texto { display: none; }
+  .card { padding: 32px 24px; }
+  .logo { width: 120px; height: 120px; }
+  .painel h1 { font-size: 28px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .erro,
+  input.invalido {
+    animation: none;
+  }
+}

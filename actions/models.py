@@ -178,7 +178,7 @@ class PerfilUsuario(models.Model):
      return f"{self.usuario.username} - {self.cargo}"
         
 class CustomPasswordChangeView(PasswordChangeView):
-    template_name = 'actions/password-change.html'
+    template_name = 'actions/redefinir-senha.html'
     success_url = reverse_lazy('kanban') # Redireciona para a página do Kanban após a alteração da senha
     def form_valid(self, form):
         response = super().form_valid(form) # Chama o método form_valid da classe pai para processar a alteração da senha
@@ -188,10 +188,3 @@ class CustomPasswordChangeView(PasswordChangeView):
         self.request.user.perfil.save()
         
         return response
-
-        
-        
-        
-
-
-

@@ -11,7 +11,7 @@ urlpatterns = [
     path('kanban/acao/<int:acao_id>/excluir/', views.excluir_acao_view, name='excluir_acao'),  # Rota para excluir uma ação
     path('login/', views.CustomLoginView.as_view(), name='login'),  # Rota do login
     path('cadastrar-acoes/', views.cadastro_acoes_view, name='cadastro_acoes'), # Rota para o cadastro de ações
-    path('redefinir-senha/', views.CustomPasswordChangeView.as_view(), name='password-change'),  # Rota para alterar a senha
+    path('redefinir-senha/', views.CustomPasswordChangeView.as_view(), name='redefinir-senha'),  # Rota para alterar a senha
     path('actions/<int:acao_id>/atualizar_status/', views.atualizar_status_acao, name='atualizar_status_acao'),  # Rota para atualizar o status da ação
     path('logout/', LogoutView.as_view(next_page='/login/'), name='logout'),  # Rota de logout
 ]

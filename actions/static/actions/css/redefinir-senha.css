@@ -1,0 +1,30 @@
+/* Complementa o login.css: só o que a tela de redefinição tem a mais */
+
+/* mensagem de erro logo abaixo do campo */
+.erro-campo {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #b3261e;
+}
+
+/* regras da senha (vêm do Django, em lista) */
+.dica {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--texto-suave, #475569);
+}
+
+.dica ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.dica li + li {
+  margin-top: 2px;
+}
+
+/* a lista de regras ocupa espaço: deixa o card respirar um pouco mais */
+.card {
+  max-width: 460px;
+}

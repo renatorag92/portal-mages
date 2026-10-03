@@ -12,17 +12,41 @@ from .models import AcaoCatalogo, Acao, Etapa, Eixo, Status
 class CustomLoginView(LoginView):
     template_name = 'actions/login.html'
     redirect_authenticated_user = True
-    
+
+    def get_form_kwargs(self):
+        # O HTML envia "contrato" e "senha"; o Django espera "username" e "password".
+        kwargs = super().get_form_kwargs()
+        if 'data' in kwargs:
+            data = kwargs['data'].copy()
+            data['username'] = data.get('contrato', '')
+            data['password'] = data.get('senha', '')
+            kwargs['data'] = data
+        return kwargs
+
+    def form_invalid(self, form):
+        # Guarda o erro e o contrato digitado, e volta para a tela de login.
+        # Assim, ao recarregar (F5), o erro não reaparece.
+        self.request.session['login_erro'] = True
+        self.request.session['login_contrato'] = self.request.POST.get('contrato', '')
+        return redirect('login')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # pop() lê e apaga, então o erro aparece uma vez só
+        context['erro_login'] = self.request.session.pop('login_erro', False)
+        context['contrato_digitado'] = self.request.session.pop('login_contrato', '')
+        return context
+
     def get_success_url(self):
         user = self.request.user
         # Corrigido para user.perfil
         if hasattr(user, 'perfil') and user.perfil.primeiro_acesso:
-            return reverse_lazy('password-change')
+            return reverse_lazy('redefinir-senha')
         return reverse_lazy('kanban')
 
 
 class CustomPasswordChangeView(PasswordChangeView):
-    template_name = 'actions/password-change.html'
+    template_name = 'actions/redefinir-senha.html'
     success_url = reverse_lazy('kanban')
 
     def form_valid(self, form):
@@ -39,12 +63,12 @@ def cadastro_acoes_view(request):
 
     # Passa a lista pura de dicionários Python (o template tratará com json_script)
     acoes_catalogo_list = [{'id': a.id, 'nome': a.nome, 'eixo_id': a.eixo.id} for a in acoes_catalogo]
-    
+
     context = {
         'eixos': [(e.id, e.nome) for e in eixos],
-        'acoes_catalogo_objetos': acoes_catalogo, 
+        'acoes_catalogo_objetos': acoes_catalogo,
         'acoes_catalogo_list': acoes_catalogo_list,
-        'prioridades': Acao.Status_Prioridade.choices, 
+        'prioridades': Acao.Status_Prioridade.choices,
     }
     return render(request, 'actions/cadastro-de-acoes.html', context)
 
@@ -69,12 +93,12 @@ def atualizar_status_acao(request, acao_id):
     if request.method == 'POST':
         acao = get_object_or_404(Acao, id=acao_id)
         novo_status = request.POST.get('status')
-        
+
         if novo_status:
-            acao.status_id = novo_status # Atribuição via status_id
+            acao.status_id = novo_status  # Atribuição via status_id
             acao.save()
-            
-    return redirect('kanban') 
+
+    return redirect('kanban')
 
 
 @require_POST
@@ -88,7 +112,7 @@ def criar_acao_kanban_view(request):
         eixo_id = data.get('eixo')
         acao_catalogo_id = data.get('acao')
         acao_texto_custom = data.get('novaAcao', '').strip()
-        
+
         status_id = data.get('status')
         prioridade = data.get('prioridade')
         custo = data.get('custo')
@@ -134,7 +158,7 @@ def criar_acao_kanban_view(request):
         return JsonResponse({
             'success': True,
             'message': 'Ação criada com sucesso!',
-            'card': { 
+            'card': {
                 'id': nova_acao.id,
                 'nome': nova_acao.acao_catalogo.nome,
                 'eixo': nova_acao.acao_catalogo.eixo.nome,
@@ -145,7 +169,7 @@ def criar_acao_kanban_view(request):
                 'custo': str(nova_acao.custo),
             },
         }, status=201)
-             
+
     except Eixo.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Eixo não encontrado.'}, status=400)
     except Exception as e:
