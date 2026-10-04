@@ -1,18 +1,22 @@
 import json
+import re
 import webcolors
+from decimal import Decimal, InvalidOperation
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.db.models.deletion import ProtectedError
 from django.http import JsonResponse
 from django.contrib import messages
+from django.utils.dateparse import parse_date
+from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.urls import reverse_lazy
-from .models import AcaoCatalogo, Acao, Etapa, Eixo, Status
+from .models import AcaoCatalogo, Acao, Etapa, Eixo, Status, Funcionario
 
 PT_EN = dict(zip(
     'azul vermelho verde amarelo laranja roxo rosa preto branco cinza marrom ciano dourado prata turquesa bege lilás violeta magenta índigo salmão coral vinho lima'.split(),
@@ -109,21 +113,9 @@ class CustomPasswordChangeView(PasswordChangeView):
 
 @login_required
 def cadastro_acoes_view(request):
-    eixos = Eixo.objects.all()
-    acoes_catalogo = AcaoCatalogo.objects.select_related('eixo').all()
-    status_lista = Status.objects.order_by('ordem', 'id')
-
-    # Passa a lista pura de dicionários Python (o template tratará com json_script)
-    acoes_catalogo_list = [{'id': a.id, 'nome': a.nome, 'eixo_id': a.eixo.id} for a in acoes_catalogo]
-
-    context = {
-        'eixos': [(e.id, e.nome) for e in eixos],
-        'acoes_catalogo_objetos': acoes_catalogo,
-        'acoes_catalogo_list': acoes_catalogo_list,
-        'status_lista': status_lista,
-        'prioridades': Acao.Status_Prioridade.choices,
-    }
-    return render(request, 'actions/cadastro-de-acoes.html', context)
+    # O cadastro de ações agora é um pop-up dentro do Kanban.
+    # Esta rota fica só para não quebrar links antigos.
+    return redirect('kanban')
 
 
 @login_required
@@ -138,7 +130,21 @@ def kanban_view(request):
     for st in todos_status:
         st.acoes_lista = [a for a in acoes if a.status_id == st.id]
 
-    return render(request, 'actions/kanban-governanca.html', {'kanban': todos_status})
+    # Dados adicionais necessários para popular o modal de cadastro de ação
+    eixos = Eixo.objects.all()
+    acoes_catalogo = AcaoCatalogo.objects.select_related('eixo').all()
+    acoes_catalogo_list = [{'id': a.id, 'nome': a.nome, 'eixo_id': a.eixo.id} for a in acoes_catalogo]
+
+    context = {
+        'kanban': todos_status,
+        'eixos': eixos,
+        'acoes_catalogo_objetos': acoes_catalogo,
+        'acoes_catalogo_list': acoes_catalogo_list,
+        'prioridades': Acao.Status_Prioridade.choices,
+        'toast': request.session.pop('kanban_toast', None),
+    }
+
+    return render(request, 'actions/kanban-governanca.html', context)
 
 
 @login_required
@@ -189,17 +195,131 @@ def excluir_status_view(request, status_id):
     return redirect('gerenciar_status')
 
 
+@login_required
+@require_POST
 def atualizar_status_acao(request, acao_id):
-    if request.method == 'POST':
-        acao = get_object_or_404(Acao, id=acao_id)
-        novo_status = request.POST.get('status')
+    # Só encontra a ação se ela for da prefeitura do usuário logado
+    acao = _acao_da_prefeitura(request, acao_id)
 
-        if novo_status:
-            acao.status_id = novo_status  # Atribuição via status_id
-            acao.save()
+    # Ação inexistente, de outra prefeitura ou cancelada (definitiva): não muda nada
+    if acao is None or _acao_cancelada(acao):
+        return redirect('kanban')
+
+    novo_status = request.POST.get('status')
+
+    # Só salva (e avisa) se o status realmente mudou
+    if novo_status and novo_status.isdigit() and str(acao.status_id) != novo_status:
+        status_destino = get_object_or_404(Status, pk=novo_status)
+        acao.status = status_destino
+        acao.save()
+        request.session['kanban_toast'] = {
+            'mensagem': f'Ação {acao.codigo} movida para "{status_destino.nome}".'
+        }
 
     return redirect('kanban')
 
+
+# =========================================================
+# APOIO (ações e etapas)
+# =========================================================
+
+def _erro(mensagem, status=400):
+    return JsonResponse({'success': False, 'error': mensagem}, status=status)
+
+
+def _prefeitura_do_usuario(request):
+    perfil = getattr(request.user, 'perfil', None)
+    return perfil.prefeitura if perfil else None
+
+
+def _converter_data(valor):
+    try:
+        return parse_date(valor or '')
+    except ValueError:
+        return None
+
+
+def _funcionario_por_cpf(cpf, prefeitura):
+    # Aceita o CPF com ou sem máscara, e só procura entre os funcionários da prefeitura
+    digitos = re.sub(r'\D', '', cpf or '')
+    if len(digitos) != 11:
+        return None
+    mascarado = f'{digitos[:3]}.{digitos[3:6]}.{digitos[6:9]}-{digitos[9:]}'
+    return (
+        Funcionario.objects
+        .filter(prefeitura=prefeitura)
+        .filter(Q(cpf=digitos) | Q(cpf=mascarado))
+        .first()
+    )
+
+
+def _acao_da_prefeitura(request, acao_id):
+    prefeitura = _prefeitura_do_usuario(request)
+    if prefeitura is None:
+        return None
+    return (
+        Acao.objects
+        .select_related('acao_catalogo__eixo', 'status', 'secretario')
+        .filter(codigo=str(acao_id), secretario__prefeitura=prefeitura)
+        .first()
+    )
+
+
+def _etapa_da_prefeitura(request, etapa_id):
+    prefeitura = _prefeitura_do_usuario(request)
+    if prefeitura is None:
+        return None
+    return (
+        Etapa.objects
+        .select_related('acao__status', 'acao__secretario', 'responsavel')
+        .filter(pk=etapa_id, acao__secretario__prefeitura=prefeitura)
+        .first()
+    )
+
+
+def _acao_cancelada(acao):
+    # Ação cancelada é definitiva: não pode mais ser alterada
+    return slugify(acao.status.nome) == 'cancelado'
+
+
+def _iso(data):
+    return data.isoformat() if hasattr(data, 'isoformat') else (data or '')
+
+
+def _serializar_acao(acao):
+    catalogo = acao.acao_catalogo
+    return {
+        'codigo': acao.codigo,
+        'nome': catalogo.nome if catalogo else (acao.nova_acao_texto or ''),
+        'eixo': catalogo.eixo.nome if catalogo else '',
+        'prioridade': acao.prioridade,
+        'custo': acao.custo,
+        'data_inicio': _iso(acao.data_inicio),
+        'data_fim': _iso(acao.data_fim),
+        'observacoes': acao.observacoes or '',
+        'responsavel': acao.secretario.nome,
+        'status': {'id': acao.status.id, 'nome': acao.status.nome, 'cor': acao.status.cor},
+        'somente_leitura': _acao_cancelada(acao),
+    }
+
+
+def _serializar_etapa(etapa):
+    return {
+        'id': etapa.id,
+        'nome': etapa.nome,
+        'cpf': etapa.responsavel.cpf,
+        'responsavel': etapa.responsavel.nome,
+        'prioridade': etapa.prioridade,
+        'data_inicio': _iso(etapa.data_inicio),
+        'data_fim': _iso(etapa.data_fim),
+        'observacoes': etapa.observacoes or '',
+        'concluida': etapa.concluida,
+    }
+
+
+# =========================================================
+# CADASTRO DE AÇÃO (pop-up do Kanban)
+# =========================================================
 
 @require_POST
 def criar_acao_kanban_view(request):
@@ -215,12 +335,49 @@ def criar_acao_kanban_view(request):
 
         status_id = data.get('status')
         prioridade = data.get('prioridade')
-        custo = data.get('custo')
-        data_inicio = data.get('dataInicio')
-        data_fim = data.get('dataFim')
+        
+
+        # Tratamento do custo.
+        # O pop-up já manda o valor como "2121.22" (ponto decimal). Só um formulário comum
+        # manda no formato brasileiro ("2.121,22"), que precisa ser convertido.
+        custo_raw = str(data.get('custo', '0')).strip()
+        if request.content_type != 'application/json':
+            custo_raw = custo_raw.replace('.', '').replace(',', '.')
+        try:
+            custo = float(custo_raw)
+        except ValueError:
+            custo = 0.0
+
+        data_inicio = data.get('dataInicio') or data.get('data_inicio')
+        data_fim = data.get('dataFim') or data.get('data_fim')
         observacoes = data.get('observacoes')
 
-        secretario = request.user.perfil.secretario
+        # Obtém o funcionário/secretário padrão da prefeitura do usuário logado
+        prefeitura_logada = request.user.perfil.prefeitura
+        secretario = Funcionario.objects.filter(prefeitura=prefeitura_logada).first()
+
+        if not secretario:
+            return JsonResponse({
+                'success': False,
+                'error': 'Cadastre pelo menos um Secretário/Funcionário no Admin antes de criar ações.'
+            }, status=400)
+
+                # Valida o CPF de cada etapa ANTES de criar qualquer coisa
+        etapas_validadas = []
+        if request.content_type == 'application/json':
+            for item in data.get('etapas', []):
+                nome_etapa = item.get('nome') or item.get('etapaNome')
+                if not nome_etapa:
+                    continue
+
+                responsavel = _funcionario_por_cpf(item.get('cpf'), prefeitura_logada)
+                if responsavel is None:
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'O CPF informado na etapa "{nome_etapa}" não foi encontrado entre os funcionários da sua prefeitura.'
+                    }, status=400)
+
+                etapas_validadas.append((item, nome_etapa, responsavel))
 
         with transaction.atomic():
             eixo_obj = Eixo.objects.get(id=eixo_id)
@@ -237,31 +394,59 @@ def criar_acao_kanban_view(request):
                 secretario=secretario,
                 status=status_obj,
                 prioridade=prioridade,
-                custo=custo or 0,
+                custo=custo,
                 data_inicio=data_inicio,
                 data_fim=data_fim,
                 observacoes=observacoes,
             )
 
-            # Grava etapas iniciais caso tenham sido informadas na criação
+            # --- CRIAÇÃO DAS ETAPAS ---
             if request.content_type == 'application/json':
-                etapas_data = data.get('etapas', [])
-                for item in etapas_data:
-                    if item.get('nome'):
-                        Etapa.objects.create(acao=nova_acao, nome=item.get('nome'))
+                for item, nome_etapa, responsavel in etapas_validadas:
+                    # O pop-up manda "inicio" e "fim"
+                    e_inicio = item.get('inicio') or item.get('data_inicio') or item.get('dataInicio') or item.get('etapaInicio') or data_inicio
+                    e_fim = item.get('fim') or item.get('data_fim') or item.get('dataFim') or item.get('etapaFim') or data_fim
+
+                    Etapa.objects.create(
+                        acao=nova_acao,
+                        nome=nome_etapa,
+                        responsavel=responsavel,
+                        data_inicio=e_inicio,
+                        data_fim=e_fim,
+                        prioridade=item.get('prioridade') or '',
+                        observacoes=item.get('observacoes', '')
+                    )
             else:
                 nomes = request.POST.getlist('etapaNome[]')
-                for nome in nomes:
+                inicios = request.POST.getlist('etapaInicio[]')
+                fims = request.POST.getlist('etapaFim[]')
+                prioridades = request.POST.getlist('etapaPrioridade[]')
+                obs_list = request.POST.getlist('etapaObservacoes[]')
+
+                for i, nome in enumerate(nomes):
                     if nome.strip():
-                        Etapa.objects.create(acao=nova_acao, nome=nome.strip())
+                        d_inicio = inicios[i] if (i < len(inicios) and inicios[i]) else data_inicio
+                        d_fim = fims[i] if (i < len(fims) and fims[i]) else data_fim
+                        prio = prioridades[i] if i < len(prioridades) else ''
+                        obs = obs_list[i] if i < len(obs_list) else ''
+
+                        Etapa.objects.create(
+                            acao=nova_acao,
+                            nome=nome.strip(),
+                            responsavel=secretario,
+                            data_inicio=d_inicio,
+                            data_fim=d_fim,
+                            prioridade=prio,
+                            observacoes=obs
+                        )
 
         return JsonResponse({
             'success': True,
             'message': 'Ação criada com sucesso!',
             'card': {
-                'id': nova_acao.id,
-                'nome': nova_acao.acao_catalogo.nome,
-                'eixo': nova_acao.acao_catalogo.eixo.nome,
+                'id': nova_acao.codigo,  # Usa o campo 'codigo' que é a chave primária do modelo Acao
+                'nome': nova_acao.acao_catalogo.nome if nova_acao.acao_catalogo else nova_acao.nova_acao_texto,
+                'eixo': nova_acao.acao_catalogo.eixo.nome if nova_acao.acao_catalogo else '',
                 'prioridade': nova_acao.get_prioridade_display() if hasattr(nova_acao, 'get_prioridade_display') else nova_acao.prioridade,
                 'status_id': nova_acao.status.id,
                 'status_nome': nova_acao.status.nome,
@@ -276,103 +461,173 @@ def criar_acao_kanban_view(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
+# =========================================================
+# DETALHES, EDIÇÃO E ETAPAS (pop-up de detalhes)
+# =========================================================
+
+@login_required
 def obter_detalhes_acao_view(request, acao_id):
-    try:
-        acao = Acao.objects.select_related('acao_catalogo', 'secretario').get(id=acao_id)
-        etapas = list(acao.etapas.values('id', 'nome', 'concluida'))
+    acao = _acao_da_prefeitura(request, acao_id)
+    if acao is None:
+        return _erro('Ação não encontrada.', 404)
 
-        return JsonResponse({
-            'success': True,
-            'acao': {
-                'id': acao.id,
-                'nome': acao.acao_catalogo.nome,
-                'custo': acao.custo,
-                'prioridade': acao.prioridade,
-                'data_inicio': acao.data_inicio,
-                'data_fim': acao.data_fim,
-                'observacoes': acao.observacoes,
-            },
-            'etapas': etapas,
-        })
-    except Acao.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Ação não encontrada.'}, status=404)
+    etapas = acao.etapas.select_related('responsavel').order_by('id')
+
+    return JsonResponse({
+        'success': True,
+        'acao': _serializar_acao(acao),
+        'etapas': [_serializar_etapa(e) for e in etapas],
+        'prioridades': list(Acao.Status_Prioridade.values),
+    })
 
 
-@require_POST
-def alterar_etapa_view(request, etapa_id):
-    try:
-        etapa = Etapa.objects.get(id=etapa_id)
-        etapa.concluida = not etapa.concluida
-        etapa.save()
-        return JsonResponse({'success': True, 'concluida': etapa.concluida})
-    except Etapa.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Etapa não encontrada.'}, status=404)
-
-
+@login_required
 @require_POST
 def editar_acao_view(request, acao_id):
-    # Edita os dados da Ação e realiza a sincronização em bloco
+    acao = _acao_da_prefeitura(request, acao_id)
+    if acao is None:
+        return _erro('Ação não encontrada.', 404)
+    if _acao_cancelada(acao):
+        return _erro('Uma ação cancelada não pode ser editada.', 403)
+
     try:
-        acao = Acao.objects.get(id=acao_id)
-        data = (
-            json.loads(request.body)
-            if request.content_type == 'application/json'
-            else request.POST
-        )
+        data = json.loads(request.body)
+    except (ValueError, TypeError):
+        return _erro('Dados inválidos.')
 
-        with transaction.atomic():
-            # 1. Atualiza dados principais
-            acao.prioridade = data.get('prioridade', acao.prioridade)
-            acao.custo = data.get('custo', acao.custo)
-            acao.data_inicio = data.get('data_inicio', acao.data_inicio)
-            acao.data_fim = data.get('data_fim', acao.data_fim)
-            acao.observacoes = data.get('observacoes', acao.observacoes)
-            acao.save()
+    prioridade = data.get('prioridade')
+    if prioridade not in Acao.Status_Prioridade.values:
+        return _erro('Prioridade inválida.')
 
-            # 2. Sincroniza a lista de etapas
-            etapas_data = data.get('etapas')
-            if etapas_data is not None:
-                ids_manter = []
+    try:
+        custo = Decimal(str(data.get('custo', '')).strip())
+    except InvalidOperation:
+        return _erro('Custo inválido.')
+    if not custo.is_finite() or custo < 0:
+        return _erro('Custo inválido.')
 
-                for item in etapas_data:
-                    etapa_id = item.get('id')
-                    nome = item.get('nome', '').strip()
+    data_inicio = _converter_data(data.get('data_inicio'))
+    data_fim = _converter_data(data.get('data_fim'))
+    if not data_inicio or not data_fim:
+        return _erro('Informe datas válidas.')
+    if data_fim < data_inicio:
+        return _erro('A data de fim não pode ser anterior à data de início.')
 
-                    if not nome:
-                        continue  # Descarta entradas vazias
+    acao.prioridade = prioridade
+    acao.custo = float(custo)
+    acao.data_inicio = data_inicio
+    acao.data_fim = data_fim
+    acao.observacoes = (data.get('observacoes') or '').strip() or None
+    acao.save()
 
-                    if etapa_id:
-                        # Atualiza etapa existente
-                        Etapa.objects.filter(id=etapa_id, acao=acao).update(
-                            nome=nome,
-                            concluida=item.get('concluida', False)
-                        )
-                        ids_manter.append(etapa_id)
-                    else:
-                        # Cria nova etapa vinculada à Ação
-                        nova_etapa = Etapa.objects.create(
-                            acao=acao,
-                            nome=nome,
-                            concluida=item.get('concluida', False)
-                        )
-                        ids_manter.append(nova_etapa.id)
-
-                # Remove do banco as etapas que o usuário apagou na interface
-                acao.etapas.exclude(id__in=ids_manter).delete()
-
-        return JsonResponse({'success': True, 'message': 'Ação e etapas atualizadas com sucesso!'})
-
-    except Acao.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Ação não encontrada.'}, status=404)
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    return JsonResponse({'success': True, 'acao': _serializar_acao(acao)})
 
 
+def _dados_etapa(request):
+    # Lê e valida o JSON de uma etapa. Retorna (dados, None) ou (None, resposta_de_erro).
+    try:
+        data = json.loads(request.body)
+    except (ValueError, TypeError):
+        return None, _erro('Dados inválidos.')
+    if not isinstance(data, dict):
+        return None, _erro('Dados inválidos.')
+
+    nome = (data.get('nome') or '').strip()
+    if not nome or len(nome) > 45:
+        return None, _erro('Informe um nome para a etapa com até 45 caracteres.')
+
+    prioridade = data.get('prioridade')
+    if prioridade not in Acao.Status_Prioridade.values:
+        return None, _erro('Prioridade inválida.')
+
+    data_inicio = _converter_data(data.get('data_inicio'))
+    data_fim = _converter_data(data.get('data_fim'))
+    if not data_inicio or not data_fim:
+        return None, _erro('Informe datas válidas.')
+    if data_fim < data_inicio:
+        return None, _erro('A data de fim não pode ser anterior à data de início.')
+
+    responsavel = _funcionario_por_cpf(data.get('cpf'), _prefeitura_do_usuario(request))
+    if responsavel is None:
+        return None, _erro('CPF do responsável não encontrado entre os funcionários da sua prefeitura.')
+
+    return {
+        'nome': nome,
+        'responsavel': responsavel,
+        'prioridade': prioridade,
+        'data_inicio': data_inicio,
+        'data_fim': data_fim,
+        'observacoes': (data.get('observacoes') or '').strip() or None,
+    }, None
+
+
+@login_required
+@require_POST
+def adicionar_etapa_view(request, acao_id):
+    acao = _acao_da_prefeitura(request, acao_id)
+    if acao is None:
+        return _erro('Ação não encontrada.', 404)
+    if _acao_cancelada(acao):
+        return _erro('Uma ação cancelada não pode ser editada.', 403)
+
+    dados, erro = _dados_etapa(request)
+    if erro:
+        return erro
+
+    etapa = Etapa.objects.create(acao=acao, **dados)
+    return JsonResponse({'success': True, 'etapa': _serializar_etapa(etapa)}, status=201)
+
+
+@login_required
+@require_POST
+def editar_etapa_view(request, etapa_id):
+    etapa = _etapa_da_prefeitura(request, etapa_id)
+    if etapa is None:
+        return _erro('Etapa não encontrada.', 404)
+    if _acao_cancelada(etapa.acao):
+        return _erro('Uma ação cancelada não pode ser editada.', 403)
+
+    dados, erro = _dados_etapa(request)
+    if erro:
+        return erro
+
+    for campo, valor in dados.items():
+        setattr(etapa, campo, valor)
+    etapa.save()
+
+    return JsonResponse({'success': True, 'etapa': _serializar_etapa(etapa)})
+
+
+@login_required
+@require_POST
+def alterar_etapa_view(request, etapa_id):
+    # Marca ou desmarca a etapa como concluída
+    etapa = _etapa_da_prefeitura(request, etapa_id)
+    if etapa is None:
+        return _erro('Etapa não encontrada.', 404)
+    if _acao_cancelada(etapa.acao):
+        return _erro('Uma ação cancelada não pode ser editada.', 403)
+
+    etapa.concluida = not etapa.concluida
+    etapa.save(update_fields=['concluida'])
+    return JsonResponse({'success': True, 'concluida': etapa.concluida})
+
+
+@login_required
 @require_POST
 def excluir_acao_view(request, acao_id):
+    acao = _acao_da_prefeitura(request, acao_id)
+    if acao is None:
+        return _erro('Ação não encontrada.', 404)
+    if _acao_cancelada(acao):
+        return _erro('Uma ação cancelada não pode ser excluída.', 403)
+
     try:
-        acao = Acao.objects.get(id=acao_id)
-        acao.delete()
-        return JsonResponse({'success': True, 'message': 'Ação excluída com sucesso!'})
-    except Acao.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Ação não encontrada.'}, status=404)
+        with transaction.atomic():
+            # As etapas usam on_delete=PROTECT, então são apagadas antes da ação
+            acao.etapas.all().delete()
+            acao.delete()
+    except ProtectedError:
+        return _erro('Não foi possível excluir a ação porque ela está vinculada a outros registros.', 409)
+
+    return JsonResponse({'success': True, 'message': 'Ação excluída com sucesso!'})
