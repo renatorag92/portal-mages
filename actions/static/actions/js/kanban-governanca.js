@@ -1,8 +1,9 @@
 /*
- * Kanban de Governança
+ * Kanban de Governança: arrastar cards, busca e filtro por eixo.
  *
+ * Os detalhes da ação (pop-up) ficam no kanban-detalhes.js.
  * Os eventos usam delegação (ouvem o document), então cards inseridos depois
- * do carregamento da página (pelo pop-up de cadastro) funcionam sem reinicializar.
+ * do carregamento da página funcionam sem reinicializar.
  */
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -19,58 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
   /* =========================================================
-     MENU DE DETALHES DA AÇÃO
-     ========================================================= */
-
-  function positionActionMenu(menu, button) {
-    const rect = button.getBoundingClientRect();
-    const menuWidth = 330;
-    const menuHeight = menu.offsetHeight;
-
-    let left = rect.right + 10;
-    let top = rect.top;
-
-    // Sem espaço à direita: abre para a esquerda
-    if (left + menuWidth > window.innerWidth - 10) {
-      left = rect.left - menuWidth - 10;
-    }
-    if (left < 10) left = 10;
-
-    // Não deixa sair por baixo nem por cima
-    if (top + menuHeight > window.innerHeight - 10) {
-      top = window.innerHeight - menuHeight - 10;
-    }
-    if (top < 10) top = 10;
-
-    menu.style.left = left + "px";
-    menu.style.top = top + "px";
-  }
-
-  function closeAllMenus(exceptCard) {
-    document.querySelectorAll(".task-card.menu-open").forEach(function (card) {
-      if (card === exceptCard) return;
-      card.classList.remove("menu-open");
-      const menu = card.querySelector(".action-menu");
-      if (menu) menu.classList.remove("open");
-    });
-  }
-
-  function repositionOpenMenus() {
-    document.querySelectorAll(".task-card.menu-open").forEach(function (card) {
-      const menu = card.querySelector(".action-menu");
-      const button = card.querySelector(".status-menu-toggle");
-      if (menu && button && menu.classList.contains("open")) {
-        positionActionMenu(menu, button);
-      }
-    });
-  }
-
-  window.addEventListener("resize", repositionOpenMenus);
-  window.addEventListener("scroll", repositionOpenMenus, true);
-
-
-  /* =========================================================
-     ALTERAÇÃO DE STATUS (botões do menu e drag and drop)
+     ALTERAÇÃO DE STATUS (arrastar o card para outra coluna)
      ========================================================= */
 
   // Ação já Cancelada é definitiva: não troca mais de status.
@@ -84,37 +34,6 @@ document.addEventListener("DOMContentLoaded", function () {
     input.value = status;
     form.submit();
   }
-
-  document.addEventListener("click", function (event) {
-
-    // Abrir/fechar o menu de detalhes
-    const toggle = event.target.closest(".status-menu-toggle");
-    if (toggle) {
-      const card = toggle.closest(".task-card");
-      const menu = card && card.querySelector(".action-menu");
-      if (!menu) return;
-
-      const wasOpen = card.classList.contains("menu-open");
-      closeAllMenus(card);
-      card.classList.toggle("menu-open", !wasOpen);
-      menu.classList.toggle("open", !wasOpen);
-      if (!wasOpen) positionActionMenu(menu, toggle);
-      return;
-    }
-
-    // Botões "Alterar status"
-    const option = event.target.closest(".status-option");
-    if (option) {
-      event.preventDefault();
-      submitStatus(option.closest(".task-card"), option.dataset.status);
-      return;
-    }
-
-    // Clique fora do menu fecha todos
-    if (!event.target.closest(".action-menu")) {
-      closeAllMenus();
-    }
-  });
 
 
   /* =========================================================
@@ -225,7 +144,7 @@ document.addEventListener("DOMContentLoaded", function () {
   if (searchInput) searchInput.addEventListener("input", applyFilters);
   if (eixoFilter) eixoFilter.addEventListener("change", applyFilters);
 
-  // O pop-up dispara este evento depois de inserir um card novo
+  // O pop-up de cadastro dispara este evento depois de inserir um card novo
   document.addEventListener("kanban:card-added", function () {
     populateEixoFilter();
     applyFilters();
@@ -234,28 +153,4 @@ document.addEventListener("DOMContentLoaded", function () {
   populateEixoFilter();
   applyFilters();
 
-});
-
-document.addEventListener('change', function(event) {
-  if (event.target.classList.contains('etapa-check-btn')) {
-    const etapaId = event.target.dataset.etapaId;
-    const isChecked = event.target.checked;
-    
-    fetch(`/actions/etapa/${etapaId}/alterar/`, {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-      }
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        const titulo = event.target.nextElementSibling;
-        if (titulo) {
-          titulo.style.textDecoration = data.concluida ? 'line-through' : 'none';
-          titulo.style.color = data.concluida ? '#888' : 'inherit';
-        }
-      }
-    });
-  }
 });

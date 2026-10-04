@@ -21,6 +21,7 @@ active
 
 <link rel="stylesheet" href="{% static 'actions/css/kanban-governanca.css' %}">
 <link rel="stylesheet" href="{% static 'actions/css/kanban-modal.css' %}">
+<link rel="stylesheet" href="{% static 'actions/css/kanban-detalhes.css' %}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 {% endblock %}
@@ -198,6 +199,47 @@ active
   </div>
 </div>
 
+<!-- POP-UP: DETALHES DA AÇÃO E ETAPAS (conteúdo preenchido pelo kanban-detalhes.js) -->
+<div id="detOverlay" class="det-overlay" aria-hidden="true"
+     data-url-detalhes="{% url 'obter_detalhes_acao' 0 %}"
+     data-url-editar-acao="{% url 'editar_acao' 0 %}"
+     data-url-editar-etapa="{% url 'editar_etapa' 0 %}"
+     data-url-concluir-etapa="{% url 'alterar_etapa' 0 %}">
+
+  <div class="det-dialog" role="dialog" aria-modal="true" aria-labelledby="detTitulo">
+
+    <header class="det-header">
+      <div class="det-header-info">
+        <span class="det-label">DETALHES DA AÇÃO</span>
+        <h2 id="detTitulo">AÇÃO</h2>
+        <p id="detSubtitulo"></p>
+      </div>
+      <div class="det-header-side">
+        <span id="detBadge" class="det-badge"></span>
+        <button type="button" id="detFechar" class="det-fechar" aria-label="Fechar">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+    </header>
+
+    <div class="det-body">
+      <section id="detAcao" class="det-col" aria-label="Dados da ação"></section>
+      <section id="detEtapas" class="det-col" aria-label="Etapas da ação"></section>
+    </div>
+
+    <footer class="det-footer" id="detStatus" hidden>
+      <span class="det-footer-label">Mover para</span>
+      {% for s in kanban %}
+      <button type="button" class="det-status-btn" data-do="mudar-status" data-status="{{ s.id }}"
+              style="--c: {{ s.cor|default:'#3e4a89' }};">
+        <span class="det-status-dot"></span>{{ s.nome }}
+      </button>
+      {% endfor %}
+    </footer>
+
+  </div>
+</div>
+
 {% endblock %}
 
 
@@ -208,5 +250,6 @@ active
 
 <script src="{% static 'actions/js/kanban-governanca.js' %}"></script>
 <script src="{% static 'actions/js/kanban-modal.js' %}"></script>
+<script src="{% static 'actions/js/kanban-detalhes.js' %}"></script>
 
 {% endblock %}

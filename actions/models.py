@@ -124,6 +124,7 @@ class Acao(models.Model):
     data_fim = models.DateField()
     custo = models.FloatField()
     observacoes = models.CharField(blank=True, null=True)
+    
 
     # Chaves estrangeiras do DER
     status = models.ForeignKey(Status, on_delete=models.PROTECT, related_name='acoes')
@@ -141,11 +142,8 @@ class Acao(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.codigo:
-            ultima_acao = Acao.objects.all().order_by('codigo').last()
-            if ultima_acao and ultima_acao.codigo and ultima_acao.codigo.isdigit():
-                self.codigo = str(int(ultima_acao.codigo) + 1)
-            else:
-                self.codigo = "1"
+            codigos = [int(c) for c in Acao.objects.values_list('codigo', flat=True) if str(c).isdigit()]
+            self.codigo = str(max(codigos) + 1) if codigos else "1"
         super().save(*args, **kwargs)
         
     def __str__(self):
@@ -157,7 +155,9 @@ class Etapa(models.Model):
     data_inicio = models.DateField()
     data_fim = models.DateField()
     observacoes = models.TextField(blank=True, null=True)
-
+    prioridade = models.CharField(max_length=20, choices=Acao.Status_Prioridade.choices, blank=True, default='')
+    concluida = models.BooleanField(default=False)
+    
     # Chaves estrangeiras
     acao = models.ForeignKey(
         Acao,
