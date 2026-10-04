@@ -74,6 +74,7 @@ class Status(models.Model):
         default='#3b3b8c',
         validators=[RegexValidator(r'^#[0-9A-Fa-f]{6}$', 'Informe uma cor hexadecimal no formato #RRGGBB.')],
     )
+    cor_nome = models.CharField(max_length=45, blank=True)
     ordem = models.IntegerField(default=0)
 
     class Meta:

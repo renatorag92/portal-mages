@@ -48,8 +48,6 @@
   justify-content: center;
   padding: 20px;
   background: rgba(30, 30, 30, 0.35);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
 }
 
 .acao-modal-overlay.open {

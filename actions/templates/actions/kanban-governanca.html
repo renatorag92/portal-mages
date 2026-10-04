@@ -22,6 +22,7 @@ active
 <link rel="stylesheet" href="{% static 'actions/css/kanban-governanca.css' %}">
 <link rel="stylesheet" href="{% static 'actions/css/kanban-modal.css' %}">
 <link rel="stylesheet" href="{% static 'actions/css/kanban-detalhes.css' %}">
+<link rel="stylesheet" href="{% static 'actions/css/gerenciar-status.css' %}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 {% endblock %}
@@ -62,7 +63,54 @@ active
       <!-- Define a cor dinâmica via variável CSS (resolve o aviso de sintaxe do VS Code) -->
       <div class="column-header" style="--col-color: {{ status.cor|default:'#3e4a89' }}; background-color: var(--col-color);">
         <span class="title">{{ status.nome }}</span>
-        <span class="count">{{ status.acoes_lista|length }}</span>
+        <div class="column-header-actions">
+          <div class="column-info">
+            <button type="button" class="column-info-trigger"
+              aria-label="Ver detalhes da coluna {{ status.nome }}"
+              aria-describedby="columnInfo{{ status.id }}">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <circle cx="5" cy="12" r="1.8"/>
+                <circle cx="12" cy="12" r="1.8"/>
+                <circle cx="19" cy="12" r="1.8"/>
+              </svg>
+            </button>
+            <div class="column-info-popover" id="columnInfo{{ status.id }}" role="tooltip">
+              <span class="column-info-name">{{ status.nome }}</span>
+              <span class="column-info-count">
+                {% if status.acoes_lista|length == 1 %}
+                1 ação nesta coluna
+                {% else %}
+                {{ status.acoes_lista|length }} ações nesta coluna
+                {% endif %}
+              </span>
+            </div>
+          </div>
+          <button type="button" class="column-status-action column-status-edit"
+            data-edit-url="{% url 'editar_status_kanban' status.id %}"
+            data-status-name="{{ status.nome }}" data-status-color="{{ status.cor_para_edicao }}"
+            aria-label="Editar status {{ status.nome }}" title="Editar status">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 20h9"/>
+              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/>
+            </svg>
+          </button>
+          <form method="post" action="{% url 'excluir_status_kanban' status.id %}" class="column-status-delete-form">
+            {% csrf_token %}
+            <button type="button" class="column-status-action column-status-delete"
+              aria-label="Excluir status {{ status.nome }}"
+              title="{% if status.total_acoes %}Não é possível excluir: há ações vinculadas{% else %}Excluir status{% endif %}"
+              {% if status.total_acoes %}disabled{% else %}data-confirm-status="{{ status.nome }}"{% endif %}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 6h18"/>
+                <path d="M8 6V4h8v2"/>
+                <path d="m19 6-1 14H6L5 6"/>
+                <path d="M10 11v5M14 11v5"/>
+              </svg>
+            </button>
+          </form>
+        </div>
       </div>
 
       <div class="column-body" data-status="{{ status.id }}">
@@ -83,6 +131,44 @@ active
 
   </div>
 
+</div>
+
+<div class="status-edit-overlay" id="kanbanStatusEditModal" hidden>
+  <section class="status-edit-dialog" role="dialog" aria-modal="true"
+    aria-labelledby="kanbanStatusEditTitle">
+    <header class="status-edit-header">
+      <div>
+        <span class="status-edit-eyebrow">CONFIGURAÇÃO DA COLUNA</span>
+        <h2 id="kanbanStatusEditTitle">Editar status</h2>
+      </div>
+      <button type="button" class="status-edit-close" data-close-status-modal
+        aria-label="Fechar edição">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </header>
+    <form id="kanbanStatusEditForm" method="post">
+      {% csrf_token %}
+      <div class="status-edit-fields">
+        <div class="status-edit-field">
+          <label for="kanbanStatusName">Nome do status</label>
+          <input type="text" id="kanbanStatusName" name="nome" maxlength="45" required>
+          <small class="status-edit-error" data-error-for="nome" hidden></small>
+        </div>
+        <div class="status-edit-field">
+          <label for="kanbanStatusColor">Cor da coluna</label>
+          <input type="text" id="kanbanStatusColor" name="cor" maxlength="45" required
+            aria-describedby="kanbanStatusColorHelp">
+          <small id="kanbanStatusColorHelp">Informe o nome da cor (ex.: azul) ou um hexadecimal (ex.: #ffff00).</small>
+          <small class="status-edit-error" data-error-for="cor" hidden></small>
+        </div>
+      </div>
+      <div class="status-edit-errors" data-error-for="__all__" role="alert" hidden></div>
+      <footer class="status-edit-actions">
+        <button type="button" class="status-edit-cancel" data-close-status-modal>Cancelar</button>
+        <button type="submit" class="status-edit-save">Salvar alterações</button>
+      </footer>
+    </form>
+  </section>
 </div>
 
 <!-- POP-UP: CADASTRAR AÇÃO E ETAPAS (conteúdo e comportamento no kanban-modal.js) -->

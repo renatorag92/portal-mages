@@ -77,29 +77,43 @@
 
 .board-wrapper {
   flex: 1;
+  width: 100%;
+  min-width: 0;
   min-height: 0;
-  overflow-x: auto;
+  overflow-x: hidden;
   overflow-y: hidden;
-  padding: 6px 24px 24px 24px;
+  padding: 6px 16px 24px;
 }
 
 .board {
   display: flex;
-  flex-wrap: nowrap; /* Impede que as colunas empilhem */
-  overflow-x: auto;  /* Libera a rolagem horizontal */
-  gap: 1rem;
-  padding-bottom: 1rem;
+  flex-wrap: nowrap;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  gap: 8px;
+  overflow: hidden;
 }
 
 .column {
+  position: relative;
+  z-index: 0;
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
+  width: 0;
+  min-width: 0;
   background: #f6f4ef;
   border-radius: 8px;
   height: 100%;
   min-height: 0;
   border: 1px solid var(--border-light);
-  overflow: hidden;
+  overflow: visible;
+}
+
+.column:hover,
+.column:focus-within {
+  z-index: 5;
 }
 
 
@@ -110,21 +124,300 @@
 
 .column-header {
   display: flex;
+  min-width: 0;
   align-items: center;
   justify-content: space-between;
+  gap: 4px;
 
-  color: #fff;
+  color: var(--column-foreground, #fff);
   font-size: 12.5px;
   font-weight: 700;
 
   padding: 9px 12px;
 }
 
-.column-header .count {
-  background: rgba(255, 255, 255, 0.25);
-  border-radius: 4px;
-  padding: 1px 7px;
-  font-size: 11.5px;
+.column-header-actions {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 3px;
+}
+
+.column-info {
+  display: flex;
+}
+
+.column-info-trigger {
+  display: inline-flex;
+  width: 25px;
+  height: 25px;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  color: var(--column-foreground, #fff);
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  cursor: help;
+  transition: background-color 0.15s ease;
+}
+
+.column-info-trigger:hover,
+.column-info-trigger:focus-visible {
+  background: rgba(var(--column-foreground-rgb, 255, 255, 255), 0.16);
+}
+
+.column-info-trigger:focus-visible {
+  outline: 2px solid var(--column-foreground, #fff);
+  outline-offset: 1px;
+}
+
+.column-info-trigger svg {
+  width: 17px;
+  height: 17px;
+}
+
+.column-info-popover {
+  position: absolute;
+  top: calc(100% - 2px);
+  right: 0;
+  z-index: 10;
+  display: flex;
+  min-width: 190px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 11px 13px;
+  color: #2b2b2b;
+  background: #fff;
+  border: 1px solid #e0ddd4;
+  border-radius: 8px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-3px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.column-info:hover .column-info-popover,
+.column-info:focus-within .column-info-popover {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.column-info-name {
+  font-weight: 700;
+}
+
+.column-info-count {
+  color: #6b6b6b;
+}
+
+.column-status-delete-form {
+  display: flex;
+  margin: 0;
+}
+
+.column-status-action {
+  display: inline-flex;
+  width: 25px;
+  height: 25px;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  color: var(--column-foreground, #fff);
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.column-status-action:hover:not(:disabled) {
+  color: var(--column-foreground, #fff);
+  background: rgba(var(--column-foreground-rgb, 255, 255, 255), 0.16);
+}
+
+.column-status-action:focus-visible {
+  outline: 2px solid var(--column-foreground, #fff);
+  outline-offset: 1px;
+}
+
+.column-status-action svg {
+  width: 16px;
+  height: 16px;
+}
+
+.column-status-action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.status-edit-overlay[hidden] {
+  display: none;
+}
+
+.status-edit-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(25, 25, 25, 0.55);
+}
+
+.status-edit-dialog {
+  width: min(520px, 100%);
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #e0ddd4;
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.24);
+}
+
+.status-edit-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.status-edit-eyebrow {
+  color: #6b6b6b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.status-edit-header h2 {
+  margin: 4px 0 0;
+  color: #2b2b2b;
+  font-size: 20px;
+}
+
+.status-edit-close {
+  display: flex;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: #555;
+  background: #f2f1ec;
+  border: 1px solid #d8d5cc;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.status-edit-close:hover {
+  color: #fff;
+  background: #c0392b;
+  border-color: #c0392b;
+}
+
+.status-edit-close:focus-visible {
+  outline: 2px solid #c0392b;
+  outline-offset: 2px;
+}
+
+.status-edit-close i {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.status-edit-fields {
+  display: grid;
+  gap: 16px;
+}
+
+.status-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.status-edit-field label {
+  color: #2b2b2b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status-edit-field input {
+  width: 100%;
+  padding: 10px 12px;
+  color: #2b2b2b;
+  background: #f5f4f0;
+  border: 1px solid #d8d5cc;
+  border-radius: 6px;
+  font: inherit;
+}
+
+.status-edit-field input:focus {
+  border-color: #3e4a89;
+  outline: 2px solid rgba(62, 74, 137, 0.18);
+}
+
+.status-edit-field small {
+  color: #6b6b6b;
+  font-size: 12px;
+}
+
+.status-edit-field .status-edit-error,
+.status-edit-errors {
+  color: #a5301f;
+}
+
+.status-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.status-edit-actions button {
+  padding: 9px 15px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.status-edit-actions button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.status-edit-cancel {
+  color: #fff;
+  background: #c0392b;
+}
+
+.status-edit-cancel:hover:not(:disabled) {
+  background: #a5301f;
+}
+
+.status-edit-save {
+  color: #fff;
+  background: #2e8b57;
+}
+
+.status-edit-save:hover:not(:disabled) {
+  background: #24704a;
+}
+
+.status-edit-save:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 
@@ -140,6 +433,7 @@
   gap: 10px;
 
   flex: 1;
+  min-width: 0;
   min-height: 0;
 
   overflow-y: auto;
@@ -174,7 +468,9 @@
    ========================================================= */
 
 .title {
+  min-width: 0;
   text-align: center;
+  overflow-wrap: anywhere;
 }
 
 
@@ -200,7 +496,6 @@
     opacity 0.15s ease,
     transform 0.15s ease;
 }
-
 
 /* =========================================================
    CORES DOS CARDS POR COLUNA
@@ -262,6 +557,52 @@
   font-size: 12px;
   line-height: 1.4;
   color: #444;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1100px) {
+  .board-wrapper {
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+
+  .board {
+    gap: 4px;
+  }
+
+  .column-header {
+    flex-wrap: wrap;
+    padding: 6px;
+  }
+
+  .column-header .title {
+    flex: 1 1 100%;
+    text-align: left;
+  }
+
+  .column-header-actions {
+    margin-left: auto;
+  }
+
+  .column-status-action {
+    width: 20px;
+    height: 20px;
+    padding: 3px;
+  }
+
+  .column-status-action svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .column-body {
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .task-card {
+    padding: 8px 6px;
+  }
 }
 
 
@@ -391,115 +732,17 @@
    AVISO (TOAST) NO CANTO SUPERIOR DIREITO
    ========================================================= */
 
-.kb-toasts {
-  position: fixed;
-  top: 94px;
-  right: 28px;
-  z-index: 30000; /* acima dos pop-ups */
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: min(455px, calc(100vw - 32px));
-  pointer-events: none;
-}
-
-.kb-toast {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  overflow: hidden;
-  padding: 20px 46px 22px 18px;
-  background: #fff;
-  border: 1px solid var(--border-light, #e0ddd4);
-  border-radius: 10px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.14);
-  pointer-events: auto;
-  animation: kb-toast-entra 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.kb-toast.saindo {
-  animation: kb-toast-sai 0.2s ease-in forwards;
-}
-
-.kb-toast-icone {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  color: #2e8b57;
-  background: rgba(46, 139, 87, 0.14);
-  border-radius: 50%;
-}
-
-.kb-toast-texto {
-  margin: 0;
-  font-size: 13.5px;
-  line-height: 1.4;
-  color: #1f6b43;
-  overflow-wrap: anywhere;
-}
-
-.kb-toast-fechar {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  font-size: 12px;
-  color: #666;
-  background: transparent;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.kb-toast-fechar:hover {
-  background: rgba(0, 0, 0, 0.07);
-}
-
-/* Barra de tempo: esvazia da direita para a esquerda até o aviso sumir */
-.kb-toast-barra {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 100%;
-  height: 3px;
-  background: #2e8b57;
-  transform-origin: left center;
-  animation: kb-toast-barra var(--kb-toast-duracao, 4s) linear forwards;
-}
-
-@keyframes kb-toast-entra {
-  from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes kb-toast-sai {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(-6px); }
-}
-
-@keyframes kb-toast-barra {
-  from { transform: scaleX(1); }
-  to   { transform: scaleX(0); }
+.status-messages.kanban-status-messages {
+  z-index: 30000;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kb-toast,
-  .kb-toast.saindo {
+  .status-messages.kanban-status-messages .status-message,
+  .status-messages.kanban-status-messages .status-message.is-leaving {
     animation: none;
   }
 
-  .kb-toast-barra {
+  .status-messages.kanban-status-messages .status-message-progress {
     display: none;
   }
 }

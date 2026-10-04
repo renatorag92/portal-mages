@@ -22,6 +22,18 @@ PT_EN = dict(zip(
     'azul vermelho verde amarelo laranja roxo rosa preto branco cinza marrom ciano dourado prata turquesa bege lilás violeta magenta índigo salmão coral vinho lima'.split(),
     'blue red green yellow orange purple pink black white gray brown cyan gold silver turquoise beige lavender violet magenta indigo salmon coral maroon lime'.split(),
 ))
+MAX_STATUS_COLUMNS = 7
+EN_PT = {ingles: portugues for portugues, ingles in PT_EN.items()}
+
+
+def _cor_para_edicao(status):
+    if status.cor_nome:
+        return status.cor_nome
+    try:
+        nome_cor = webcolors.hex_to_name(status.cor)
+    except ValueError:
+        return status.cor
+    return EN_PT.get(nome_cor, nome_cor)
 
 
 class StatusForm(forms.ModelForm):
@@ -33,8 +45,15 @@ class StatusForm(forms.ModelForm):
         model = Status
         fields = ('nome', 'cor')
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk and not self.is_bound:
+            self.initial['cor'] = _cor_para_edicao(self.instance)
+
     def clean_cor(self):
-        cor = self.cleaned_data['cor'].strip().lower()
+        cor_informada = self.cleaned_data['cor'].strip()
+        self.cor_informada = cor_informada
+        cor = cor_informada.lower()
         cor = PT_EN.get(cor, cor)
         try:
             cor = webcolors.name_to_hex(cor)
@@ -49,6 +68,11 @@ class StatusForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        if not self.instance.pk and Status.objects.count() >= MAX_STATUS_COLUMNS:
+            self.add_error(
+                None,
+                f'O limite de {MAX_STATUS_COLUMNS} status foi atingido. Exclua um status para cadastrar outro.',
+            )
         if 'nome' in cleaned_data:
             cleaned_data['nome'] = cleaned_data['nome'].strip()
         mensagens = {
@@ -62,6 +86,14 @@ class StatusForm(forms.ModelForm):
             ).exclude(pk=self.instance.pk).exists():
                 self.add_error(campo, msg)
         return cleaned_data
+
+    def save(self, commit=True):
+        status = super().save(commit=False)
+        status.cor_nome = getattr(self, 'cor_informada', status.cor_nome)
+        if commit:
+            status.save()
+            self.save_m2m()
+        return status
 
 
 class CustomLoginView(LoginView):
@@ -113,7 +145,7 @@ class CustomPasswordChangeView(PasswordChangeView):
 @login_required
 def kanban_view(request):
     prefeitura_logada = request.user.perfil.prefeitura
-    todos_status = Status.objects.order_by('ordem', 'id')
+    todos_status = Status.objects.annotate(total_acoes=Count('acoes')).order_by('ordem', 'id')
 
     acoes = Acao.objects.filter(
         secretario__prefeitura=prefeitura_logada
@@ -121,6 +153,7 @@ def kanban_view(request):
 
     for st in todos_status:
         st.acoes_lista = [a for a in acoes if a.status_id == st.id]
+        st.cor_para_edicao = _cor_para_edicao(st)
 
     # Dados adicionais necessários para popular o modal de cadastro de ação
     eixos = Eixo.objects.all()
@@ -155,10 +188,60 @@ def gerenciar_status_view(request, status_id=None):
         form = StatusForm(instance=status)
 
     status_lista = Status.objects.annotate(total_acoes=Count('acoes')).order_by('ordem', 'id')
+    status_limite_atingido = status_lista.count() >= MAX_STATUS_COLUMNS
     return render(request, 'actions/gerenciar-status.html', {
         'form': form,
         'status_lista': status_lista,
         'status_edicao': status,
+        'status_limite_atingido': status_limite_atingido,
+        'max_status_columns': MAX_STATUS_COLUMNS,
+    })
+
+
+@login_required
+@require_POST
+def editar_status_kanban_view(request, status_id):
+    status = get_object_or_404(Status, pk=status_id)
+    form = StatusForm(request.POST, instance=status)
+    if not form.is_valid():
+        return JsonResponse({
+            'success': False,
+            'errors': {
+                field: [str(error) for error in errors]
+                for field, errors in form.errors.items()
+            },
+        }, status=400)
+    status = form.save()
+    request.session['kanban_toast'] = {
+        'mensagem': f'Status "{status.nome}" atualizado com sucesso.',
+        'tipo': 'status-updated',
+    }
+    return JsonResponse({
+        'success': True,
+        'status': {
+            'id': status.id,
+            'nome': status.nome,
+            'cor': status.cor,
+        },
+    })
+
+
+@login_required
+@require_POST
+def excluir_status_kanban_view(request, status_id):
+    status = get_object_or_404(Status, pk=status_id)
+    nome_status = status.nome
+    try:
+        status.delete()
+    except ProtectedError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Este status não pode ser excluído porque está vinculado a uma ou mais ações.',
+        }, status=409)
+
+    return JsonResponse({
+        'success': True,
+        'message': f'Status "{nome_status}" excluído com sucesso.',
     })
 
 

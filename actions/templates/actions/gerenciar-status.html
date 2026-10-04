@@ -18,8 +18,11 @@ Gerenciar Status
   <section class="status-card">
     <h2 class="status-card-title">{% if status_edicao %}Editar status{% else %}Cadastrar status{% endif %}</h2>
 
+    {% if status_edicao or not status_limite_atingido %}
     <form method="post">
       {% csrf_token %}
+
+      {{ form.non_field_errors }}
 
       <div class="status-form-fields">
         <div class="status-form-group">
@@ -49,6 +52,20 @@ Gerenciar Status
         {% endif %}
       </div>
     </form>
+    {% else %}
+    <div class="status-limit-message" role="status">
+      <div class="status-limit-content">
+        <div class="status-limit-heading">
+          <h3>Você já atingiu o limite de status</h3>
+          <span class="status-limit-count">{{ status_lista|length }} de {{ max_status_columns }}</span>
+        </div>
+        <p>
+          Para cadastrar outro, primeiro exclua um status que não tenha ações vinculadas.
+          Você pode fazer isso na lista de status abaixo.
+        </p>
+      </div>
+    </div>
+    {% endif %}
   </section>
 
   <section class="status-card">
@@ -76,7 +93,7 @@ Gerenciar Status
               <div class="status-row-actions">
                 <a href="{% url 'editar_status' status.id %}" class="status-edit-button"
                   aria-label="Editar status {{ status.nome }}" title="Editar">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M12 20h9"/>
                     <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/>
@@ -86,7 +103,7 @@ Gerenciar Status
                 <button type="button" class="status-delete-button status-delete-disabled"
                   aria-label="Não é possível excluir {{ status.nome }} porque possui ações vinculadas"
                   title="Não é possível excluir: há ações vinculadas" disabled>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M3 6h18"/>
                     <path d="M8 6V4h8v2"/>
@@ -100,7 +117,7 @@ Gerenciar Status
                   <button type="submit" class="status-delete-button"
                     aria-label="Excluir status {{ status.nome }}" title="Excluir"
                     data-status-name="{{ status.nome }}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <path d="M3 6h18"/>
                       <path d="M8 6V4h8v2"/>
@@ -131,22 +148,22 @@ Gerenciar Status
   <div class="status-message status-message-{{ message.tags }}" role="status">
     <span class="status-message-icon" aria-hidden="true">
       {% if 'status-created' in message.tags %}
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="m5 12 4 4L19 6"/>
       </svg>
       {% elif 'status-updated' in message.tags %}
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M12 20h9"/>
         <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/>
       </svg>
       {% elif 'status-deleted' in message.tags %}
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M3 6h18"/>
         <path d="M8 6V4h8v2"/>
         <path d="m19 6-1 14H6L5 6"/>
       </svg>
       {% else %}
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="9"/>
         <path d="M12 8v4m0 4h.01"/>
       </svg>
@@ -164,7 +181,7 @@ Gerenciar Status
   <section class="status-confirm-dialog" role="dialog" aria-modal="true"
     aria-labelledby="statusConfirmTitle" aria-describedby="statusConfirmText">
     <div class="status-confirm-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
         stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 6h18"/>
         <path d="M8 6V4h8v2"/>
