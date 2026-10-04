@@ -103,7 +103,7 @@
 .acao-modal-dialog .acao-label {
   display: block;
   margin-bottom: 4px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.9px;
   color: #96928a;
@@ -111,7 +111,7 @@
 
 .acao-modal-dialog .acao-header h2 {
   margin: 0;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 800;
   color: var(--text-dark, #2b2b2b);
 }
@@ -125,7 +125,7 @@
 
 .acao-modal-dialog .acao-badge {
   padding: 5px 14px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: #fff;
   background: var(--acao-cor, #3e4a89);
@@ -213,7 +213,7 @@
   align-items: center;
   gap: 8px;
   margin: 0;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-dark, #2b2b2b);
 }
@@ -281,7 +281,7 @@
 }
 
 .acao-modal-dialog label {
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 700;
   color: #555;
 }
@@ -296,7 +296,7 @@
 .acao-modal-dialog textarea {
   width: 100%;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 14.5px;
   padding: 9px 12px;
   border-radius: 6px;
   border: 1px solid #d8d5cc;
@@ -367,7 +367,7 @@
 .acao-modal-dialog .custom-dropdown-list li {
   padding: 10px 14px;
   margin-bottom: 2px;
-  font-size: 13px;
+  font-size: 14.5px;
   font-weight: 500;
   line-height: 1.4;
   color: var(--text-dark, #333);
@@ -399,7 +399,7 @@
   gap: 6px;
   padding: 8px 14px;
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--acao-cor, #3e4a89);
   background: #fff;
@@ -421,7 +421,7 @@
 .acao-modal-dialog .etapas-vazio {
   flex-shrink: 0;
   margin: 0;
-  font-size: 13px;
+  font-size: 14.5px;
   color: #8a867e;
 }
 
@@ -461,7 +461,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 13px;
+  font-size: 14.5px;
   font-weight: 700;
   color: var(--acao-cor, #3e4a89);
 }
@@ -472,7 +472,7 @@
   gap: 6px;
   padding: 5px 10px;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--red);
   background: #fff;
@@ -508,7 +508,7 @@
   flex: 1;
   min-width: 0;
   padding: 9px 12px;
-  font-size: 12.5px;
+  font-size: 14px;
   color: var(--red-dark);
   background: rgba(192, 57, 43, 0.08);
   border: 1px solid rgba(192, 57, 43, 0.25);
@@ -528,7 +528,7 @@
 .acao-modal-dialog .acao-modal-btn {
   padding: 10px 28px;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 15.5px;
   font-weight: 700;
   color: #fff;
   border: none;
@@ -671,32 +671,3 @@
     animation: none;
   }
 }
-
-.etapa-nome-titulo.etapa-concluida {
-  text-decoration: line-through;
-  color: #888;
-}
-
-/* ------- Fonte um pouco maior ------- */
-
-.acao-modal-dialog .acao-label { font-size: 11px; }
-.acao-modal-dialog .acao-header h2 { font-size: 24px; }
-.acao-modal-dialog .acao-badge { font-size: 13px; }
-
-.acao-modal-dialog .form-card-title { font-size: 16px; }
-
-.acao-modal-dialog label { font-size: 13.5px; }
-
-.acao-modal-dialog input,
-.acao-modal-dialog select,
-.acao-modal-dialog textarea { font-size: 14.5px; }
-
-.acao-modal-dialog .custom-dropdown-list li { font-size: 14.5px; }
-
-.acao-modal-dialog .acao-btn-sec { font-size: 14px; }
-.acao-modal-dialog .etapa-card-titulo { font-size: 14.5px; }
-.acao-modal-dialog .etapa-remove { font-size: 13.5px; }
-.acao-modal-dialog .etapas-vazio { font-size: 14.5px; }
-
-.acao-modal-dialog .form-erro { font-size: 14px; }
-.acao-modal-dialog .acao-modal-btn { font-size: 15.5px; }

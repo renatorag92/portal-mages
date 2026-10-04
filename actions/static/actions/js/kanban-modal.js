@@ -190,9 +190,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  async function fechar(forcar) {
+  async function fechar() {
     if (overlay.classList.contains("closing")) return;
-    if (!forcar && dirty && !(await confirmarCancelamento())) return;
+    if (dirty && !(await confirmarCancelamento())) return;
 
     overlay.classList.add("closing");
     timerFechar = setTimeout(function () {

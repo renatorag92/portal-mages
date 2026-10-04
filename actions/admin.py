@@ -24,34 +24,13 @@ admin.site.register(User, UserAdmin)
 
 # --- Demais Modelos do Sistema ---
 
-@admin.register(Prefeitura)
-class PrefeituraAdmin(admin.ModelAdmin):
-    list_display = ('nome_fantasia', 'cnpj', 'nome_juridico', 'endereco')
-    sortable_by = ()  # Desativa a ordenação nos cabeçalhos das colunas     
-    save_as_continue = False
-
-    def has_add_permission(self, request):
-        if Prefeitura.objects.exists():
-            return False
-        return super().has_add_permission(request)
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['show_save_and_continue'] = False
-        return super().changeform_view(request, object_id, form_url, extra_context)
-
-
-@admin.register(Consultoria)
-class ConsultoriaAdmin(admin.ModelAdmin):
-    list_display = ('nome_fantasia', 'nome_juridico', 'cnpj', 'endereco', 'prefeitura')
+class RegistroUnicoAdmin(admin.ModelAdmin):
+    # Base para modelos que só podem ter um registro (Prefeitura e Consultoria)
     sortable_by = ()  # Desativa a ordenação nos cabeçalhos das colunas
     save_as_continue = False
 
     def has_add_permission(self, request):
-        if Consultoria.objects.exists():
+        if self.model.objects.exists():
             return False
         return super().has_add_permission(request)
 
@@ -62,6 +41,16 @@ class ConsultoriaAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         extra_context['show_save_and_continue'] = False
         return super().changeform_view(request, object_id, form_url, extra_context)
+
+
+@admin.register(Prefeitura)
+class PrefeituraAdmin(RegistroUnicoAdmin):
+    list_display = ('nome_fantasia', 'cnpj', 'nome_juridico', 'endereco')
+
+
+@admin.register(Consultoria)
+class ConsultoriaAdmin(RegistroUnicoAdmin):
+    list_display = ('nome_fantasia', 'nome_juridico', 'cnpj', 'endereco', 'prefeitura')
 
 
 @admin.register(Funcionario)

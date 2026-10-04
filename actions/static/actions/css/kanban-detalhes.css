@@ -24,6 +24,7 @@
 
 .det-overlay.open {
   display: flex;
+  animation: det-fundo-entra 0.2s ease-out;
 }
 
 /* Altura fixa: o pop-up tem sempre o mesmo tamanho, com 1 etapa ou com 20.
@@ -38,12 +39,7 @@
   border-top: 6px solid var(--det-cor);
   border-radius: 14px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: det-entrada 0.18s ease-out;
-}
-
-@keyframes det-entrada {
-  from { opacity: 0; transform: translateY(8px) scale(0.99); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  animation: det-entrada 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 
@@ -67,7 +63,7 @@
 .det-label {
   display: block;
   margin-bottom: 4px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.9px;
   color: #96928a;
@@ -75,14 +71,14 @@
 
 .det-header h2 {
   margin: 0;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 800;
   color: var(--text-dark, #2b2b2b);
 }
 
 .det-header p {
   margin: 4px 0 0;
-  font-size: 13.5px;
+  font-size: 15px;
   color: var(--text-muted, #6b6b6b);
   overflow-wrap: anywhere;
 }
@@ -96,7 +92,7 @@
 
 .det-badge {
   padding: 5px 14px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: #fff;
   background: var(--det-cor);
@@ -183,7 +179,7 @@
   align-items: center;
   gap: 8px;
   margin: 0;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-dark, #2b2b2b);
 }
@@ -241,7 +237,7 @@
 
 .det-item dt {
   margin-bottom: 4px;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 600;
   color: #96928a;
 }
@@ -252,19 +248,23 @@
 
 .det-item dd {
   margin: 0;
-  font-size: 13.5px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.45;
   color: #343434;
   overflow-wrap: anywhere;
 }
 
-/* Observações: no máximo 4 linhas; passou disso, rola dentro do próprio campo */
+/* No máximo 4 linhas em observações da etapa: passou disso, rola dentro do próprio campo */
 .det-item dd.det-obs {
   max-height: calc(1.45em * 4);
   overflow-y: auto;
   padding-right: 6px;
   white-space: pre-wrap;
+}
+
+/* No máximo 7 linhas em observações da ação: passou disso, rola dentro do próprio campo */
+.det-item dd.det-obs-acao {
   max-height: calc(1.45em * 7);
 }
 
@@ -280,13 +280,13 @@
 
 .det-vazio {
   margin: 0;
-  font-size: 13px;
+  font-size: 14.5px;
 }
 
 .det-cpf {
   display: inline-block;
   margin-left: 6px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   color: #777;
 }
@@ -298,7 +298,7 @@
   gap: 8px;
   margin: 0 0 14px;
   padding: 10px 12px;
-  font-size: 12.5px;
+  font-size: 14px;
   color: #b83225;
   background: rgba(192, 57, 43, 0.07);
   border: 1px solid rgba(192, 57, 43, 0.18);
@@ -311,7 +311,7 @@
 .det-chip {
   display: inline-block;
   padding: 3px 11px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   border-radius: 20px;
 }
@@ -327,7 +327,7 @@
   width: 100%;
   padding: 9px 12px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 14.5px;
   font-weight: 400;
   color: var(--text-dark, #333);
   background: #f5f4f0;
@@ -375,7 +375,7 @@ select.det-input {
   gap: 6px;
   padding: 8px 14px;
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 700;
   color: #fff;
   border: 1px solid transparent;
@@ -430,7 +430,7 @@ select.det-input {
 .det-erro {
   margin-top: 14px;
   padding: 9px 12px;
-  font-size: 12.5px;
+  font-size: 14px;
   color: var(--det-vermelho-escuro);
   background: rgba(192, 57, 43, 0.08);
   border: 1px solid rgba(192, 57, 43, 0.25);
@@ -451,7 +451,7 @@ select.det-input {
 
 .det-progresso-texto {
   margin-bottom: 6px;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--text-muted, #6b6b6b);
 }
@@ -512,7 +512,7 @@ select.det-input {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 13px;
+  font-size: 14.5px;
   font-weight: 700;
   color: var(--det-cor);
 }
@@ -538,7 +538,7 @@ select.det-input {
 }
 
 .det-etapa-nome {
-  font-size: 14px;
+  font-size: 15.5px;
   font-weight: 700;
   color: var(--text-dark, #2b2b2b);
   overflow-wrap: anywhere;
@@ -550,7 +550,7 @@ select.det-input {
 }
 
 
-/* ------- Rodapé: mover para outro status ------- */
+/* ------- Rodapé: mover para outro status e excluir ------- */
 
 .det-footer {
   flex-shrink: 0;
@@ -569,7 +569,7 @@ select.det-input {
 
 .det-footer-label {
   margin-right: 4px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.6px;
   text-transform: uppercase;
@@ -582,7 +582,7 @@ select.det-input {
   gap: 7px;
   padding: 6px 13px;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 600;
   color: #444;
   background: #fff;
@@ -608,6 +608,19 @@ select.det-input {
   height: 9px;
   background: var(--c);
   border-radius: 50%;
+}
+
+.det-footer .det-btn-excluir {
+  margin-left: auto;
+  color: var(--det-vermelho);
+  background: #fff;
+  border-color: #e6d3cf;
+}
+
+.det-footer .det-btn-excluir:hover:not(:disabled) {
+  color: #fff;
+  background: var(--det-vermelho);
+  border-color: var(--det-vermelho);
 }
 
 
@@ -669,15 +682,6 @@ select.det-input {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .det-dialog {
-    animation: none;
-  }
-
-  .det-progresso-preenchido {
-    transition: none;
-  }
-}
 
 /* ------- Aviso de confirmação ------- */
 
@@ -714,14 +718,14 @@ select.det-input {
 
 .det-confirma h3 {
   margin: 0 0 8px;
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 800;
   color: var(--text-dark, #2b2b2b);
 }
 
 .det-confirma p {
   margin: 0;
-  font-size: 13.5px;
+  font-size: 15px;
   line-height: 1.5;
   color: #555;
 }
@@ -743,13 +747,21 @@ select.det-input {
   outline-offset: 2px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .det-confirma {
-    animation: none;
-  }
+/* Confirmação sem perigo (verde), usada ao cadastrar uma ação */
+.det-confirma-overlay.neutro .det-confirma {
+  border-top-color: #2e8b57;
 }
 
-/* ------- Animações de abrir e fechar (mais sutis) ------- */
+.det-confirma-overlay.neutro .det-btn-cancelar {
+  background: #2e8b57;
+}
+
+.det-confirma-overlay.neutro .det-btn-cancelar:hover:not(:disabled) {
+  background: #24704a;
+}
+
+
+/* ------- Animações de abrir e fechar ------- */
 
 @keyframes det-fundo-entra { from { opacity: 0; } to { opacity: 1; } }
 @keyframes det-fundo-sai   { from { opacity: 1; } to { opacity: 0; } }
@@ -762,14 +774,6 @@ select.det-input {
 @keyframes det-saida {
   from { opacity: 1; transform: translateY(0) scale(1); }
   to   { opacity: 0; transform: translateY(4px) scale(0.99); }
-}
-
-.det-overlay.open {
-  animation: det-fundo-entra 0.2s ease-out;
-}
-
-.det-dialog {
-  animation: det-entrada 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Fechando: o JS põe a classe "closing" e remove o pop-up quando a animação termina */
@@ -786,66 +790,12 @@ select.det-input {
   .det-overlay.open,
   .det-overlay.closing,
   .det-dialog,
-  .det-overlay.closing .det-dialog {
+  .det-overlay.closing .det-dialog,
+  .det-confirma {
     animation: none;
   }
+
+  .det-progresso-preenchido {
+    transition: none;
+  }
 }
-
-/* ------- Botão de excluir ação (rodapé) ------- */
-
-.det-footer .det-btn-excluir {
-  margin-left: auto;
-  color: var(--det-vermelho);
-  background: #fff;
-  border-color: #e6d3cf;
-}
-
-.det-footer .det-btn-excluir:hover:not(:disabled) {
-  color: #fff;
-  background: var(--det-vermelho);
-  border-color: var(--det-vermelho);
-}
-
-/* ------- Aviso de confirmação sem perigo (verde) ------- */
-
-.det-confirma-overlay.neutro .det-confirma {
-  border-top-color: #2e8b57;
-}
-
-.det-confirma-overlay.neutro .det-btn-cancelar {
-  background: #2e8b57;
-}
-
-.det-confirma-overlay.neutro .det-btn-cancelar:hover:not(:disabled) {
-  background: #24704a;
-}
-
-/* ------- Fonte um pouco maior ------- */
-
-.det-label { font-size: 11px; }
-.det-header h2 { font-size: 24px; }
-.det-header p { font-size: 15px; }
-.det-badge { font-size: 13px; }
-
-.det-card-head h3 { font-size: 16px; }
-
-.det-item dt { font-size: 12.5px; }
-.det-item dd { font-size: 15px; }
-.det-vazio { font-size: 14.5px; }
-.det-cpf { font-size: 13px; }
-.det-aviso { font-size: 14px; }
-.det-chip { font-size: 13px; }
-
-.det-input { font-size: 14.5px; }
-.det-btn { font-size: 14px; }
-.det-erro { font-size: 14px; }
-
-.det-progresso-texto { font-size: 13.5px; }
-.det-etapa-titulo { font-size: 14.5px; }
-.det-etapa-nome { font-size: 15.5px; }
-
-.det-footer-label { font-size: 12px; }
-.det-status-btn { font-size: 13.5px; }
-
-.det-confirma h3 { font-size: 19px; }
-.det-confirma p { font-size: 15px; }

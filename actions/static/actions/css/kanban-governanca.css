@@ -105,6 +105,7 @@
 
 /* =========================================================
    CABEÇALHO DAS COLUNAS
+   A cor de fundo vem do próprio status (style inline no template)
    ========================================================= */
 
 .column-header {
@@ -125,37 +126,6 @@
   padding: 1px 7px;
   font-size: 11.5px;
 }
-
-/* .col-planejado .column-header {
-  background: var(--header-planejado);
-}
-
-.col-preparacao .column-header {
-  background: var(--header-preparacao);
-}
-
-.col-execucao .column-header {
-  background: var(--header-execucao);
-}
-
-.col-validacao .column-header {
-  background: var(--header-validacao);
-}
-
-.col-concluido .column-header {
-  background: var(--header-concluido);
-}
-
-.col-cancelado .column-header {
-  background: var(--header-cancelado); */
-/* } */
-
-.col-planejado .column-header { background-color: #3b3b8c; }
-.col-em-preparacao .column-header { background-color: #6c5ce7; }
-.col-em-execucao .column-header { background-color: #d63031; } /* ou a cor amarela/laranja da imagem */
-.col-em-validacao .column-header { background-color: #8e44ad; }
-.col-concluido .column-header { background-color: #27ae60; }
-.col-cancelado .column-header { background-color: #c0392b; }
 
 
 /* =========================================================
@@ -308,17 +278,13 @@
   transform: scale(0.98);
 }
 
-.task-card.menu-open {
-  cursor: default;
-}
-
 .task-card.highlight {
   border: 1px solid #edcbc6;
 }
 
 
 /* =========================================================
-   BOTÃO DO MENU DE STATUS
+   BOTÃO QUE ABRE OS DETALHES DA AÇÃO
    ========================================================= */
 
 .status-menu-toggle {
@@ -359,200 +325,12 @@
 .status-menu-toggle svg {
   width: 16px;
   height: 16px;
-
-  transition: transform 0.2s ease;
-}
-
-.task-card.menu-open .status-menu-toggle svg {
-  transform: rotate(180deg);
 }
 
 
 /* =========================================================
-   MENU DE DETALHES DA AÇÃO
-   ========================================================= */
-
-.action-menu {
-  display: none;
-
-  position: fixed;
-
-  width: 330px;
-  max-height: none;
-
-  overflow-y: visible;
-
-  background: #ffffff;
-
-  border: 1px solid #ddd9cf;
-  border-radius: 12px;
-
-  box-shadow:
-    0 12px 35px rgba(0, 0, 0, 0.18),
-    0 3px 10px rgba(0, 0, 0, 0.08);
-
-  z-index: 10000;
-
-  padding: 0;
-
-  animation: actionMenuOpen 0.16s ease-out;
-}
-
-.action-menu.open {
-  display: block;
-}
-
-@keyframes actionMenuOpen {
-  from {
-    opacity: 0;
-    transform: translateY(-5px) scale(0.98);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-
-/* =========================================================
-   CABEÇALHO DO MENU
-   ========================================================= */
-
-.action-menu-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: 15px 16px;
-
-  background: #f7f6f2;
-
-  border-bottom: 1px solid #e6e2d9;
-  border-radius: 12px 12px 0 0;
-}
-
-.action-menu-header div {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.action-menu-label {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  color: #96928a;
-}
-
-.action-menu-header strong {
-  font-size: 14px;
-  color: #2b2b2b;
-}
-
-
-/* =========================================================
-   COR DO CABEÇALHO DO MENU POR STATUS
-   ========================================================= */
-
-.action-menu:has(.status-badge.status-planejado) .action-menu-header {
-  background: #e8ebf7;
-  border-bottom-color: #d3d8ed;
-}
-
-.action-menu:has(.status-badge.status-preparacao) .action-menu-header {
-  background: #eceef1;
-  border-bottom-color: #d9dce0;
-}
-
-.action-menu:has(.status-badge.status-execucao) .action-menu-header {
-  background: #fff0d7;
-  border-bottom-color: #f1d6a5;
-}
-
-.action-menu:has(.status-badge.status-validacao) .action-menu-header {
-  background: #f0e5f5;
-  border-bottom-color: #dfcce8;
-}
-
-.action-menu:has(.status-badge.status-concluido) .action-menu-header {
-  background: #e2f1e8;
-  border-bottom-color: #c9e2d2;
-}
-
-.action-menu:has(.status-badge.status-cancelado) .action-menu-header {
-  background: #f9e5e2;
-  border-bottom-color: #edcbc6;
-}
-
-
-/* =========================================================
-   INFORMAÇÕES DA AÇÃO
-   ========================================================= */
-
-.action-info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-
-  gap: 0;
-
-  padding: 6px 0;
-}
-
-.action-info-item {
-  display: flex;
-  flex-direction: column;
-
-  gap: 3px;
-
-  padding: 9px 14px;
-
-  min-width: 0;
-}
-
-.action-info-item:nth-child(odd) {
-  border-right: 1px solid #eeeae2;
-}
-
-.action-info-full {
-  grid-column: 1 / -1;
-  border-right: none !important;
-}
-
-.action-info-item span {
-  font-size: 10px;
-  color: #96928a;
-  font-weight: 500;
-}
-
-.action-info-item strong {
-  font-size: 11.5px;
-  color: #343434;
-  font-weight: 600;
-
-  word-break: break-word;
-}
-
-.action-observation {
-  font-weight: 400 !important;
-  line-height: 1.45;
-
-  max-height: 55px;
-  overflow-y: auto;
-}
-
-.action-observation::-webkit-scrollbar {
-  width: 4px;
-}
-
-.action-observation::-webkit-scrollbar-thumb {
-  background: #c8c6c0;
-  border-radius: 10px;
-}
-
-
-/* =========================================================
-   BADGES DE STATUS
+   BADGES E PONTOS DE STATUS
+   (herdados do antigo menu da ação; confirme se outra tela usa antes de apagar)
    ========================================================= */
 
 .status-badge {
@@ -599,81 +377,6 @@
   background: rgba(192, 57, 43, 0.13);
 }
 
-
-/* =========================================================
-   SEÇÃO DE ALTERAÇÃO DE STATUS
-   ========================================================= */
-
-.action-status-section {
-  border-top: 1px solid #e7e3db;
-
-  padding: 12px 14px 14px;
-
-  background: #faf9f6;
-
-  border-radius: 0 0 12px 12px;
-}
-
-.action-status-title {
-  font-size: 10px;
-  font-weight: 700;
-
-  color: #77736c;
-
-  margin-bottom: 8px;
-}
-
-.status-options {
-  display: grid;
-
-  grid-template-columns: 1fr 1fr;
-
-  gap: 5px;
-}
-
-.status-option {
-  display: flex;
-  align-items: center;
-
-  gap: 7px;
-
-  width: 100%;
-
-  padding: 7px 8px;
-
-  border: 1px solid transparent;
-  border-radius: 6px;
-
-  background: #fff;
-  color: #444;
-
-  font-size: 10.5px;
-  text-align: left;
-
-  cursor: pointer;
-
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    transform 0.1s ease;
-}
-
-.status-option:hover {
-  background: #f2f1ed;
-  border-color: #d9d5cc;
-
-  transform: translateY(-1px);
-}
-
-.status-option:active {
-  transform: translateY(0);
-}
-
-
-/* =========================================================
-   PONTOS DOS STATUS
-   ========================================================= */
-
 .status-dot {
   width: 7px;
   height: 7px;
@@ -683,159 +386,6 @@
   border-radius: 50%;
 }
 
-.status-option-planejado .status-dot {
-  background: var(--header-planejado);
-}
-
-.status-option-preparacao .status-dot {
-  background: var(--header-preparacao);
-}
-
-.status-option-execucao .status-dot {
-  background: var(--header-execucao);
-}
-
-.status-option-validacao .status-dot {
-  background: var(--header-validacao);
-}
-
-.status-option-concluido .status-dot {
-  background: var(--header-concluido);
-}
-
-.status-option-cancelado .status-dot {
-  background: var(--header-cancelado);
-}
-
-
-/* =========================================================
-   AVISO DE AÇÃO CANCELADA
-   ========================================================= */
-
-.cancelled-warning {
-  display: flex;
-  align-items: flex-start;
-
-  gap: 9px;
-
-  margin: 4px 14px 14px;
-
-  padding: 10px;
-
-  border-radius: 7px;
-
-  background: rgba(192, 57, 43, 0.07);
-  border: 1px solid rgba(192, 57, 43, 0.16);
-}
-
-.cancelled-warning svg {
-  width: 18px;
-  height: 18px;
-
-  min-width: 18px;
-
-  color: #c0392b;
-}
-
-.cancelled-warning div {
-  display: flex;
-  flex-direction: column;
-
-  gap: 2px;
-}
-
-.cancelled-warning strong {
-  font-size: 10.5px;
-  color: #b83225;
-}
-
-.cancelled-warning span {
-  font-size: 9.5px;
-  line-height: 1.35;
-  color: #777;
-}
-
-
-/* =========================================================
-   COLUNA VAZIA
-   ========================================================= */
-
-.empty-column-msg {
-  font-size: 11px;
-
-  color: var(--text-muted);
-
-  text-align: center;
-
-  padding: 12px 8px;
-
-  border: 1px dashed var(--border-light);
-  border-radius: 6px;
-
-  background: rgba(255, 255, 255, 0.4);
-}
-
-
-/* =========================================================
-   SCROLL DO MENU
-   ========================================================= */
-
-.action-menu::-webkit-scrollbar {
-  width: 6px;
-}
-
-.action-menu::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.action-menu::-webkit-scrollbar-thumb {
-  background: #d0cec8;
-  border-radius: 10px;
-}
-
-.action-menu::-webkit-scrollbar-thumb:hover {
-  background: #aaa;
-}
-
-
-/* =========================================================
-   RESPONSIVIDADE
-   ========================================================= */
-
-@media (max-width: 900px) {
-
-  .board {
-    grid-template-columns: repeat(3, minmax(180px, 1fr));
-  }
-
-}
-
-
-@media (max-width: 560px) {
-
-  .board {
-    grid-template-columns: repeat(2, minmax(180px, 1fr));
-  }
-
-  .action-menu {
-    width: min(330px, calc(100vw - 20px));
-    max-height: none;
-    overflow-y: visible;
-  }
-
-  .action-info-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .action-info-item:nth-child(odd) {
-    border-right: none;
-  }
-
-  .status-options {
-    grid-template-columns: 1fr;
-  }
-
-}
 
 /* =========================================================
    AVISO (TOAST) NO CANTO SUPERIOR DIREITO
