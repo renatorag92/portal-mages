@@ -441,7 +441,6 @@ select.det-input {
   display: none;
 }
 
-
 /* ------- Etapas ------- */
 
 .det-progresso {
@@ -798,4 +797,24 @@ select.det-input {
   .det-progresso-preenchido {
     transition: none;
   }
+}
+
+/* ------- Botão de excluir etapa ------- */
+
+.det-etapa-botoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.det-btn-perigo {
+  color: var(--det-vermelho);
+  background: #fff;
+  border-color: #e6d3cf;
+}
+
+.det-btn-perigo:hover:not(:disabled) {
+  background: rgba(192, 57, 43, 0.08);
+  border-color: var(--det-vermelho);
 }

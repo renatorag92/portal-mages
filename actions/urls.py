@@ -14,6 +14,7 @@ urlpatterns = [
     path('kanban/etapa/<int:etapa_id>/editar/', views.editar_etapa_view, name='editar_etapa'),  # Rota para alterar dados de uma etapa
     path('kanban/acao/<int:acao_id>/etapas/nova/', views.adicionar_etapa_view, name='adicionar_etapa'),  # Rota para adicionar uma etapa
     path('kanban/etapa/<int:etapa_id>/concluir/', views.alterar_etapa_view, name='alterar_etapa'),  # Rota para marcar/desmarcar etapa como concluída
+    path('kanban/etapa/<int:etapa_id>/excluir/', views.excluir_etapa_view, name='excluir_etapa'),  # Rota para excluir uma etapa
     path('login/', views.CustomLoginView.as_view(), name='login'),  # Rota do login
     path('redefinir-senha/', views.CustomPasswordChangeView.as_view(), name='redefinir-senha'),  # Rota para alterar a senha
     path('actions/<int:acao_id>/atualizar_status/', views.atualizar_status_acao, name='atualizar_status_acao'),  # Rota para atualizar o status da ação

@@ -583,6 +583,18 @@ def alterar_etapa_view(request, etapa_id):
     etapa.save(update_fields=['concluida'])
     return JsonResponse({'success': True, 'concluida': etapa.concluida})
 
+@login_required
+@require_POST
+def excluir_etapa_view(request, etapa_id):
+    etapa = _etapa_da_prefeitura(request, etapa_id)
+    if etapa is None:
+        return _erro('Etapa não encontrada.', 404)
+    if _acao_cancelada(etapa.acao):
+        return _erro('Uma ação cancelada não pode ser editada.', 403)
+
+    etapa.delete()
+    return JsonResponse({'success': True, 'message': 'Etapa excluída com sucesso!'})
+
 
 @login_required
 @require_POST
