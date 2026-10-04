@@ -12,6 +12,7 @@ urlpatterns = [
     path('kanban/acao/<int:acao_id>/editar/', views.editar_acao_view, name='editar_acao'),  # Rota para alterar dados de uma ação
     path('kanban/acao/<int:acao_id>/excluir/', views.excluir_acao_view, name='excluir_acao'),  # Rota para excluir uma ação
     path('kanban/etapa/<int:etapa_id>/editar/', views.editar_etapa_view, name='editar_etapa'),  # Rota para alterar dados de uma etapa
+    path('kanban/acao/<int:acao_id>/etapas/nova/', views.adicionar_etapa_view, name='adicionar_etapa'),  # Rota para adicionar uma etapa
     path('kanban/etapa/<int:etapa_id>/concluir/', views.alterar_etapa_view, name='alterar_etapa'),  # Rota para marcar/desmarcar etapa como concluída
     path('login/', views.CustomLoginView.as_view(), name='login'),  # Rota do login
     path('cadastrar-acoes/', views.cadastro_acoes_view, name='cadastro_acoes'), # Antiga rota de cadastro (redireciona para o Kanban)

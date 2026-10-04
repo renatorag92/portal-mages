@@ -25,6 +25,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const catalogoEl = $("dados-catalogo");
   const catalogo = catalogoEl ? JSON.parse(catalogoEl.textContent) : [];
 
+  // Tempo da animação de fechar (igual ao do CSS). Sem animação para quem prefere menos movimento.
+  const DURACAO_SAIDA = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 150;
+  let timerFechar = null;
+
   let dirty = false; // true quando o usuário já mexeu em algum campo
 
   function norm(texto) {
@@ -74,6 +78,8 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function abrir(statusId) {
+    clearTimeout(timerFechar);
+    overlay.classList.remove("closing");
     limparFormulario();
     hidStatus.value = statusId;
     overlay.classList.add("open");
@@ -81,12 +87,29 @@ document.addEventListener("DOMContentLoaded", function () {
     document.body.style.overflow = "hidden";
     selEixo.focus();
   }
+  // Aviso do site (definido no kanban-detalhes.js). Se não estiver disponível, usa o do navegador.
+  function confirmarCancelamento() {
+    if (typeof window.confirmarSite !== "function") {
+      return Promise.resolve(confirm("Pretende cancelar o cadastro da ação?"));
+    }
+    return window.confirmarSite({
+      titulo: "Cancelar o cadastro?",
+      texto: "Os dados preenchidos ainda não foram salvos. Se continuar, eles serão perdidos.",
+      sim: "Descartar",
+      nao: "Continuar preenchendo"
+    });
+  }
 
-  function fechar(forcar) {
-    if (!forcar && dirty && !confirm("Pretende cancelar o cadastro da ação?")) return;
-    overlay.classList.remove("open");
-    overlay.setAttribute("aria-hidden", "true");
-    document.body.style.overflow = "";
+  async function fechar(forcar) {
+    if (overlay.classList.contains("closing")) return;
+    if (!forcar && dirty && !(await confirmarCancelamento())) return;
+
+    overlay.classList.add("closing");
+    timerFechar = setTimeout(function () {
+      overlay.classList.remove("open", "closing");
+      overlay.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }, DURACAO_SAIDA);
   }
 
   document.addEventListener("click", function (event) {
@@ -98,6 +121,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && overlay.classList.contains("open")) fechar(false);
+  });
+
+  // Clique no fundo desfocado fecha o cadastro. Só vale se o clique começou e terminou
+  // no fundo, para não fechar quando a pessoa arrasta o mouse para selecionar texto de um campo.
+  let cliqueComecouNoFundo = false;
+
+  overlay.addEventListener("mousedown", function (event) {
+    cliqueComecouNoFundo = event.target === overlay;
+  });
+
+  overlay.addEventListener("click", function (event) {
+    if (event.target === overlay && cliqueComecouNoFundo) fechar(false);
   });
 
   form.addEventListener("input", function () { dirty = true; });

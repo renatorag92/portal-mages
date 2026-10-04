@@ -444,3 +444,44 @@
   text-decoration: line-through;
   color: #888;
 }
+
+/* ------- Animações de abrir e fechar (mais sutis) ------- */
+
+@keyframes acao-fundo-entra { from { opacity: 0; } to { opacity: 1; } }
+@keyframes acao-fundo-sai   { from { opacity: 1; } to { opacity: 0; } }
+
+@keyframes acao-entrada {
+  from { opacity: 0; transform: translateY(6px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes acao-saida {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(4px) scale(0.99); }
+}
+
+.acao-modal-overlay.open {
+  animation: acao-fundo-entra 0.2s ease-out;
+}
+
+.acao-modal-overlay.open .acao-modal-dialog {
+  animation: acao-entrada 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.acao-modal-overlay.closing {
+  pointer-events: none;
+  animation: acao-fundo-sai 0.15s ease-in forwards;
+}
+
+.acao-modal-overlay.closing .acao-modal-dialog {
+  animation: acao-saida 0.15s ease-in forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acao-modal-overlay.open,
+  .acao-modal-overlay.closing,
+  .acao-modal-overlay.open .acao-modal-dialog,
+  .acao-modal-overlay.closing .acao-modal-dialog {
+    animation: none;
+  }
+}

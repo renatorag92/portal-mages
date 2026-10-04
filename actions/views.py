@@ -349,6 +349,23 @@ def criar_acao_kanban_view(request):
                 'error': 'Cadastre pelo menos um Secretário/Funcionário no Admin antes de criar ações.'
             }, status=400)
 
+                # Valida o CPF de cada etapa ANTES de criar qualquer coisa
+        etapas_validadas = []
+        if request.content_type == 'application/json':
+            for item in data.get('etapas', []):
+                nome_etapa = item.get('nome') or item.get('etapaNome')
+                if not nome_etapa:
+                    continue
+
+                responsavel = _funcionario_por_cpf(item.get('cpf'), prefeitura_logada)
+                if responsavel is None:
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'O CPF informado na etapa "{nome_etapa}" não foi encontrado entre os funcionários da sua prefeitura.'
+                    }, status=400)
+
+                etapas_validadas.append((item, nome_etapa, responsavel))
+
         with transaction.atomic():
             eixo_obj = Eixo.objects.get(id=eixo_id)
 
@@ -372,26 +389,20 @@ def criar_acao_kanban_view(request):
 
             # --- CRIAÇÃO DAS ETAPAS ---
             if request.content_type == 'application/json':
-                etapas_data = data.get('etapas', [])
-                for item in etapas_data:
-                    nome_etapa = item.get('nome') or item.get('etapaNome')
-                    if nome_etapa:
-                        # O pop-up manda "inicio" e "fim"
-                        e_inicio = item.get('inicio') or item.get('data_inicio') or item.get('dataInicio') or item.get('etapaInicio') or data_inicio
-                        e_fim = item.get('fim') or item.get('data_fim') or item.get('dataFim') or item.get('etapaFim') or data_fim
+                for item, nome_etapa, responsavel in etapas_validadas:
+                    # O pop-up manda "inicio" e "fim"
+                    e_inicio = item.get('inicio') or item.get('data_inicio') or item.get('dataInicio') or item.get('etapaInicio') or data_inicio
+                    e_fim = item.get('fim') or item.get('data_fim') or item.get('dataFim') or item.get('etapaFim') or data_fim
 
-                        # Responsável: o CPF informado; se não achar, usa o secretário da prefeitura
-                        responsavel = _funcionario_por_cpf(item.get('cpf'), prefeitura_logada) or secretario
-
-                        Etapa.objects.create(
-                            acao=nova_acao,
-                            nome=nome_etapa,
-                            responsavel=responsavel,
-                            data_inicio=e_inicio,
-                            data_fim=e_fim,
-                            prioridade=item.get('prioridade') or '',
-                            observacoes=item.get('observacoes', '')
-                        )
+                    Etapa.objects.create(
+                        acao=nova_acao,
+                        nome=nome_etapa,
+                        responsavel=responsavel,
+                        data_inicio=e_inicio,
+                        data_fim=e_fim,
+                        prioridade=item.get('prioridade') or '',
+                        observacoes=item.get('observacoes', '')
+                    )
             else:
                 nomes = request.POST.getlist('etapaNome[]')
                 inicios = request.POST.getlist('etapaInicio[]')
@@ -499,6 +510,61 @@ def editar_acao_view(request, acao_id):
     return JsonResponse({'success': True, 'acao': _serializar_acao(acao)})
 
 
+def _dados_etapa(request):
+    # Lê e valida o JSON de uma etapa. Retorna (dados, None) ou (None, resposta_de_erro).
+    try:
+        data = json.loads(request.body)
+    except (ValueError, TypeError):
+        return None, _erro('Dados inválidos.')
+    if not isinstance(data, dict):
+        return None, _erro('Dados inválidos.')
+
+    nome = (data.get('nome') or '').strip()
+    if not nome or len(nome) > 45:
+        return None, _erro('Informe um nome para a etapa com até 45 caracteres.')
+
+    prioridade = data.get('prioridade')
+    if prioridade not in Acao.Status_Prioridade.values:
+        return None, _erro('Prioridade inválida.')
+
+    data_inicio = _converter_data(data.get('data_inicio'))
+    data_fim = _converter_data(data.get('data_fim'))
+    if not data_inicio or not data_fim:
+        return None, _erro('Informe datas válidas.')
+    if data_fim < data_inicio:
+        return None, _erro('A data de fim não pode ser anterior à data de início.')
+
+    responsavel = _funcionario_por_cpf(data.get('cpf'), _prefeitura_do_usuario(request))
+    if responsavel is None:
+        return None, _erro('CPF do responsável não encontrado entre os funcionários da sua prefeitura.')
+
+    return {
+        'nome': nome,
+        'responsavel': responsavel,
+        'prioridade': prioridade,
+        'data_inicio': data_inicio,
+        'data_fim': data_fim,
+        'observacoes': (data.get('observacoes') or '').strip() or None,
+    }, None
+
+
+@login_required
+@require_POST
+def adicionar_etapa_view(request, acao_id):
+    acao = _acao_da_prefeitura(request, acao_id)
+    if acao is None:
+        return _erro('Ação não encontrada.', 404)
+    if _acao_cancelada(acao):
+        return _erro('Uma ação cancelada não pode ser editada.', 403)
+
+    dados, erro = _dados_etapa(request)
+    if erro:
+        return erro
+
+    etapa = Etapa.objects.create(acao=acao, **dados)
+    return JsonResponse({'success': True, 'etapa': _serializar_etapa(etapa)}, status=201)
+
+
 @login_required
 @require_POST
 def editar_etapa_view(request, etapa_id):
@@ -508,36 +574,12 @@ def editar_etapa_view(request, etapa_id):
     if _acao_cancelada(etapa.acao):
         return _erro('Uma ação cancelada não pode ser editada.', 403)
 
-    try:
-        data = json.loads(request.body)
-    except (ValueError, TypeError):
-        return _erro('Dados inválidos.')
+    dados, erro = _dados_etapa(request)
+    if erro:
+        return erro
 
-    nome = (data.get('nome') or '').strip()
-    if not nome or len(nome) > 45:
-        return _erro('Informe um nome para a etapa com até 45 caracteres.')
-
-    prioridade = data.get('prioridade')
-    if prioridade not in Acao.Status_Prioridade.values:
-        return _erro('Prioridade inválida.')
-
-    data_inicio = _converter_data(data.get('data_inicio'))
-    data_fim = _converter_data(data.get('data_fim'))
-    if not data_inicio or not data_fim:
-        return _erro('Informe datas válidas.')
-    if data_fim < data_inicio:
-        return _erro('A data de fim não pode ser anterior à data de início.')
-
-    responsavel = _funcionario_por_cpf(data.get('cpf'), _prefeitura_do_usuario(request))
-    if responsavel is None:
-        return _erro('CPF do responsável não encontrado entre os funcionários da sua prefeitura.')
-
-    etapa.nome = nome
-    etapa.responsavel = responsavel
-    etapa.prioridade = prioridade
-    etapa.data_inicio = data_inicio
-    etapa.data_fim = data_fim
-    etapa.observacoes = (data.get('observacoes') or '').strip() or None
+    for campo, valor in dados.items():
+        setattr(etapa, campo, valor)
     etapa.save()
 
     return JsonResponse({'success': True, 'etapa': _serializar_etapa(etapa)})

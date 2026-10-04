@@ -2,7 +2,8 @@
  * Pop-up de detalhes da ação (Kanban)
  *
  * Esquerda: dados da ação (botão "Editar ação").
- * Direita:  etapas da ação (botão "Editar etapa" em cada uma e caixa de concluída).
+ * Direita:  etapas da ação (botão "Adicionar etapa", botão "Editar etapa" em cada uma
+ *           e caixa de concluída).
  * Os dados vêm do servidor em JSON, e o pop-up é desenhado aqui.
  */
 document.addEventListener("DOMContentLoaded", function () {
@@ -26,12 +27,22 @@ document.addEventListener("DOMContentLoaded", function () {
     detalhes: overlay.dataset.urlDetalhes,
     editarAcao: overlay.dataset.urlEditarAcao,
     editarEtapa: overlay.dataset.urlEditarEtapa,
-    concluirEtapa: overlay.dataset.urlConcluirEtapa
+    concluirEtapa: overlay.dataset.urlConcluirEtapa,
+    adicionarEtapa: overlay.dataset.urlAdicionarEtapa
   };
 
+  // Tempo da animação de fechar (igual ao do CSS). Sem animação para quem prefere menos movimento.
+  const DURACAO_SAIDA = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 150;
+  let timerFechar = null;
+
   let codigoAberto = null;
-  // estado = { acao, etapas, prioridades, editandoAcao, editandoEtapa }
+  // estado = { acao, etapas, prioridades, editandoAcao, editandoEtapa, novaEtapa }
   let estado = null;
+
+  // Largura (em %) que a barra de progresso tinha no último desenho.
+  // Como o pop-up é redesenhado a cada mudança, usamos este valor para a barra
+  // nascer na largura antiga e deslizar até a nova.
+  let ultimoPorcento = null;
 
 
   /* =========================================================
@@ -106,13 +117,20 @@ document.addEventListener("DOMContentLoaded", function () {
     caixa.hidden = false;
   }
 
+  // Tem alguma ação, etapa ou etapa nova sendo editada?
+  function emEdicao() {
+    return !!estado && (estado.editandoAcao || estado.editandoEtapa !== null || estado.novaEtapa);
+  }
+
 
   /* =========================================================
      PEÇAS DE HTML
      ========================================================= */
 
-  function item(rotulo, valor, cheio) {
-    return '<div class="det-item' + (cheio ? " full" : "") + '"><dt>' + rotulo + "</dt><dd>" + valor + "</dd></div>";
+  // "classe" é opcional e vai no <dd> (usada nas observações, que têm limite de altura)
+  function item(rotulo, valor, cheio, classe) {
+    return '<div class="det-item' + (cheio ? " full" : "") + '"><dt>' + rotulo + "</dt>" +
+      "<dd" + (classe ? ' class="' + classe + '"' : "") + ">" + valor + "</dd></div>";
   }
 
   function campo(id, rotulo, obrigatorio, controle, cheio) {
@@ -136,10 +154,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }).join("");
   }
 
-  function botaoSecundario(acao, id, texto, desabilitado) {
+  function botaoSecundario(acao, id, texto, desabilitado, icone) {
     return '<button type="button" class="det-btn det-btn-sec" data-do="' + acao + '"' +
       (id != null ? ' data-id="' + id + '"' : "") + (desabilitado ? " disabled" : "") +
-      '><i class="bi bi-pencil"></i> ' + texto + "</button>";
+      '><i class="bi bi-' + (icone || "pencil") + '"></i> ' + texto + "</button>";
   }
 
   function rodapeEdicao(salvar, cancelar, id) {
@@ -168,11 +186,11 @@ document.addEventListener("DOMContentLoaded", function () {
   function renderAcao() {
     const a = estado.acao;
     const editando = estado.editandoAcao;
-    const bloqueado = estado.editandoEtapa !== null;
+    const bloqueado = estado.editandoEtapa !== null || estado.novaEtapa;
     let conteudo;
 
     if (!editando) {
-      conteudo =
+    conteudo =
         item("Código", esc(a.codigo)) +
         item("Eixo", esc(a.eixo || "Não informado")) +
         item("Nome", esc(a.nome || "Não informado"), true) +
@@ -181,7 +199,7 @@ document.addEventListener("DOMContentLoaded", function () {
         item("Data de início", esc(fmtData(a.data_inicio))) +
         item("Data de fim", esc(fmtData(a.data_fim))) +
         item("Responsável", esc(a.responsavel || "Não informado"), true) +
-        item("Observações", a.observacoes ? esc(a.observacoes) : vazio("Nenhuma observação informada."), true);
+        item("Observações", a.observacoes ? esc(a.observacoes) : vazio("Nenhuma observação informada."), true, "det-obs det-obs-acao");
     } else {
       conteudo =
         item("Código", esc(a.codigo)) +
@@ -197,7 +215,7 @@ document.addEventListener("DOMContentLoaded", function () {
           '<input class="det-input" id="detf-data-fim" name="data_fim" type="date" value="' + esc(a.data_fim) + '">') +
         item("Responsável", esc(a.responsavel || "Não informado"), true) +
         campo("detf-observacoes", "Observações", false,
-          '<textarea class="det-input" id="detf-observacoes" name="observacoes" rows="3">' + esc(a.observacoes) + "</textarea>", true);
+          '<textarea class="det-input" id="detf-observacoes" name="observacoes" rows="4">' + esc(a.observacoes) + "</textarea>", true);
     }
 
     const botaoEditar = (!a.somente_leitura && !editando)
@@ -209,40 +227,47 @@ document.addEventListener("DOMContentLoaded", function () {
       : "";
 
     elAcao.innerHTML =
-      '<div class="det-card">' +
+      '<div class="det-card det-card-acao">' +
       '<div class="det-card-head"><h3><i class="bi bi-card-text"></i> Dados da ação</h3>' + botaoEditar + "</div>" +
       aviso +
       '<dl class="det-grid">' + conteudo + "</dl>" +
       (editando ? rodapeEdicao("salvar-acao", "cancelar-acao") : "") +
       "</div>";
+
+  }
+
+  // Formulário de etapa. Com id = edita a etapa; com id = null é o formulário de etapa nova.
+  function formEtapaHtml(e, id) {
+    const nova = id == null;
+    const p = "detf-e" + (nova ? "nova" : id) + "-";
+
+    return '<article class="det-etapa editando' + (nova ? " nova" : "") + '"' + (nova ? "" : ' data-id="' + id + '"') + ">" +
+      '<div class="det-etapa-topo"><span class="det-etapa-titulo">' +
+      '<i class="bi bi-' + (nova ? "plus-circle" : "pencil-square") + '"></i> ' + (nova ? "Nova etapa" : "Editando etapa") +
+      "</span></div>" +
+      '<dl class="det-grid">' +
+      campo(p + "nome", "Etapa", true,
+        '<input class="det-input" id="' + p + 'nome" name="nome" type="text" maxlength="45" value="' + esc(e.nome) + '">', true) +
+      campo(p + "cpf", "CPF do responsável", true,
+        '<input class="det-input" id="' + p + 'cpf" name="cpf" type="text" maxlength="14" placeholder="000.000.000-00" value="' + esc(mascaraCpf(e.cpf)) + '">') +
+      campo(p + "prioridade", "Prioridade", true,
+        '<select class="det-input" id="' + p + 'prioridade" name="prioridade">' + opcoesPrioridade(e.prioridade) + "</select>") +
+      campo(p + "inicio", "Início", true,
+        '<input class="det-input" id="' + p + 'inicio" name="data_inicio" type="date" value="' + esc(e.data_inicio) + '">') +
+      campo(p + "fim", "Fim", true,
+        '<input class="det-input" id="' + p + 'fim" name="data_fim" type="date" value="' + esc(e.data_fim) + '">') +
+      campo(p + "obs", "Observações", false,
+        '<input class="det-input" id="' + p + 'obs" name="observacoes" type="text" value="' + esc(e.observacoes) + '">', true) +
+      "</dl>" +
+      rodapeEdicao(nova ? "salvar-nova-etapa" : "salvar-etapa", nova ? "cancelar-nova-etapa" : "cancelar-etapa", id) +
+      "</article>";
   }
 
   function etapaHtml(e) {
-    const editando = estado.editandoEtapa === e.id;
-    const algumaEdicao = estado.editandoAcao || estado.editandoEtapa !== null;
+    const algumaEdicao = emEdicao();
     const somenteLeitura = estado.acao.somente_leitura;
 
-    if (editando) {
-      const p = "detf-e" + e.id + "-";
-      return '<article class="det-etapa editando" data-id="' + e.id + '">' +
-        '<div class="det-etapa-topo"><span class="det-etapa-titulo"><i class="bi bi-pencil-square"></i> Editando etapa</span></div>' +
-        '<dl class="det-grid">' +
-        campo(p + "nome", "Etapa", true,
-          '<input class="det-input" id="' + p + 'nome" name="nome" type="text" maxlength="45" value="' + esc(e.nome) + '">', true) +
-        campo(p + "cpf", "CPF do responsável", true,
-          '<input class="det-input" id="' + p + 'cpf" name="cpf" type="text" maxlength="14" placeholder="000.000.000-00" value="' + esc(mascaraCpf(e.cpf)) + '">') +
-        campo(p + "prioridade", "Prioridade", true,
-          '<select class="det-input" id="' + p + 'prioridade" name="prioridade">' + opcoesPrioridade(e.prioridade) + "</select>") +
-        campo(p + "inicio", "Início", true,
-          '<input class="det-input" id="' + p + 'inicio" name="data_inicio" type="date" value="' + esc(e.data_inicio) + '">') +
-        campo(p + "fim", "Fim", true,
-          '<input class="det-input" id="' + p + 'fim" name="data_fim" type="date" value="' + esc(e.data_fim) + '">') +
-        campo(p + "obs", "Observações", false,
-          '<input class="det-input" id="' + p + 'obs" name="observacoes" type="text" value="' + esc(e.observacoes) + '">', true) +
-        "</dl>" +
-        rodapeEdicao("salvar-etapa", "cancelar-etapa", e.id) +
-        "</article>";
-    }
+    if (estado.editandoEtapa === e.id) return formEtapaHtml(e, e.id);
 
     const botao = somenteLeitura ? "" : botaoSecundario("editar-etapa", e.id, "Editar etapa", algumaEdicao);
 
@@ -258,7 +283,7 @@ document.addEventListener("DOMContentLoaded", function () {
       item("Responsável", esc(e.responsavel) + ' <span class="det-cpf">' + esc(mascaraCpf(e.cpf)) + "</span>", true) +
       item("Prioridade", chipPrioridade(e.prioridade)) +
       item("Período", esc(fmtData(e.data_inicio)) + " até " + esc(fmtData(e.data_fim))) +
-      item("Observações", e.observacoes ? esc(e.observacoes) : vazio("Sem observações."), true) +
+      item("Observações", e.observacoes ? esc(e.observacoes) : vazio("Sem observações."), true, "det-obs") +
       "</dl>" +
       "</article>";
   }
@@ -268,25 +293,49 @@ document.addEventListener("DOMContentLoaded", function () {
     const feitas = lista.filter(function (e) { return e.concluida; }).length;
     const porcento = lista.length ? Math.round((feitas / lista.length) * 100) : 0;
 
+    // Guarda a rolagem da lista, porque o HTML é refeito do zero
+    const listaAntiga = elEtapas.querySelector(".det-etapas-lista");
+    const rolagem = listaAntiga ? listaAntiga.scrollTop : 0;
+
+    // Na primeira vez a barra já nasce na largura certa; depois ela parte da largura antiga
+    const larguraInicial = ultimoPorcento == null ? porcento : ultimoPorcento;
+
     let progresso = "";
     if (lista.length) {
       progresso =
         '<div class="det-progresso">' +
         '<div class="det-progresso-texto">' + feitas + " de " + lista.length +
         (lista.length === 1 ? " concluída" : " concluídas") + "</div>" +
-        '<div class="det-progresso-barra"><div class="det-progresso-preenchido" style="width:' + porcento + '%"></div></div>' +
+        '<div class="det-progresso-barra"><div class="det-progresso-preenchido" style="width:' + larguraInicial + '%"></div></div>' +
         "</div>";
     }
 
-    const corpo = lista.length
-      ? '<div class="det-etapas-lista">' + lista.map(etapaHtml).join("") + "</div>"
+    const formNova = estado.novaEtapa ? formEtapaHtml({}, null) : "";
+
+    const corpo = (lista.length || estado.novaEtapa)
+      ? '<div class="det-etapas-lista">' + lista.map(etapaHtml).join("") + formNova + "</div>"
       : '<p class="det-vazio">Nenhuma etapa cadastrada para esta ação.</p>';
 
+    const botaoAdicionar = estado.acao.somente_leitura
+      ? ""
+      : botaoSecundario("adicionar-etapa", null, "Adicionar etapa", emEdicao(), "plus-lg");
+
     elEtapas.innerHTML =
-      '<div class="det-card">' +
-      '<div class="det-card-head"><h3><i class="bi bi-list-check"></i> Etapas da ação</h3></div>' +
+      '<div class="det-card det-card-etapas">' +
+      '<div class="det-card-head"><h3><i class="bi bi-list-check"></i> Etapas da ação</h3>' + botaoAdicionar + "</div>" +
       progresso + corpo +
       "</div>";
+
+    const novaLista = elEtapas.querySelector(".det-etapas-lista");
+    if (novaLista) novaLista.scrollTop = rolagem;
+
+    // Força o navegador a "ver" a largura antiga e só então muda para a nova: é isso que anima
+    const barra = elEtapas.querySelector(".det-progresso-preenchido");
+    if (barra) {
+      void barra.offsetWidth;
+      barra.style.width = porcento + "%";
+    }
+    ultimoPorcento = porcento;
   }
 
   function renderRodape() {
@@ -305,14 +354,100 @@ document.addEventListener("DOMContentLoaded", function () {
     renderRodape();
   }
 
+  // Rola até o formulário da etapa nova e coloca o cursor no primeiro campo
+  function focarNovaEtapa() {
+    const form = elEtapas.querySelector(".det-etapa.nova");
+    if (!form) return;
+    form.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const primeiro = form.querySelector("input");
+    if (primeiro) primeiro.focus({ preventScroll: true });
+  }
+
+    /* =========================================================
+     AVISO DE CONFIRMAÇÃO (no lugar do confirm/alert do navegador)
+     ========================================================= */
+
+  const dlgConfirma = document.createElement("div");
+  dlgConfirma.className = "det-confirma-overlay";
+  dlgConfirma.setAttribute("aria-hidden", "true");
+  dlgConfirma.innerHTML =
+    '<div class="det-confirma" role="alertdialog" aria-modal="true" ' +
+    'aria-labelledby="detConfirmaTitulo" aria-describedby="detConfirmaTexto">' +
+    '<h3 id="detConfirmaTitulo"></h3>' +
+    '<p id="detConfirmaTexto"></p>' +
+    '<div class="det-confirma-acoes">' +
+    '<button type="button" class="det-btn det-btn-sec" data-resp="nao"></button>' +
+    '<button type="button" class="det-btn det-btn-cancelar" data-resp="sim"></button>' +
+    "</div></div>";
+  document.body.appendChild(dlgConfirma);
+
+  // Mostra o aviso e devolve uma Promise: true se a pessoa confirmou, false se cancelou.
+  // Com nao: null vira um aviso simples, só com o botão de confirmar.
+  function confirmar(opcoes) {
+    return new Promise(function (resolve) {
+      const botaoSim = dlgConfirma.querySelector('[data-resp="sim"]');
+      const botaoNao = dlgConfirma.querySelector('[data-resp="nao"]');
+
+      dlgConfirma.querySelector("#detConfirmaTitulo").textContent = opcoes.titulo;
+      dlgConfirma.querySelector("#detConfirmaTexto").textContent = opcoes.texto;
+      botaoSim.textContent = opcoes.sim || "OK";
+      botaoNao.textContent = opcoes.nao || "Cancelar";
+      botaoNao.hidden = opcoes.nao === null;
+
+      dlgConfirma.classList.add("open");
+      dlgConfirma.setAttribute("aria-hidden", "false");
+      // O foco começa na opção segura (a que não descarta nada)
+      (botaoNao.hidden ? botaoSim : botaoNao).focus();
+
+      function responder(resposta) {
+        dlgConfirma.classList.remove("open");
+        dlgConfirma.setAttribute("aria-hidden", "true");
+        dlgConfirma.removeEventListener("click", aoClicar);
+        document.removeEventListener("keydown", aoTeclar, true);
+        resolve(resposta);
+      }
+
+      function aoClicar(event) {
+        if (event.target === dlgConfirma) return responder(false); // clique no fundo
+        const botao = event.target.closest("[data-resp]");
+        if (botao) responder(botao.dataset.resp === "sim");
+      }
+
+      // Esc fecha só o aviso, sem fechar o pop-up de trás
+      function aoTeclar(event) {
+        if (event.key !== "Escape") return;
+        event.preventDefault();
+        event.stopPropagation();
+        responder(false);
+      }
+
+      dlgConfirma.addEventListener("click", aoClicar);
+      document.addEventListener("keydown", aoTeclar, true);
+    });
+  }
+
+  function confirmarDescarte() {
+    return confirmar({
+      titulo: "Descartar alterações?",
+      texto: "Você tem alterações que ainda não foram salvas. Se continuar, elas serão perdidas.",
+      sim: "Descartar",
+      nao: "Continuar editando"
+    });
+  }
+
+    // Deixa o aviso disponível para o pop-up de cadastro (kanban-modal.js)
+    window.confirmarSite = confirmar;
 
   /* =========================================================
      ABRIR E FECHAR
      ========================================================= */
 
   async function abrir(codigo) {
+    clearTimeout(timerFechar);
+    overlay.classList.remove("closing");
     codigoAberto = codigo;
     estado = null;
+    ultimoPorcento = null;
 
     elTitulo.textContent = "AÇÃO " + codigo;
     elSubtitulo.textContent = "";
@@ -334,7 +469,8 @@ document.addEventListener("DOMContentLoaded", function () {
         etapas: dados.etapas,
         prioridades: dados.prioridades,
         editandoAcao: false,
-        editandoEtapa: null
+        editandoEtapa: null,
+        novaEtapa: false
       };
       render();
     } catch (erro) {
@@ -343,16 +479,22 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function fechar() {
-    overlay.classList.remove("open");
-    overlay.setAttribute("aria-hidden", "true");
-    document.body.style.overflow = "";
+    if (overlay.classList.contains("closing")) return;
+
     estado = null;
     codigoAberto = null;
+    ultimoPorcento = null;
+
+    overlay.classList.add("closing");
+    timerFechar = setTimeout(function () {
+      overlay.classList.remove("open", "closing");
+      overlay.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }, DURACAO_SAIDA);
   }
 
-  function tentarFechar() {
-    const editando = estado && (estado.editandoAcao || estado.editandoEtapa !== null);
-    if (editando && !confirm("Descartar as alterações que estão sendo editadas?")) return;
+    async function tentarFechar() {
+    if (emEdicao() && !(await confirmarDescarte())) return;
     fechar();
   }
 
@@ -367,7 +509,9 @@ document.addEventListener("DOMContentLoaded", function () {
   $("detFechar").addEventListener("click", tentarFechar);
 
   document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape" && overlay.classList.contains("open")) tentarFechar();
+    if (event.key === "Escape" && overlay.classList.contains("open") && !overlay.classList.contains("closing")) {
+      tentarFechar();
+    }
   });
 
 
@@ -419,11 +563,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
   /* =========================================================
-     SALVAR ETAPA
+     SALVAR ETAPA (editar uma existente ou criar uma nova)
      ========================================================= */
 
+  // id = número da etapa para editar, ou null para criar uma etapa nova
   async function salvarEtapa(id, botao) {
-    const bloco = elEtapas.querySelector('.det-etapa[data-id="' + id + '"]');
+    const nova = id == null;
+    const bloco = nova
+      ? elEtapas.querySelector(".det-etapa.nova")
+      : elEtapas.querySelector('.det-etapa[data-id="' + id + '"]');
     const caixa = bloco.querySelector(".det-erro");
     const ler = function (nome) { return bloco.querySelector('[name="' + nome + '"]'); };
 
@@ -455,16 +603,30 @@ document.addEventListener("DOMContentLoaded", function () {
       observacoes: ler("observacoes").value.trim()
     };
 
+    const url = nova ? urlDe(urls.adicionarEtapa, codigoAberto) : urlDe(urls.editarEtapa, id);
+
     botao.disabled = true;
     try {
-      const resposta = await pedir(urlDe(urls.editarEtapa, id), {
+      const resposta = await pedir(url, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-CSRFToken": csrf() },
         body: JSON.stringify(corpo)
       });
-      estado.etapas = estado.etapas.map(function (e) { return e.id === id ? resposta.etapa : e; });
-      estado.editandoEtapa = null;
+
+      if (nova) {
+        estado.etapas.push(resposta.etapa);
+        estado.novaEtapa = false;
+      } else {
+        estado.etapas = estado.etapas.map(function (e) { return e.id === id ? resposta.etapa : e; });
+        estado.editandoEtapa = null;
+      }
       render();
+
+      // A etapa nova entra no fim da lista: rola até ela
+      if (nova) {
+        const lista = elEtapas.querySelector(".det-etapas-lista");
+        if (lista) lista.scrollTo({ top: lista.scrollHeight, behavior: "smooth" });
+      }
     } catch (erro) {
       mostrarErro(caixa, erro.message);
       botao.disabled = false;
@@ -476,9 +638,8 @@ document.addEventListener("DOMContentLoaded", function () {
      MOVER PARA OUTRO STATUS
      ========================================================= */
 
-  function mudarStatus(statusId) {
-    if (estado && (estado.editandoAcao || estado.editandoEtapa !== null) &&
-        !confirm("Descartar as alterações que estão sendo editadas?")) return;
+   async function mudarStatus(statusId) {
+    if (emEdicao() && !(await confirmarDescarte())) return;
 
     const card = document.querySelector('.task-card[data-codigo="' + codigoAberto + '"]');
     const form = card && card.querySelector("form");
@@ -504,13 +665,16 @@ document.addEventListener("DOMContentLoaded", function () {
     const id = botao.dataset.id ? Number(botao.dataset.id) : null;
 
     switch (botao.dataset.do) {
-      case "editar-acao":     estado.editandoAcao = true; render(); break;
-      case "cancelar-acao":   estado.editandoAcao = false; render(); break;
-      case "salvar-acao":     salvarAcao(botao); break;
-      case "editar-etapa":    estado.editandoEtapa = id; render(); break;
-      case "cancelar-etapa":  estado.editandoEtapa = null; render(); break;
-      case "salvar-etapa":    salvarEtapa(id, botao); break;
-      case "mudar-status":    mudarStatus(botao.dataset.status); break;
+      case "editar-acao":        estado.editandoAcao = true; render(); break;
+      case "cancelar-acao":      estado.editandoAcao = false; render(); break;
+      case "salvar-acao":        salvarAcao(botao); break;
+      case "editar-etapa":       estado.editandoEtapa = id; render(); break;
+      case "cancelar-etapa":     estado.editandoEtapa = null; render(); break;
+      case "salvar-etapa":       salvarEtapa(id, botao); break;
+      case "adicionar-etapa":    estado.novaEtapa = true; render(); focarNovaEtapa(); break;
+      case "cancelar-nova-etapa": estado.novaEtapa = false; render(); break;
+      case "salvar-nova-etapa":  salvarEtapa(null, botao); break;
+      case "mudar-status":       mudarStatus(botao.dataset.status); break;
     }
   });
 
@@ -533,7 +697,7 @@ document.addEventListener("DOMContentLoaded", function () {
     } catch (erro) {
       caixa.checked = !caixa.checked;
       caixa.disabled = false;
-      alert(erro.message);
+      confirmar({ titulo: "Não foi possível concluir", texto: erro.message, sim: "OK", nao: null });
     }
   });
 
