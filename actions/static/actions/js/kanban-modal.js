@@ -1,5 +1,7 @@
 /*
  * Pop-up de cadastro de ação e etapas (Kanban)
+ *
+ * Esquerda: dados da ação. Direita: etapas, cada uma em um cartão.
  */
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -18,18 +20,23 @@ document.addEventListener("DOMContentLoaded", function () {
   const hidAcao = $("acao");
   const hidNova = $("novaAcao");
   const hidStatus = $("acaoStatus");
+  const badge = $("acaoStatusBadge");
   const etapasList = $("etapasList");
+  const etapasVazio = $("etapasVazio");
+  const etapasContagem = $("etapasContagem");
+  const tplEtapa = $("etapaTemplate");
   const erroBox = $("acaoFormErro");
   const btnSalvar = $("salvarAcaoBtn");
 
   const catalogoEl = $("dados-catalogo");
   const catalogo = catalogoEl ? JSON.parse(catalogoEl.textContent) : [];
 
+  let dirty = false; // true quando o usuário já mexeu em algum campo
+  let contadorEtapas = 0; // usado para dar ids únicos aos campos de cada etapa
+
   // Tempo da animação de fechar (igual ao do CSS). Sem animação para quem prefere menos movimento.
   const DURACAO_SAIDA = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 150;
   let timerFechar = null;
-
-  let dirty = false; // true quando o usuário já mexeu em algum campo
 
   function norm(texto) {
     return String(texto || "")
@@ -55,6 +62,54 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
 
+  /* ---------- Etapas: cartões ---------- */
+
+  // Renumera os cartões, atualiza o contador e mostra o aviso de lista vazia
+  function atualizarEtapas() {
+    const cartoes = etapasList.querySelectorAll(".etapa-card");
+
+    cartoes.forEach(function (cartao, i) {
+      cartao.querySelector(".etapa-num").textContent = "Etapa " + (i + 1);
+    });
+
+    etapasContagem.textContent = cartoes.length ? "(" + cartoes.length + ")" : "";
+    etapasVazio.hidden = cartoes.length > 0;
+  }
+
+  // Cria um cartão de etapa novo a partir do modelo do HTML
+  function novaEtapa(focar) {
+    const cartao = tplEtapa.content.firstElementChild.cloneNode(true);
+    contadorEtapas++;
+
+    // Liga cada rótulo ao seu campo (ids únicos por cartão)
+    cartao.querySelectorAll(".form-group").forEach(function (grupo, i) {
+      const controle = grupo.querySelector("input, select");
+      const rotulo = grupo.querySelector("label");
+      if (!controle || !rotulo) return;
+      controle.id = "etapa" + contadorEtapas + "-" + i;
+      rotulo.htmlFor = controle.id;
+    });
+
+    cartao.querySelectorAll('select, input[type="date"]').forEach(atualizarCor);
+    etapasList.appendChild(cartao);
+    atualizarEtapas();
+
+    if (focar) {
+      cartao.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      cartao.querySelector("input").focus({ preventScroll: true });
+    }
+  }
+
+  $("adicionarEtapaBtn").addEventListener("click", function () { novaEtapa(true); });
+
+  etapasList.addEventListener("click", function (event) {
+    const remover = event.target.closest(".etapa-remove");
+    if (!remover) return;
+    remover.closest(".etapa-card").remove();
+    atualizarEtapas();
+  });
+
+
   /* ---------- Abrir / fechar ---------- */
 
   function mostrarErro(mensagem) {
@@ -65,9 +120,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function limparFormulario() {
     form.reset();
-    etapasList.querySelectorAll(".etapa-row").forEach(function (row, i) {
-      if (i > 0) row.remove();
-    });
+    etapasList.innerHTML = "";
+    contadorEtapas = 0;
+    novaEtapa(false); // começa com uma etapa em branco (se ficar vazia, é ignorada ao salvar)
     hidAcao.value = "";
     hidNova.value = "";
     lista.style.display = "none";
@@ -77,16 +132,32 @@ document.addEventListener("DOMContentLoaded", function () {
     dirty = false;
   }
 
-  function abrir(statusId) {
+  // Mostra no cabeçalho a coluna onde a ação será criada, com a cor dela
+  function mostrarStatus(botao) {
+    const coluna = botao.closest(".column");
+    const cabecalho = coluna && coluna.querySelector(".column-header");
+    const titulo = coluna && coluna.querySelector(".column-header .title");
+    const cor = cabecalho ? getComputedStyle(cabecalho).backgroundColor : "";
+
+    badge.textContent = titulo ? titulo.textContent.trim() : "";
+    badge.style.backgroundColor = cor;
+    overlay.style.setProperty("--acao-cor", cor || "#3e4a89");
+  }
+
+  function abrir(botao) {
     clearTimeout(timerFechar);
     overlay.classList.remove("closing");
+
     limparFormulario();
-    hidStatus.value = statusId;
+    hidStatus.value = botao.dataset.status;
+    mostrarStatus(botao);
+
     overlay.classList.add("open");
     overlay.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
     selEixo.focus();
   }
+
   // Aviso do site (definido no kanban-detalhes.js). Se não estiver disponível, usa o do navegador.
   function confirmarCancelamento() {
     if (typeof window.confirmarSite !== "function") {
@@ -97,6 +168,25 @@ document.addEventListener("DOMContentLoaded", function () {
       texto: "Os dados preenchidos ainda não foram salvos. Se continuar, eles serão perdidos.",
       sim: "Descartar",
       nao: "Continuar preenchendo"
+    });
+  }
+
+    function confirmarCriacao(nome, totalEtapas) {
+    if (typeof window.confirmarSite !== "function") {
+      return Promise.resolve(confirm("Confirma o cadastro da ação?"));
+    }
+
+    const coluna = badge.textContent.trim();
+    const etapas = totalEtapas
+      ? " com " + totalEtapas + (totalEtapas === 1 ? " etapa" : " etapas")
+      : " sem etapas";
+
+    return window.confirmarSite({
+      titulo: "Cadastrar a ação?",
+      texto: "A ação \"" + nome + "\" será criada" + (coluna ? " na coluna \"" + coluna + "\"" : "") + etapas + ".",
+      sim: "Cadastrar",
+      nao: "Voltar",
+      perigo: false
     });
   }
 
@@ -114,10 +204,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.addEventListener("click", function (event) {
     const botao = event.target.closest(".add-action-btn");
-    if (botao) abrir(botao.dataset.status);
+    if (botao) abrir(botao);
   });
 
   $("cancelarBtn").addEventListener("click", function () { fechar(false); });
+  $("acaoFechar").addEventListener("click", function () { fechar(false); });
 
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && overlay.classList.contains("open")) fechar(false);
@@ -205,25 +296,6 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
 
-  /* ---------- Etapas: adicionar / remover linha ---------- */
-
-  etapasList.addEventListener("click", function (event) {
-    const add = event.target.closest(".etapa-add");
-    const remove = event.target.closest(".etapa-remove");
-
-    if (add) {
-      const nova = etapasList.querySelector(".etapa-row").cloneNode(true);
-      nova.querySelectorAll("input").forEach(function (input) { input.value = ""; });
-      nova.querySelectorAll("select").forEach(function (select) { select.selectedIndex = 0; });
-      nova.querySelectorAll('select, input[type="date"]').forEach(atualizarCor);
-      etapasList.appendChild(nova);
-      etapasList.scrollTop = etapasList.scrollHeight;
-    } else if (remove && etapasList.querySelectorAll(".etapa-row").length > 1) {
-      remove.closest(".etapa-row").remove();
-    }
-  });
-
-
   /* ---------- Máscaras: CPF e custo ---------- */
 
   etapasList.addEventListener("input", function (event) {
@@ -248,6 +320,7 @@ document.addEventListener("DOMContentLoaded", function () {
     event.target.value = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".") + "," + partes[1];
   });
 
+
   /* ---------- Enviar ---------- */
 
   form.addEventListener("submit", async function (event) {
@@ -266,11 +339,11 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const etapas = [];
-    const linhas = etapasList.querySelectorAll(".etapa-row");
+    const cartoes = etapasList.querySelectorAll(".etapa-card");
 
-    for (let i = 0; i < linhas.length; i++) {
+    for (let i = 0; i < cartoes.length; i++) {
       const campo = function (nome) {
-        return linhas[i].querySelector('[name="' + nome + '[]"]').value.trim();
+        return cartoes[i].querySelector('[name="' + nome + '[]"]').value.trim();
       };
 
       const etapa = {
@@ -282,11 +355,11 @@ document.addEventListener("DOMContentLoaded", function () {
         observacoes: campo("etapaObservacoes")
       };
 
-      // Linha totalmente vazia é ignorada
+      // Etapa totalmente vazia é ignorada
       if (!Object.values(etapa).some(Boolean)) continue;
 
       if (!etapa.nome || !etapa.cpf || !etapa.inicio || !etapa.fim || !etapa.prioridade) {
-        return mostrarErro("Preencha todos os campos obrigatórios de cada etapa iniciada.");
+        return mostrarErro("Preencha todos os campos obrigatórios da etapa " + (i + 1) + ".");
       }
       if (etapa.cpf.replace(/\D/g, "").length !== 11) {
         return mostrarErro("O CPF da etapa \"" + etapa.nome + "\" está incompleto.");
@@ -310,6 +383,9 @@ document.addEventListener("DOMContentLoaded", function () {
       observacoes: valor("observacoes"),
       etapas: etapas
     };
+
+    const confirmado = await confirmarCriacao(valor("acaoTexto"), etapas.length);
+    if (!confirmado) return;
 
     btnSalvar.disabled = true;
 

@@ -85,116 +85,174 @@ active
 
 </div>
 
-<!-- POP-UP: CADASTRAR AÇÃO E ETAPAS -->
+<!-- POP-UP: CADASTRAR AÇÃO E ETAPAS (conteúdo e comportamento no kanban-modal.js) -->
 <div id="acaoModalOverlay" class="acao-modal-overlay" aria-hidden="true">
-  <div class="acao-modal-dialog" role="dialog" aria-modal="true" aria-label="Cadastrar ação">
+  <div class="acao-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="acaoModalTitulo">
 
     <form id="formCadastroAcao" data-url="{% url 'criar_acao_kanban' %}" novalidate>
       {% csrf_token %}
       <!-- Status da coluna onde o botão foi clicado (preenchido via JS) -->
       <input type="hidden" id="acaoStatus" name="status">
 
-      <!-- Cadastrar ações -->
-      <section class="form-card">
-        <h2 class="form-card-title">Cadastrar ações</h2>
+      <header class="acao-header">
+        <div class="acao-header-info">
+          <span class="acao-label">NOVA AÇÃO</span>
+          <h2 id="acaoModalTitulo">Cadastrar ação</h2>
+        </div>
+        <div class="acao-header-side">
+          <!-- Nome e cor da coluna onde a ação será criada (preenchidos via JS) -->
+          <span id="acaoStatusBadge" class="acao-badge"></span>
+          <button type="button" id="acaoFechar" class="acao-fechar" aria-label="Fechar">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+      </header>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="eixo" class="required">Eixo:</label>
-            <select id="eixo" name="eixo">
-              <option value="">Selecione um Eixo...</option>
-              {% for eixo in eixos %}
-              <option value="{{ eixo.id }}">{{ eixo.nome }}</option>
-              {% endfor %}
-            </select>
-          </div>
+      <div class="acao-body">
 
-          <div class="form-group custom-select-container">
-            <label for="acaoTexto" class="required">Ações:</label>
-            <input type="text" id="acaoTexto" placeholder="Pesquise ou digite uma nova ação..." autocomplete="off">
-            <ul id="customAcoesList" class="custom-dropdown-list"></ul>
-            <input type="hidden" id="acao" name="acao">
-            <input type="hidden" id="novaAcao" name="novaAcao">
-          </div>
+        <!-- ESQUERDA: dados da ação -->
+        <section class="acao-col" aria-label="Dados da ação">
+          <div class="form-card form-card-dados">
+            <div class="form-card-head">
+              <h3 class="form-card-title"><i class="bi bi-card-text"></i> Dados da ação</h3>
+            </div>
 
-          <div class="form-group">
-            <label for="prioridade" class="required">Prioridade:</label>
-            <select id="prioridade" name="prioridade">
-              <option value="">Selecione a prioridade específica</option>
-              {% for valor, rotulo in prioridades %}
-              <option value="{{ valor }}">{{ rotulo }}</option>
-              {% endfor %}
-            </select>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="eixo" class="required">Eixo</label>
+                <select id="eixo" name="eixo">
+                  <option value="">Selecione um Eixo...</option>
+                  {% for eixo in eixos %}
+                  <option value="{{ eixo.id }}">{{ eixo.nome }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="form-group custom-select-container">
+                <label for="acaoTexto" class="required">Ação</label>
+                <input type="text" id="acaoTexto" placeholder="Pesquise ou digite uma nova ação..." autocomplete="off">
+                <ul id="customAcoesList" class="custom-dropdown-list"></ul>
+                <input type="hidden" id="acao" name="acao">
+                <input type="hidden" id="novaAcao" name="novaAcao">
+              </div>
+
+              <div class="form-group">
+                <label for="prioridade" class="required">Prioridade</label>
+                <select id="prioridade" name="prioridade">
+                  <option value="">Selecione a prioridade</option>
+                  {% for valor, rotulo in prioridades %}
+                  <option value="{{ valor }}">{{ rotulo }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="custo" class="required">Custo total (R$)</label>
+                <input type="text" id="custo" name="custo" inputmode="numeric" placeholder="0,00">
+              </div>
+
+              <div class="form-group">
+                <label for="dataInicio" class="required">Data de início</label>
+                <input type="date" id="dataInicio" name="dataInicio">
+              </div>
+
+              <div class="form-group">
+                <label for="dataFim" class="required">Data de fim</label>
+                <input type="date" id="dataFim" name="dataFim">
+              </div>
+
+              <div class="form-group form-group-full">
+                <label for="observacoes">Observações</label>
+                <textarea id="observacoes" name="observacoes" rows="4"
+                  placeholder="Escreva aqui as observações relativas a esta ação..."></textarea>
+              </div>
+            </div>
           </div>
+        </section>
+
+        <!-- DIREITA: etapas (só esta lista rola) -->
+        <section class="acao-col" aria-label="Etapas da ação">
+          <div class="form-card form-card-etapas">
+            <div class="form-card-head">
+              <h3 class="form-card-title">
+                <i class="bi bi-list-check"></i> Etapas da ação
+                <span id="etapasContagem" class="form-card-contagem"></span>
+              </h3>
+              <button type="button" id="adicionarEtapaBtn" class="acao-btn-sec">
+                <i class="bi bi-plus-lg"></i> Adicionar etapa
+              </button>
+            </div>
+
+            <p id="etapasVazio" class="etapas-vazio" hidden>
+              Nenhuma etapa adicionada. Use o botão acima para incluir uma etapa.
+            </p>
+
+            <div id="etapasList" class="etapas-list"></div>
+          </div>
+        </section>
+
+      </div>
+
+      <footer class="acao-footer">
+        <!-- Mensagem de erro (validação / servidor) -->
+        <div id="acaoFormErro" class="form-erro" role="alert" hidden></div>
+
+        <div class="form-actions">
+          <button type="submit" class="acao-modal-btn acao-modal-btn-salvar" id="salvarAcaoBtn">Salvar</button>
+          <button type="button" class="acao-modal-btn acao-modal-btn-cancelar" id="cancelarBtn">Cancelar</button>
+        </div>
+      </footer>
+    </form>
+
+    <!-- Modelo de uma etapa: o JS copia este bloco a cada "Adicionar etapa".
+         As opções de prioridade vêm do Django, por isso o modelo fica aqui no HTML. -->
+    <template id="etapaTemplate">
+      <article class="etapa-card">
+        <div class="etapa-card-topo">
+          <span class="etapa-card-titulo"><i class="bi bi-list-check"></i> <span class="etapa-num">Etapa</span></span>
+          <button type="button" class="etapa-remove" aria-label="Remover etapa">
+            <i class="bi bi-trash3"></i> Remover
+          </button>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="custo" class="required">Custo total (R$):</label>
-            <input type="text" id="custo" name="custo" inputmode="numeric" placeholder="0,00">
-          </div>
-          <div class="form-group">
-            <label for="dataInicio" class="required">Data de início:</label>
-            <input type="date" id="dataInicio" name="dataInicio">
-          </div>
-          <div class="form-group">
-            <label for="dataFim" class="required">Data de fim:</label>
-            <input type="date" id="dataFim" name="dataFim">
-          </div>
-        </div>
-
-        <div class="form-row">
+        <div class="form-grid">
           <div class="form-group form-group-full">
-            <label for="observacoes">Observações:</label>
-            <textarea id="observacoes" name="observacoes" rows="3"
-              placeholder="Escreva aqui as observações relativas a esta ação..."></textarea>
-          </div>
-        </div>
-      </section>
-
-      <!-- Definir etapas -->
-      <section class="form-card">
-        <h2 class="form-card-title">Definir etapas</h2>
-
-        <div class="etapas-header">
-          <span class="required">Etapa:</span>
-          <span class="required">CPF do Responsável:</span>
-          <span class="required">Início:</span>
-          <span class="required">Fim:</span>
-          <span class="required">Prioridade:</span>
-          <span>Observações:</span>
-          <span></span>
-        </div>
-
-        <div id="etapasList" class="etapas-list">
-          <div class="etapa-row">
+            <label class="required">Etapa</label>
             <input type="text" name="etapaNome[]" placeholder="Nome da etapa" maxlength="45">
-            <input type="text" name="etapaResponsavelCpf[]" placeholder="000.000.000-00" maxlength="14">
-            <input type="date" name="etapaInicio[]">
-            <input type="date" name="etapaFim[]">
+          </div>
+
+          <div class="form-group">
+            <label class="required">CPF do responsável</label>
+            <input type="text" name="etapaResponsavelCpf[]" placeholder="000.000.000-00" maxlength="14" inputmode="numeric">
+          </div>
+
+          <div class="form-group">
+            <label class="required">Prioridade</label>
             <select name="etapaPrioridade[]">
               <option value="">Selecione a prioridade</option>
               {% for valor, rotulo in prioridades %}
               <option value="{{ valor }}">{{ rotulo }}</option>
               {% endfor %}
             </select>
+          </div>
+
+          <div class="form-group">
+            <label class="required">Início</label>
+            <input type="date" name="etapaInicio[]">
+          </div>
+
+          <div class="form-group">
+            <label class="required">Fim</label>
+            <input type="date" name="etapaFim[]">
+          </div>
+
+          <div class="form-group form-group-full">
+            <label>Observações</label>
             <input type="text" name="etapaObservacoes[]" placeholder="Observações da etapa">
-            <div class="etapa-actions">
-              <button type="button" class="etapa-add" aria-label="Adicionar etapa"><i class="bi bi-plus-lg"></i></button>
-              <button type="button" class="etapa-remove" aria-label="Remover etapa"><i class="bi bi-trash3"></i></button>
-            </div>
           </div>
         </div>
-      </section>
-
-      <!-- Mensagem de erro (validação / servidor) -->
-      <div id="acaoFormErro" class="form-erro" role="alert" hidden></div>
-
-      <div class="form-actions">
-        <button type="submit" class="acao-modal-btn acao-modal-btn-salvar" id="salvarAcaoBtn">Salvar</button>
-        <button type="button" class="acao-modal-btn acao-modal-btn-cancelar" id="cancelarBtn">Cancelar</button>
-      </div>
-    </form>
+      </article>
+    </template>
 
   </div>
 </div>
@@ -205,7 +263,8 @@ active
      data-url-editar-acao="{% url 'editar_acao' 0 %}"
      data-url-editar-etapa="{% url 'editar_etapa' 0 %}"
      data-url-concluir-etapa="{% url 'alterar_etapa' 0 %}"
-     data-url-adicionar-etapa="{% url 'adicionar_etapa' 0 %}">
+     data-url-adicionar-etapa="{% url 'adicionar_etapa' 0 %}"
+     data-url-excluir-acao="{% url 'excluir_acao' 0 %}">
 
   <div class="det-dialog" role="dialog" aria-modal="true" aria-labelledby="detTitulo">
 
@@ -236,6 +295,9 @@ active
         <span class="det-status-dot"></span>{{ s.nome }}
       </button>
       {% endfor %}
+      <button type="button" class="det-btn det-btn-excluir" data-do="excluir-acao">
+        <i class="bi bi-trash3"></i> Excluir ação
+      </button>
     </footer>
 
   </div>
@@ -248,6 +310,7 @@ active
 {% block extra_js %}
 
 {{ acoes_catalogo_list|json_script:"dados-catalogo" }}
+{% if toast %}{{ toast|json_script:"kanban-toast" }}{% endif %}
 
 <script src="{% static 'actions/js/kanban-governanca.js' %}"></script>
 <script src="{% static 'actions/js/kanban-modal.js' %}"></script>

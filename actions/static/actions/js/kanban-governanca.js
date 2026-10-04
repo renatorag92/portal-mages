@@ -153,4 +153,52 @@ document.addEventListener("DOMContentLoaded", function () {
   populateEixoFilter();
   applyFilters();
 
+    /* =========================================================
+     AVISO (TOAST) NO CANTO SUPERIOR DIREITO
+     ========================================================= */
+
+  const DURACAO_TOAST = 4000; // milissegundos
+
+  function mostrarToast(mensagem) {
+    let pilha = document.getElementById("kbToasts");
+    if (!pilha) {
+      pilha = document.createElement("div");
+      pilha.id = "kbToasts";
+      pilha.className = "kb-toasts";
+      pilha.setAttribute("aria-live", "polite");
+      document.body.appendChild(pilha);
+    }
+
+    const toast = document.createElement("div");
+    toast.className = "kb-toast";
+    toast.setAttribute("role", "status");
+    toast.style.setProperty("--kb-toast-duracao", DURACAO_TOAST + "ms");
+    toast.innerHTML =
+      '<span class="kb-toast-icone"><i class="bi bi-check-lg"></i></span>' +
+      '<p class="kb-toast-texto"></p>' +
+      '<button type="button" class="kb-toast-fechar" aria-label="Fechar aviso"><i class="bi bi-x-lg"></i></button>' +
+      '<span class="kb-toast-barra"></span>';
+    toast.querySelector(".kb-toast-texto").textContent = mensagem;
+    pilha.appendChild(toast);
+
+    const timer = setTimeout(fechar, DURACAO_TOAST);
+
+    function fechar() {
+      clearTimeout(timer);
+      if (toast.classList.contains("saindo")) return;
+      toast.classList.add("saindo");
+      setTimeout(function () { toast.remove(); }, 200);
+    }
+
+    toast.querySelector(".kb-toast-fechar").addEventListener("click", fechar);
+  }
+
+  // Aviso enviado pelo servidor (ex.: depois de mover uma ação de status)
+  const dadosToast = document.getElementById("kanban-toast");
+  if (dadosToast) {
+    try {
+      mostrarToast(JSON.parse(dadosToast.textContent).mensagem);
+    } catch (erro) { /* sem aviso, sem problema */ }
+  }
+
 });

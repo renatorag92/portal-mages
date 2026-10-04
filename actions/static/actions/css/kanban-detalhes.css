@@ -790,3 +790,32 @@ select.det-input {
     animation: none;
   }
 }
+
+/* ------- Botão de excluir ação (rodapé) ------- */
+
+.det-footer .det-btn-excluir {
+  margin-left: auto;
+  color: var(--det-vermelho);
+  background: #fff;
+  border-color: #e6d3cf;
+}
+
+.det-footer .det-btn-excluir:hover:not(:disabled) {
+  color: #fff;
+  background: var(--det-vermelho);
+  border-color: var(--det-vermelho);
+}
+
+/* ------- Aviso de confirmação sem perigo (verde) ------- */
+
+.det-confirma-overlay.neutro .det-confirma {
+  border-top-color: #2e8b57;
+}
+
+.det-confirma-overlay.neutro .det-btn-cancelar {
+  background: #2e8b57;
+}
+
+.det-confirma-overlay.neutro .det-btn-cancelar:hover:not(:disabled) {
+  background: #24704a;
+}

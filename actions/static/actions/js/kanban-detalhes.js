@@ -28,7 +28,8 @@ document.addEventListener("DOMContentLoaded", function () {
     editarAcao: overlay.dataset.urlEditarAcao,
     editarEtapa: overlay.dataset.urlEditarEtapa,
     concluirEtapa: overlay.dataset.urlConcluirEtapa,
-    adicionarEtapa: overlay.dataset.urlAdicionarEtapa
+    adicionarEtapa: overlay.dataset.urlAdicionarEtapa,
+    excluirAcao: overlay.dataset.urlExcluirAcao
   };
 
   // Tempo da animação de fechar (igual ao do CSS). Sem animação para quem prefere menos movimento.
@@ -393,6 +394,7 @@ document.addEventListener("DOMContentLoaded", function () {
       botaoSim.textContent = opcoes.sim || "OK";
       botaoNao.textContent = opcoes.nao || "Cancelar";
       botaoNao.hidden = opcoes.nao === null;
+      dlgConfirma.classList.toggle("neutro", opcoes.perigo === false);
 
       dlgConfirma.classList.add("open");
       dlgConfirma.setAttribute("aria-hidden", "false");
@@ -650,6 +652,27 @@ document.addEventListener("DOMContentLoaded", function () {
     form.submit();
   }
 
+  async function excluirAcao(botao) {
+    const confirmado = await confirmar({
+      titulo: "Excluir a ação " + estado.acao.codigo + "?",
+      texto: "A ação e todas as suas etapas serão excluídas de forma permanente. Essa operação não pode ser desfeita.",
+      sim: "Excluir",
+      nao: "Cancelar"
+    });
+    if (!confirmado) return;
+
+    botao.disabled = true;
+    try {
+      await pedir(urlDe(urls.excluirAcao, codigoAberto), {
+        method: "POST",
+        headers: { "X-CSRFToken": csrf() }
+      });
+      window.location.reload();
+    } catch (erro) {
+      botao.disabled = false;
+      confirmar({ titulo: "Não foi possível excluir", texto: erro.message, sim: "OK", nao: null });
+    }
+  }
 
   /* =========================================================
      EVENTOS DENTRO DO POP-UP
@@ -675,6 +698,7 @@ document.addEventListener("DOMContentLoaded", function () {
       case "cancelar-nova-etapa": estado.novaEtapa = false; render(); break;
       case "salvar-nova-etapa":  salvarEtapa(null, botao); break;
       case "mudar-status":       mudarStatus(botao.dataset.status); break;
+      case "excluir-acao":       excluirAcao(botao); break;
     }
   });
 

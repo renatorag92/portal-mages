@@ -141,6 +141,7 @@ def kanban_view(request):
         'acoes_catalogo_objetos': acoes_catalogo,
         'acoes_catalogo_list': acoes_catalogo_list,
         'prioridades': Acao.Status_Prioridade.choices,
+        'toast': request.session.pop('kanban_toast', None),
     }
 
     return render(request, 'actions/kanban-governanca.html', context)
@@ -194,15 +195,26 @@ def excluir_status_view(request, status_id):
     return redirect('gerenciar_status')
 
 
+@login_required
+@require_POST
 def atualizar_status_acao(request, acao_id):
-    if request.method == 'POST':
-        # Busca pela chave primária 'codigo' em vez de 'id'
-        acao = get_object_or_404(Acao, codigo=acao_id)
-        novo_status = request.POST.get('status')
+    # Só encontra a ação se ela for da prefeitura do usuário logado
+    acao = _acao_da_prefeitura(request, acao_id)
 
-        if novo_status:
-            acao.status_id = novo_status
-            acao.save()
+    # Ação inexistente, de outra prefeitura ou cancelada (definitiva): não muda nada
+    if acao is None or _acao_cancelada(acao):
+        return redirect('kanban')
+
+    novo_status = request.POST.get('status')
+
+    # Só salva (e avisa) se o status realmente mudou
+    if novo_status and novo_status.isdigit() and str(acao.status_id) != novo_status:
+        status_destino = get_object_or_404(Status, pk=novo_status)
+        acao.status = status_destino
+        acao.save()
+        request.session['kanban_toast'] = {
+            'mensagem': f'Ação {acao.codigo} movida para "{status_destino.nome}".'
+        }
 
     return redirect('kanban')
 
@@ -323,6 +335,7 @@ def criar_acao_kanban_view(request):
 
         status_id = data.get('status')
         prioridade = data.get('prioridade')
+        
 
         # Tratamento do custo.
         # O pop-up já manda o valor como "2121.22" (ponto decimal). Só um formulário comum
@@ -600,11 +613,21 @@ def alterar_etapa_view(request, etapa_id):
     return JsonResponse({'success': True, 'concluida': etapa.concluida})
 
 
+@login_required
 @require_POST
 def excluir_acao_view(request, acao_id):
+    acao = _acao_da_prefeitura(request, acao_id)
+    if acao is None:
+        return _erro('Ação não encontrada.', 404)
+    if _acao_cancelada(acao):
+        return _erro('Uma ação cancelada não pode ser excluída.', 403)
+
     try:
-        acao = Acao.objects.get(id=acao_id)
-        acao.delete()
-        return JsonResponse({'success': True, 'message': 'Ação excluída com sucesso!'})
-    except Acao.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Ação não encontrada.'}, status=404)
+        with transaction.atomic():
+            # As etapas usam on_delete=PROTECT, então são apagadas antes da ação
+            acao.etapas.all().delete()
+            acao.delete()
+    except ProtectedError:
+        return _erro('Não foi possível excluir a ação porque ela está vinculada a outros registros.', 409)
+
+    return JsonResponse({'success': True, 'message': 'Ação excluída com sucesso!'})
