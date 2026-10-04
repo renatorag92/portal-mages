@@ -1,11 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
-from django.db.models.signals import post_save
-from django.contrib.auth.views import PasswordChangeView
-from django.urls import reverse_lazy # Importa o modelo de usuário do Django
-from django.dispatch import receiver # Importa o sinal para criar o perfil do usuário automaticamente
-from django.db import models
 
 # Entidades base (Prefeitura e Consultoria)
 class Prefeitura(models.Model):
@@ -124,7 +119,6 @@ class Acao(models.Model):
     data_fim = models.DateField()
     custo = models.FloatField()
     observacoes = models.CharField(blank=True, null=True)
-    
 
     # Chaves estrangeiras do DER
     status = models.ForeignKey(Status, on_delete=models.PROTECT, related_name='acoes')
@@ -157,7 +151,7 @@ class Etapa(models.Model):
     observacoes = models.TextField(blank=True, null=True)
     prioridade = models.CharField(max_length=20, choices=Acao.Status_Prioridade.choices, blank=True, default='')
     concluida = models.BooleanField(default=False)
-    
+
     # Chaves estrangeiras
     acao = models.ForeignKey(
         Acao,
@@ -186,17 +180,4 @@ class PerfilUsuario(models.Model):
     cargo = models.CharField(max_length=100)
     
     def __str__(self):
-
-     return f"{self.usuario.username} - {self.cargo}"
-        
-class CustomPasswordChangeView(PasswordChangeView):
-    template_name = 'actions/redefinir-senha.html'
-    success_url = reverse_lazy('kanban') # Redireciona para a página do Kanban após a alteração da senha
-    def form_valid(self, form):
-        response = super().form_valid(form) # Chama o método form_valid da classe pai para processar a alteração da senha
-       
-        # Atualiza o campo primeiro_acesso para False após a alteração da senha
-        self.request.user.perfil.primeiro_acesso = False
-        self.request.user.perfil.save()
-        
-        return response
+        return f"{self.usuario.username} - {self.cargo}"

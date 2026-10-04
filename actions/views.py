@@ -110,14 +110,6 @@ class CustomPasswordChangeView(PasswordChangeView):
         self.request.user.perfil.save()
         return response
 
-
-@login_required
-def cadastro_acoes_view(request):
-    # O cadastro de ações agora é um pop-up dentro do Kanban.
-    # Esta rota fica só para não quebrar links antigos.
-    return redirect('kanban')
-
-
 @login_required
 def kanban_view(request):
     prefeitura_logada = request.user.perfil.prefeitura
@@ -125,7 +117,7 @@ def kanban_view(request):
 
     acoes = Acao.objects.filter(
         secretario__prefeitura=prefeitura_logada
-    ).select_related('acao_catalogo__eixo', 'acao_catalogo', 'status', 'secretario')
+    ).select_related('acao_catalogo__eixo', 'status', 'secretario')
 
     for st in todos_status:
         st.acoes_lista = [a for a in acoes if a.status_id == st.id]
@@ -138,7 +130,6 @@ def kanban_view(request):
     context = {
         'kanban': todos_status,
         'eixos': eixos,
-        'acoes_catalogo_objetos': acoes_catalogo,
         'acoes_catalogo_list': acoes_catalogo_list,
         'prioridades': Acao.Status_Prioridade.choices,
         'toast': request.session.pop('kanban_toast', None),
@@ -175,18 +166,12 @@ def gerenciar_status_view(request, status_id=None):
 @require_POST
 def excluir_status_view(request, status_id):
     status = get_object_or_404(Status, pk=status_id)
-    if status.acoes.exists():
-        messages.error(
-            request,
-            'Este status não pode ser excluído porque está vinculado a uma ou mais ações.',
-            extra_tags='status-delete-blocked',
-        )
-        return redirect('gerenciar_status')
 
     try:
         status.delete()
         messages.success(request, 'Status excluído com sucesso.', extra_tags='status-deleted')
     except ProtectedError:
+        # As ações usam on_delete=PROTECT: status com ações vinculadas não pode ser excluído
         messages.error(
             request,
             'Este status não pode ser excluído porque está vinculado a uma ou mais ações.',
@@ -335,7 +320,6 @@ def criar_acao_kanban_view(request):
 
         status_id = data.get('status')
         prioridade = data.get('prioridade')
-        
 
         # Tratamento do custo.
         # O pop-up já manda o valor como "2121.22" (ponto decimal). Só um formulário comum
@@ -362,7 +346,7 @@ def criar_acao_kanban_view(request):
                 'error': 'Cadastre pelo menos um Secretário/Funcionário no Admin antes de criar ações.'
             }, status=400)
 
-                # Valida o CPF de cada etapa ANTES de criar qualquer coisa
+        # Valida o CPF de cada etapa ANTES de criar qualquer coisa
         etapas_validadas = []
         if request.content_type == 'application/json':
             for item in data.get('etapas', []):
@@ -440,20 +424,7 @@ def criar_acao_kanban_view(request):
                             observacoes=obs
                         )
 
-        return JsonResponse({
-            'success': True,
-            'message': 'Ação criada com sucesso!',
-            'card': {
-                'id': nova_acao.codigo,  # Usa o campo 'codigo' que é a chave primária do modelo Acao
-                'nome': nova_acao.acao_catalogo.nome if nova_acao.acao_catalogo else nova_acao.nova_acao_texto,
-                'eixo': nova_acao.acao_catalogo.eixo.nome if nova_acao.acao_catalogo else '',
-                'prioridade': nova_acao.get_prioridade_display() if hasattr(nova_acao, 'get_prioridade_display') else nova_acao.prioridade,
-                'status_id': nova_acao.status.id,
-                'status_nome': nova_acao.status.nome,
-                'secretario': getattr(nova_acao.secretario, 'nome', str(nova_acao.secretario)),
-                'custo': str(nova_acao.custo),
-            },
-        }, status=201)
+        return JsonResponse({'success': True, 'message': 'Ação criada com sucesso!'}, status=201)
 
     except Eixo.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Eixo não encontrado.'}, status=400)
@@ -611,6 +582,18 @@ def alterar_etapa_view(request, etapa_id):
     etapa.concluida = not etapa.concluida
     etapa.save(update_fields=['concluida'])
     return JsonResponse({'success': True, 'concluida': etapa.concluida})
+
+@login_required
+@require_POST
+def excluir_etapa_view(request, etapa_id):
+    etapa = _etapa_da_prefeitura(request, etapa_id)
+    if etapa is None:
+        return _erro('Etapa não encontrada.', 404)
+    if _acao_cancelada(etapa.acao):
+        return _erro('Uma ação cancelada não pode ser editada.', 403)
+
+    etapa.delete()
+    return JsonResponse({'success': True, 'message': 'Etapa excluída com sucesso!'})
 
 
 @login_required

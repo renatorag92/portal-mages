@@ -29,7 +29,8 @@ document.addEventListener("DOMContentLoaded", function () {
     editarEtapa: overlay.dataset.urlEditarEtapa,
     concluirEtapa: overlay.dataset.urlConcluirEtapa,
     adicionarEtapa: overlay.dataset.urlAdicionarEtapa,
-    excluirAcao: overlay.dataset.urlExcluirAcao
+    excluirAcao: overlay.dataset.urlExcluirAcao,
+    excluirEtapa: overlay.dataset.urlExcluirEtapa
   };
 
   // Tempo da animação de fechar (igual ao do CSS). Sem animação para quem prefere menos movimento.
@@ -161,6 +162,11 @@ document.addEventListener("DOMContentLoaded", function () {
       '><i class="bi bi-' + (icone || "pencil") + '"></i> ' + texto + "</button>";
   }
 
+  function botaoExcluirEtapa(id, desabilitado) {
+    return '<button type="button" class="det-btn det-btn-perigo" data-do="excluir-etapa" data-id="' + id + '"' +
+      (desabilitado ? " disabled" : "") + '><i class="bi bi-trash3"></i> Excluir</button>';
+  }
+
   function rodapeEdicao(salvar, cancelar, id) {
     const dado = id != null ? ' data-id="' + id + '"' : "";
     return '<div class="det-erro" role="alert" hidden></div>' +
@@ -270,15 +276,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (estado.editandoEtapa === e.id) return formEtapaHtml(e, e.id);
 
-    const botao = somenteLeitura ? "" : botaoSecundario("editar-etapa", e.id, "Editar etapa", algumaEdicao);
-
+      const botoes = somenteLeitura ? "" :
+      '<div class="det-etapa-botoes">' +
+      botaoSecundario("editar-etapa", e.id, "Editar etapa", algumaEdicao) +
+      botaoExcluirEtapa(e.id, algumaEdicao) +
+      "</div>";
+          
     return '<article class="det-etapa' + (e.concluida ? " concluida" : "") + '" data-id="' + e.id + '">' +
       '<div class="det-etapa-topo">' +
       '<label class="det-check">' +
       '<input type="checkbox" class="det-check-input" data-id="' + e.id + '"' +
       (e.concluida ? " checked" : "") + (somenteLeitura || algumaEdicao ? " disabled" : "") + ">" +
       '<span class="det-etapa-nome">' + esc(e.nome) + "</span>" +
-      "</label>" + botao +
+      "</label>" + botoes +
       "</div>" +
       '<dl class="det-grid">' +
       item("Responsável", esc(e.responsavel) + ' <span class="det-cpf">' + esc(mascaraCpf(e.cpf)) + "</span>", true) +
@@ -674,6 +684,33 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  async function excluirEtapa(id, botao) {
+    const etapa = estado.etapas.find(function (e) { return e.id === id; });
+    if (!etapa) return;
+
+    const confirmado = await confirmar({
+      titulo: "Excluir a etapa?",
+      texto: "A etapa \"" + etapa.nome + "\" será excluída de forma permanente. Essa operação não pode ser desfeita.",
+      sim: "Excluir",
+      nao: "Cancelar"
+    });
+    if (!confirmado) return;
+
+    botao.disabled = true;
+    try {
+      await pedir(urlDe(urls.excluirEtapa, id), {
+        method: "POST",
+        headers: { "X-CSRFToken": csrf() }
+      });
+      if (!estado) return;
+      estado.etapas = estado.etapas.filter(function (e) { return e.id !== id; });
+      render();
+    } catch (erro) {
+      botao.disabled = false;
+      confirmar({ titulo: "Não foi possível excluir", texto: erro.message, sim: "OK", nao: null });
+    }
+  }
+
   /* =========================================================
      EVENTOS DENTRO DO POP-UP
      ========================================================= */
@@ -699,6 +736,7 @@ document.addEventListener("DOMContentLoaded", function () {
       case "salvar-nova-etapa":  salvarEtapa(null, botao); break;
       case "mudar-status":       mudarStatus(botao.dataset.status); break;
       case "excluir-acao":       excluirAcao(botao); break;
+      case "excluir-etapa":      excluirEtapa(id, botao); break;
     }
   });
 

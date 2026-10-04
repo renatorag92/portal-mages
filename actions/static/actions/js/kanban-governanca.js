@@ -144,12 +144,6 @@ document.addEventListener("DOMContentLoaded", function () {
   if (searchInput) searchInput.addEventListener("input", applyFilters);
   if (eixoFilter) eixoFilter.addEventListener("change", applyFilters);
 
-  // O pop-up de cadastro dispara este evento depois de inserir um card novo
-  document.addEventListener("kanban:card-added", function () {
-    populateEixoFilter();
-    applyFilters();
-  });
-
   populateEixoFilter();
   applyFilters();
 
