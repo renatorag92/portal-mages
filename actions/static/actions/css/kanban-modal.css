@@ -672,8 +672,31 @@
   }
 }
 
-
 .etapa-nome-titulo.etapa-concluida {
   text-decoration: line-through;
   color: #888;
 }
+
+/* ------- Fonte um pouco maior ------- */
+
+.acao-modal-dialog .acao-label { font-size: 11px; }
+.acao-modal-dialog .acao-header h2 { font-size: 24px; }
+.acao-modal-dialog .acao-badge { font-size: 13px; }
+
+.acao-modal-dialog .form-card-title { font-size: 16px; }
+
+.acao-modal-dialog label { font-size: 13.5px; }
+
+.acao-modal-dialog input,
+.acao-modal-dialog select,
+.acao-modal-dialog textarea { font-size: 14.5px; }
+
+.acao-modal-dialog .custom-dropdown-list li { font-size: 14.5px; }
+
+.acao-modal-dialog .acao-btn-sec { font-size: 14px; }
+.acao-modal-dialog .etapa-card-titulo { font-size: 14.5px; }
+.acao-modal-dialog .etapa-remove { font-size: 13.5px; }
+.acao-modal-dialog .etapas-vazio { font-size: 14.5px; }
+
+.acao-modal-dialog .form-erro { font-size: 14px; }
+.acao-modal-dialog .acao-modal-btn { font-size: 15.5px; }

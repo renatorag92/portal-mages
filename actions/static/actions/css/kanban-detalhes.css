@@ -819,3 +819,33 @@ select.det-input {
 .det-confirma-overlay.neutro .det-btn-cancelar:hover:not(:disabled) {
   background: #24704a;
 }
+
+/* ------- Fonte um pouco maior ------- */
+
+.det-label { font-size: 11px; }
+.det-header h2 { font-size: 24px; }
+.det-header p { font-size: 15px; }
+.det-badge { font-size: 13px; }
+
+.det-card-head h3 { font-size: 16px; }
+
+.det-item dt { font-size: 12.5px; }
+.det-item dd { font-size: 15px; }
+.det-vazio { font-size: 14.5px; }
+.det-cpf { font-size: 13px; }
+.det-aviso { font-size: 14px; }
+.det-chip { font-size: 13px; }
+
+.det-input { font-size: 14.5px; }
+.det-btn { font-size: 14px; }
+.det-erro { font-size: 14px; }
+
+.det-progresso-texto { font-size: 13.5px; }
+.det-etapa-titulo { font-size: 14.5px; }
+.det-etapa-nome { font-size: 15.5px; }
+
+.det-footer-label { font-size: 12px; }
+.det-status-btn { font-size: 13.5px; }
+
+.det-confirma h3 { font-size: 19px; }
+.det-confirma p { font-size: 15px; }
