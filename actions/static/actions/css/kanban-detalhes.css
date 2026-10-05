@@ -814,3 +814,30 @@ select.det-input {
   background: rgba(192, 57, 43, 0.08);
   border-color: var(--det-vermelho);
 }
+
+/* ------- Cor de destaque fixa: textos, ícones e botões legíveis em qualquer cor de status ------- */
+
+.det-overlay,
+.det-confirma-overlay {
+  --det-destaque: #3e4a89;
+}
+
+.det-badge {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.det-card-head h3 i,
+.det-etapa-titulo,
+.det-btn-sec {
+  color: var(--det-destaque);
+}
+
+.det-input:focus,
+.det-btn-sec:hover:not(:disabled),
+.det-etapa.editando {
+  border-color: var(--det-destaque);
+}
+
+.det-status-dot {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}

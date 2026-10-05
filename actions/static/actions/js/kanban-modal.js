@@ -46,6 +46,14 @@ document.addEventListener("DOMContentLoaded", function () {
       .trim();
   }
 
+    // Escolhe texto escuro ou branco conforme o brilho da cor de fundo, para o texto sempre ficar legível
+  function corDoTexto(cor) {
+    const m = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(cor || "");
+    if (!m) return "";
+    const brilho = (Number(m[1]) * 299 + Number(m[2]) * 587 + Number(m[3]) * 114) / 1000;
+    return brilho > 150 ? "#2b2b2b" : "#fff";
+  }
+
 
   /* ---------- Cor do texto: cinza quando vazio, escuro quando preenchido ---------- */
 
@@ -141,6 +149,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     badge.textContent = titulo ? titulo.textContent.trim() : "";
     badge.style.backgroundColor = cor;
+    badge.style.color = corDoTexto(cor);
     overlay.style.setProperty("--acao-cor", cor || "#3e4a89");
   }
 
