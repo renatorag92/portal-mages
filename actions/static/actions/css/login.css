@@ -1,0 +1,303 @@
+:root {
+  --azul: #0b2545;
+  --azul-medio: #134e5e;
+  --verde: #1f7a68;
+  --verde-hover: #17695a;
+  --verde-claro: #9fd8cb;
+  --fundo: #f8fafc;
+  --texto-suave: #475569;
+  --borda: #94a3b8;
+  --vermelho: #d62d20;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  background: var(--fundo);
+  color: var(--azul);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* LADO ESQUERDO: MARCA*/
+
+.painel {
+  position: relative;
+  overflow: hidden;
+  flex: 1 1 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;          /* centralizado. Para alinhar à esquerda: apague esta linha */
+  padding: 64px 72px;
+  background: var(--azul);
+  color: #fff;
+}
+
+/* bolhas decorativas */
+.painel::before,
+.painel::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+}
+
+.painel::before {
+  width: 520px;
+  height: 520px;
+  right: -180px;
+  top: -160px;
+  background: var(--azul-medio);
+}
+
+.painel::after {
+  width: 360px;
+  height: 360px;
+  left: -120px;
+  bottom: -140px;
+  background: var(--verde);
+  opacity: 0.55;
+}
+
+.painel-conteudo {
+  position: relative;           /* fica por cima das bolhas */
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;          /* para alinhar à esquerda: flex-start */
+  text-align: center;           /* para alinhar à esquerda: left */
+  gap: 20px;
+}
+
+.logo {
+  width: 220px;
+  height: 220px;
+}
+
+.logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.35));
+}
+
+.painel h1 {
+  margin: 0;
+  font-weight: 700;
+  font-size: 40px;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  color: #fff;
+}
+
+.painel .texto {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.5;
+  color: #b7cddd;
+}
+
+/* LADO DIREITO: FORMULÁRIO */
+
+.lado-form {
+  flex: 1 1 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  padding: 48px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(11, 37, 69, 0.10);
+}
+
+.titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.titulo h2 {
+  margin: 0;
+  font-weight: 700;
+  font-size: 28px;
+}
+
+.titulo p {
+  margin: 0;
+  font-size: 16px;
+  color: var(--texto-suave);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.campos {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+label {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+input {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  font: inherit;
+  font-size: 16px;
+  color: var(--azul);
+  background: #fff;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus {
+  outline: 3px solid var(--verde-claro);
+  border-color: var(--verde);
+}
+
+.esqueci {
+  align-self: flex-end;
+  font-size: 14px;
+  color: var(--verde);
+}
+
+.esqueci:hover { color: var(--azul); }
+
+button {
+  width: 100%;
+  height: 48px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--verde);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+button:hover { background: var(--verde-hover); }
+button:focus-visible { outline: 3px solid var(--verde-claro); outline-offset: 2px; }
+
+/* ERROS*/
+
+/* campo com erro */
+input.invalido {
+  border-color: var(--vermelho);
+  box-shadow: inset 0 0 0 1px var(--vermelho);
+  background: #fff5f4;
+  animation: tremer 0.35s ease-in-out;
+}
+
+input.invalido:focus {
+  outline: 3px solid rgba(214, 45, 32, 0.25);
+  border-color: var(--vermelho);
+}
+
+/* caixa de mensagem */
+.erro {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #fbd5d1;
+  border: 1px solid #e0554a;
+  color: #a31d12;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  animation: erro-entrada 0.3s ease-out;
+}
+
+.erro[hidden] { display: none; }
+
+/* mensagem de erro logo abaixo do campo, com símbolo vermelho */
+.erro-campo {
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #b3261e;
+  animation: erro-entrada 0.3s ease-out;
+}
+
+.erro-campo[hidden] { display: none; }
+
+/* símbolo: círculo vermelho com "!" */
+.erro-campo::before {
+  content: "!";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: #d62d20;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+/* animações */
+@keyframes erro-entrada {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes tremer {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(6px); }
+  60%      { transform: translateX(-4px); }
+  80%      { transform: translateX(4px); }
+}
+
+/* quem desativa animações no sistema não vê movimento */
+@media (prefers-reduced-motion: reduce) {
+  .erro,
+  .erro-campo,
+  input.invalido {
+    animation: none;
+  }
+}
+
+/* CELULAR / TELA PEQUENA: EMPILHA*/
+@media (max-width: 800px) {
+  body { flex-direction: column; }
+  .painel { flex: none; padding: 40px 24px; }
+  .logo { width: 120px; height: 120px; }
+  .painel h1 { font-size: 28px; }
+  .painel .texto { display: none; }
+  .card { padding: 32px 24px; }
+}

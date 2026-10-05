@@ -1,0 +1,843 @@
+/* =========================================================
+   POP-UP DE DETALHES DA AÇÃO
+   Esquerda: dados da ação | Direita: etapas
+   ========================================================= */
+
+.det-overlay {
+  --det-cor: #3e4a89;
+  --det-verde: #2e8b57;
+  --det-verde-escuro: #24704a;
+  --det-vermelho: #c0392b;
+  --det-vermelho-escuro: #a5301f;
+
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(30, 30, 30, 0.35);
+}
+
+.det-overlay.open {
+  display: flex;
+  animation: det-fundo-entra 0.2s ease-out;
+}
+
+/* Altura fixa: o pop-up tem sempre o mesmo tamanho, com 1 etapa ou com 20.
+   Para deixar mais alto ou mais baixo, mude o 740px. */
+.det-dialog {
+  width: min(1120px, 100%);
+  height: min(740px, calc(100vh - 40px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg, #eeece7);
+  border-top: 6px solid var(--det-cor);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: det-entrada 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+
+/* ------- Cabeçalho ------- */
+
+.det-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 24px 16px;
+  background: #fff;
+  border-bottom: 1px solid var(--border-light, #e0ddd4);
+}
+
+.det-header-info {
+  min-width: 0;
+}
+
+.det-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  color: #96928a;
+}
+
+.det-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-dark, #2b2b2b);
+}
+
+.det-header p {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: var(--text-muted, #6b6b6b);
+  overflow-wrap: anywhere;
+}
+
+.det-header-side {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.det-badge {
+  padding: 5px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--det-cor);
+  border-radius: 20px;
+}
+
+.det-badge:empty {
+  display: none;
+}
+
+.det-fechar {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: #555;
+  background: #f2f1ec;
+  border: 1px solid #d8d5cc;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.det-fechar:hover {
+  color: #fff;
+  background: var(--det-vermelho);
+  border-color: var(--det-vermelho);
+}
+
+
+/* ------- Corpo em duas colunas -------
+   O corpo não rola. Quem rola é a lista de etapas (e, se faltar espaço
+   na edição, o card de dados da ação). */
+
+.det-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 18px;
+  align-items: stretch;
+  padding: 20px 24px;
+  overflow: hidden;
+}
+
+.det-col {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.det-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px;
+  background: #fff;
+  border: 1px solid var(--border-light, #e0ddd4);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.det-card-acao {
+  overflow-y: auto;
+}
+
+.det-card-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+  margin-bottom: 14px;
+}
+
+.det-card-head h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark, #2b2b2b);
+}
+
+.det-card-head h3 i {
+  color: var(--det-cor);
+}
+
+
+/* ------- Barras de rolagem finas ------- */
+
+.det-card-acao,
+.det-etapas-lista,
+.det-obs {
+  scrollbar-width: thin;
+  scrollbar-color: #c8c6c0 transparent;
+}
+
+.det-card-acao::-webkit-scrollbar,
+.det-etapas-lista::-webkit-scrollbar,
+.det-obs::-webkit-scrollbar {
+  width: 6px;
+}
+
+.det-card-acao::-webkit-scrollbar-thumb,
+.det-etapas-lista::-webkit-scrollbar-thumb,
+.det-obs::-webkit-scrollbar-thumb {
+  background: #c8c6c0;
+  border-radius: 10px;
+}
+
+.det-card-acao::-webkit-scrollbar-thumb:hover,
+.det-etapas-lista::-webkit-scrollbar-thumb:hover,
+.det-obs::-webkit-scrollbar-thumb:hover {
+  background: #a9a69e;
+}
+
+
+/* ------- Lista de campos ------- */
+
+.det-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 20px;
+  margin: 0;
+}
+
+.det-item {
+  min-width: 0;
+}
+
+.det-item.full {
+  grid-column: 1 / -1;
+}
+
+.det-item dt {
+  margin-bottom: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #96928a;
+}
+
+.det-item dt label {
+  font-weight: 600;
+}
+
+.det-item dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #343434;
+  overflow-wrap: anywhere;
+}
+
+/* No máximo 4 linhas em observações da etapa: passou disso, rola dentro do próprio campo */
+.det-item dd.det-obs {
+  max-height: calc(1.45em * 4);
+  overflow-y: auto;
+  padding-right: 6px;
+  white-space: pre-wrap;
+}
+
+/* No máximo 7 linhas em observações da ação: passou disso, rola dentro do próprio campo */
+.det-item dd.det-obs-acao {
+  max-height: calc(1.45em * 7);
+}
+
+.det-req {
+  color: var(--det-vermelho);
+}
+
+.det-vazio,
+.det-vazio-inline {
+  font-weight: 400;
+  color: #8a867e;
+}
+
+.det-vazio {
+  margin: 0;
+  font-size: 14.5px;
+}
+
+.det-cpf {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #777;
+}
+
+.det-aviso {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #b83225;
+  background: rgba(192, 57, 43, 0.07);
+  border: 1px solid rgba(192, 57, 43, 0.18);
+  border-radius: 7px;
+}
+
+
+/* ------- Prioridade ------- */
+
+.det-chip {
+  display: inline-block;
+  padding: 3px 11px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 20px;
+}
+
+.det-chip-alta  { color: #b83225; background: rgba(192, 57, 43, 0.12); }
+.det-chip-media { color: #a05f00; background: rgba(217, 138, 31, 0.16); }
+.det-chip-baixa { color: #26734a; background: rgba(46, 139, 87, 0.14); }
+
+
+/* ------- Campos editáveis ------- */
+
+.det-input {
+  width: 100%;
+  padding: 9px 12px;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 400;
+  color: var(--text-dark, #333);
+  background: #f5f4f0;
+  border: 1px solid #d8d5cc;
+  border-radius: 6px;
+}
+
+.det-input:focus {
+  outline: none;
+  background: #fff;
+  border-color: var(--det-cor);
+  box-shadow: 0 0 0 3px rgba(62, 74, 137, 0.15);
+}
+
+textarea.det-input {
+  resize: none;
+}
+
+select.det-input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 30px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #999 50%),
+    linear-gradient(135deg, #999 50%, transparent 50%);
+  background-position: calc(100% - 15px) center, calc(100% - 10px) center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.det-input.invalido,
+.det-input.invalido:focus {
+  background-color: #fff5f4;
+  border-color: #d62d20;
+  box-shadow: inset 0 0 0 1px #d62d20;
+}
+
+
+/* ------- Botões ------- */
+
+.det-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.det-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.det-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.det-btn-sec {
+  color: var(--det-cor);
+  background: #fff;
+  border-color: #d8d5cc;
+}
+
+.det-btn-sec:hover:not(:disabled) {
+  background: #f2f1ec;
+  border-color: var(--det-cor);
+}
+
+.det-btn-salvar {
+  background: var(--det-verde);
+}
+
+.det-btn-salvar:hover:not(:disabled) {
+  background: var(--det-verde-escuro);
+}
+
+.det-btn-cancelar {
+  background: var(--det-vermelho);
+}
+
+.det-btn-cancelar:hover:not(:disabled) {
+  background: var(--det-vermelho-escuro);
+}
+
+.det-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.det-erro {
+  margin-top: 14px;
+  padding: 9px 12px;
+  font-size: 14px;
+  color: var(--det-vermelho-escuro);
+  background: rgba(192, 57, 43, 0.08);
+  border: 1px solid rgba(192, 57, 43, 0.25);
+  border-radius: 7px;
+}
+
+.det-erro[hidden] {
+  display: none;
+}
+
+/* ------- Etapas ------- */
+
+.det-progresso {
+  flex-shrink: 0;
+  margin-bottom: 14px;
+}
+
+.det-progresso-texto {
+  margin-bottom: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-muted, #6b6b6b);
+}
+
+.det-progresso-barra {
+  height: 8px;
+  overflow: hidden;
+  background: #ebe9e2;
+  border-radius: 10px;
+}
+
+.det-progresso-preenchido {
+  height: 100%;
+  background: var(--det-verde);
+  border-radius: 10px;
+  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* É esta lista que rola. O respiro nas bordas evita cortar o brilho da etapa em edição. */
+.det-etapas-lista {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 3px 8px 3px 3px;
+  overflow-y: auto;
+}
+
+.det-etapa {
+  flex-shrink: 0;
+  padding: 14px 16px;
+  background: #faf9f6;
+  border: 1px solid #e5e2d9;
+  border-left: 4px solid var(--det-cor);
+  border-radius: 8px;
+}
+
+.det-etapa.concluida {
+  border-left-color: var(--det-verde);
+}
+
+.det-etapa.editando {
+  background: #fff;
+  border-color: var(--det-cor);
+  box-shadow: 0 0 0 3px rgba(62, 74, 137, 0.1);
+}
+
+.det-etapa-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.det-etapa-titulo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--det-cor);
+}
+
+.det-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.det-check-input {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--det-verde);
+  cursor: pointer;
+}
+
+.det-check-input:disabled {
+  cursor: not-allowed;
+}
+
+.det-etapa-nome {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--text-dark, #2b2b2b);
+  overflow-wrap: anywhere;
+}
+
+.det-etapa.concluida .det-etapa-nome {
+  color: #888;
+  text-decoration: line-through;
+}
+
+
+/* ------- Rodapé: mover para outro status e excluir ------- */
+
+.det-footer {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  background: #fff;
+  border-top: 1px solid var(--border-light, #e0ddd4);
+}
+
+.det-footer[hidden] {
+  display: none;
+}
+
+.det-footer-label {
+  margin-right: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #96928a;
+}
+
+.det-status-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 13px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #444;
+  background: #fff;
+  border: 1px solid #d8d5cc;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.det-status-btn:hover:not(:disabled) {
+  background: #f5f4f0;
+  border-color: var(--c);
+}
+
+.det-status-btn.atual {
+  color: #8a867e;
+  background: #f2f1ec;
+  cursor: default;
+}
+
+.det-status-dot {
+  width: 9px;
+  height: 9px;
+  background: var(--c);
+  border-radius: 50%;
+}
+
+.det-footer .det-btn-excluir {
+  margin-left: auto;
+  color: var(--det-vermelho);
+  background: #fff;
+  border-color: #e6d3cf;
+}
+
+.det-footer .det-btn-excluir:hover:not(:disabled) {
+  color: #fff;
+  background: var(--det-vermelho);
+  border-color: var(--det-vermelho);
+}
+
+
+/* ------- Responsividade ------- */
+
+/* Em telas estreitas as duas colunas ficam empilhadas e não cabem na altura fixa:
+   aí o corpo inteiro passa a rolar. */
+@media (max-width: 900px) {
+  .det-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    overflow-y: auto;
+  }
+
+  .det-col,
+  .det-card {
+    display: block;
+  }
+
+  .det-card-acao {
+    overflow: visible;
+  }
+
+  .det-etapas-lista {
+    padding: 0;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 560px) {
+  .det-overlay {
+    padding: 8px;
+  }
+
+  .det-dialog {
+    height: calc(100vh - 16px);
+  }
+
+  .det-header,
+  .det-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .det-body {
+    padding: 14px 16px;
+  }
+
+  .det-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .det-acoes {
+    justify-content: stretch;
+  }
+
+  .det-acoes .det-btn {
+    flex: 1;
+  }
+}
+
+
+/* ------- Aviso de confirmação ------- */
+
+.det-confirma-overlay {
+  --det-cor: #3e4a89;
+  --det-vermelho: #c0392b;
+  --det-vermelho-escuro: #a5301f;
+
+  position: fixed;
+  inset: 0;
+  z-index: 20001; /* acima do pop-up de detalhes */
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(30, 30, 30, 0.35);
+}
+
+.det-confirma-overlay.open {
+  display: flex;
+}
+
+.det-confirma {
+  width: min(400px, 100%);
+  padding: 22px 24px 18px;
+  background: #fff;
+  border-top: 5px solid var(--det-vermelho);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: det-entrada 0.18s ease-out;
+}
+
+.det-confirma h3 {
+  margin: 0 0 8px;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text-dark, #2b2b2b);
+}
+
+.det-confirma p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #555;
+}
+
+.det-confirma-acoes {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.det-confirma-acoes .det-btn[hidden] {
+  display: none;
+}
+
+.det-confirma .det-btn:focus-visible {
+  outline: 2px solid var(--det-cor);
+  outline-offset: 2px;
+}
+
+/* Confirmação sem perigo (verde), usada ao cadastrar uma ação */
+.det-confirma-overlay.neutro .det-confirma {
+  border-top-color: #2e8b57;
+}
+
+.det-confirma-overlay.neutro .det-btn-cancelar {
+  background: #2e8b57;
+}
+
+.det-confirma-overlay.neutro .det-btn-cancelar:hover:not(:disabled) {
+  background: #24704a;
+}
+
+
+/* ------- Animações de abrir e fechar ------- */
+
+@keyframes det-fundo-entra { from { opacity: 0; } to { opacity: 1; } }
+@keyframes det-fundo-sai   { from { opacity: 1; } to { opacity: 0; } }
+
+@keyframes det-entrada {
+  from { opacity: 0; transform: translateY(6px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes det-saida {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(4px) scale(0.99); }
+}
+
+/* Fechando: o JS põe a classe "closing" e remove o pop-up quando a animação termina */
+.det-overlay.closing {
+  pointer-events: none;
+  animation: det-fundo-sai 0.15s ease-in forwards;
+}
+
+.det-overlay.closing .det-dialog {
+  animation: det-saida 0.15s ease-in forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .det-overlay.open,
+  .det-overlay.closing,
+  .det-dialog,
+  .det-overlay.closing .det-dialog,
+  .det-confirma {
+    animation: none;
+  }
+
+  .det-progresso-preenchido {
+    transition: none;
+  }
+}
+
+/* ------- Botão de excluir etapa ------- */
+
+.det-etapa-botoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.det-btn-perigo {
+  color: var(--det-vermelho);
+  background: #fff;
+  border-color: #e6d3cf;
+}
+
+.det-btn-perigo:hover:not(:disabled) {
+  background: rgba(192, 57, 43, 0.08);
+  border-color: var(--det-vermelho);
+}
+
+/* ------- Cor de destaque fixa: textos, ícones e botões legíveis em qualquer cor de status ------- */
+
+.det-overlay,
+.det-confirma-overlay {
+  --det-destaque: #3e4a89;
+}
+
+.det-badge {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.det-card-head h3 i,
+.det-etapa-titulo,
+.det-btn-sec {
+  color: var(--det-destaque);
+}
+
+.det-input:focus,
+.det-btn-sec:hover:not(:disabled),
+.det-etapa.editando {
+  border-color: var(--det-destaque);
+}
+
+.det-status-dot {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}

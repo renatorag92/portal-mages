@@ -1,0 +1,694 @@
+/* =========================================================
+   BOTÃO "CADASTRAR AÇÃO" NAS COLUNAS
+   ========================================================= */
+
+.add-action-btn {
+  width: 100%;
+  padding: 10px 8px;
+  margin-bottom: 8px; /* Adicionado espaçamento inferior */
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-muted, #6b6b6b);
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px dashed #c9c5b9;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.add-action-btn:hover {
+  background: #fff;
+  color: var(--text-dark, #2b2b2b);
+  border-color: #b7b2a5;
+}
+
+.add-action-btn:focus-visible {
+  outline: 2px solid #3e4a89;
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   POP-UP DE CADASTRO
+   Esquerda: dados da ação | Direita: etapas
+   ========================================================= */
+
+.acao-modal-overlay {
+  /* --acao-cor é trocada pelo JS com a cor da coluna onde a ação será criada */
+  --acao-cor: #3e4a89;
+
+  pointer-events: auto;
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(30, 30, 30, 0.35);
+}
+
+.acao-modal-overlay.open {
+  display: flex;
+}
+
+/* Altura fixa, igual ao pop-up de detalhes. Para mudar, ajuste o 740px. */
+.acao-modal-dialog {
+  --green: #2e8b57;
+  --green-dark: #24704a;
+  --red: #c0392b;
+  --red-dark: #a5301f;
+
+  pointer-events: auto;
+  width: min(1120px, 100%);
+  height: min(740px, calc(100vh - 40px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg, #eeece7);
+  border-top: 6px solid var(--acao-cor, #3e4a89);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.acao-modal-dialog #formCadastroAcao {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+
+/* ------- Cabeçalho ------- */
+
+.acao-modal-dialog .acao-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 24px 16px;
+  background: #fff;
+  border-bottom: 1px solid var(--border-light, #e0ddd4);
+}
+
+.acao-modal-dialog .acao-header-info {
+  min-width: 0;
+}
+
+.acao-modal-dialog .acao-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  color: #96928a;
+}
+
+.acao-modal-dialog .acao-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-dark, #2b2b2b);
+}
+
+.acao-modal-dialog .acao-header-side {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.acao-modal-dialog .acao-badge {
+  padding: 5px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--acao-cor, #3e4a89);
+  border-radius: 20px;
+}
+
+.acao-modal-dialog .acao-badge:empty {
+  display: none;
+}
+
+.acao-modal-dialog .acao-fechar {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 15px;
+  color: #555;
+  background: #f2f1ec;
+  border: 1px solid #d8d5cc;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.acao-modal-dialog .acao-fechar:hover {
+  color: #fff;
+  background: var(--red);
+  border-color: var(--red);
+}
+
+
+/* ------- Corpo em duas colunas -------
+   O corpo não rola. Quem rola é a lista de etapas (e, se faltar altura
+   na tela, o card de dados da ação). */
+
+.acao-modal-dialog .acao-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 18px;
+  align-items: stretch;
+  padding: 20px 24px;
+  overflow: hidden;
+}
+
+.acao-modal-dialog .acao-col {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.acao-modal-dialog .form-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px;
+  background: #fff;
+  border: 1px solid var(--border-light, #e0ddd4);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.acao-modal-dialog .form-card-dados {
+  overflow-y: auto;
+}
+
+.acao-modal-dialog .form-card-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+  margin-bottom: 14px;
+}
+
+.acao-modal-dialog .form-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark, #2b2b2b);
+}
+
+.acao-modal-dialog .form-card-title i {
+  color: var(--acao-cor, #3e4a89);
+}
+
+.acao-modal-dialog .form-card-contagem {
+  font-weight: 600;
+  color: #96928a;
+}
+
+
+/* ------- Barras de rolagem finas ------- */
+
+.acao-modal-dialog .form-card-dados,
+.acao-modal-dialog .etapas-list,
+.acao-modal-dialog .custom-dropdown-list {
+  scrollbar-width: thin;
+  scrollbar-color: #c8c6c0 transparent;
+}
+
+.acao-modal-dialog .form-card-dados::-webkit-scrollbar,
+.acao-modal-dialog .etapas-list::-webkit-scrollbar,
+.acao-modal-dialog .custom-dropdown-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.acao-modal-dialog .form-card-dados::-webkit-scrollbar-thumb,
+.acao-modal-dialog .etapas-list::-webkit-scrollbar-thumb,
+.acao-modal-dialog .custom-dropdown-list::-webkit-scrollbar-thumb {
+  background: #c8c6c0;
+  border-radius: 10px;
+}
+
+.acao-modal-dialog .form-card-dados::-webkit-scrollbar-thumb:hover,
+.acao-modal-dialog .etapas-list::-webkit-scrollbar-thumb:hover,
+.acao-modal-dialog .custom-dropdown-list::-webkit-scrollbar-thumb:hover {
+  background: #a9a69e;
+}
+
+
+/* ------- Campos ------- */
+
+.acao-modal-dialog .form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 16px;
+}
+
+.acao-modal-dialog .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.acao-modal-dialog .form-group-full {
+  grid-column: 1 / -1;
+}
+
+.acao-modal-dialog .custom-select-container {
+  position: relative;
+}
+
+.acao-modal-dialog label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #555;
+}
+
+.acao-modal-dialog .required::after {
+  content: " *";
+  color: var(--red);
+}
+
+.acao-modal-dialog input,
+.acao-modal-dialog select,
+.acao-modal-dialog textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: 14.5px;
+  padding: 9px 12px;
+  border-radius: 6px;
+  border: 1px solid #d8d5cc;
+  background: #f5f4f0;
+  color: var(--text-dark, #333);
+}
+
+.acao-modal-dialog textarea {
+  resize: none;
+}
+
+.acao-modal-dialog input:focus,
+.acao-modal-dialog select:focus,
+.acao-modal-dialog textarea:focus {
+  outline: none;
+  background: #fff;
+  border-color: var(--acao-cor, #3e4a89);
+  box-shadow: 0 0 0 3px rgba(62, 74, 137, 0.15);
+}
+
+.acao-modal-dialog select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 30px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #999 50%),
+    linear-gradient(135deg, #999 50%, transparent 50%);
+  background-position: calc(100% - 15px) center, calc(100% - 10px) center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.acao-modal-dialog ::placeholder {
+  color: #999;
+  opacity: 1;
+}
+
+.acao-modal-dialog select.placeholder-ativo {
+  color: #999;
+}
+
+.acao-modal-dialog select option {
+  color: #333;
+  background-color: #fff;
+}
+
+
+/* ------- Lista suspensa de ações ------- */
+
+.acao-modal-dialog .custom-dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: none;
+  max-height: 220px;
+  overflow-y: auto;
+  margin-top: 6px;
+  padding: 6px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #d8d5cc;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.acao-modal-dialog .custom-dropdown-list li {
+  padding: 10px 14px;
+  margin-bottom: 2px;
+  font-size: 14.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-dark, #333);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.acao-modal-dialog .custom-dropdown-list li:last-child {
+  margin-bottom: 0;
+}
+
+.acao-modal-dialog .custom-dropdown-list li:not(.dropdown-hint):hover {
+  background: #f2f1ec;
+  color: var(--green);
+}
+
+.acao-modal-dialog .custom-dropdown-list li.dropdown-hint {
+  color: #888;
+  cursor: default;
+}
+
+
+/* ------- Etapas (cada uma em um cartão) ------- */
+
+.acao-modal-dialog .acao-btn-sec {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--acao-cor, #3e4a89);
+  background: #fff;
+  border: 1px solid #d8d5cc;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.acao-modal-dialog .acao-btn-sec:hover {
+  background: #f2f1ec;
+  border-color: var(--acao-cor, #3e4a89);
+}
+
+.acao-modal-dialog .acao-btn-sec:active {
+  transform: translateY(1px);
+}
+
+.acao-modal-dialog .etapas-vazio {
+  flex-shrink: 0;
+  margin: 0;
+  font-size: 14.5px;
+  color: #8a867e;
+}
+
+.acao-modal-dialog .etapas-vazio[hidden] {
+  display: none;
+}
+
+/* É esta lista que rola. O respiro nas bordas evita cortar o brilho do campo em foco. */
+.acao-modal-dialog .etapas-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 3px 8px 3px 3px;
+  overflow-y: auto;
+}
+
+.acao-modal-dialog .etapa-card {
+  flex-shrink: 0;
+  padding: 14px 16px;
+  background: #faf9f6;
+  border: 1px solid #e5e2d9;
+  border-left: 4px solid var(--acao-cor, #3e4a89);
+  border-radius: 8px;
+}
+
+.acao-modal-dialog .etapa-card-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.acao-modal-dialog .etapa-card-titulo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--acao-cor, #3e4a89);
+}
+
+.acao-modal-dialog .etapa-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--red);
+  background: #fff;
+  border: 1px solid #e6d3cf;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.acao-modal-dialog .etapa-remove:hover {
+  background: rgba(192, 57, 43, 0.08);
+  border-color: var(--red);
+}
+
+.acao-modal-dialog .etapa-remove:active {
+  transform: translateY(1px);
+}
+
+
+/* ------- Rodapé: erro e botões ------- */
+
+.acao-modal-dialog .acao-footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 24px;
+  background: #fff;
+  border-top: 1px solid var(--border-light, #e0ddd4);
+}
+
+.acao-modal-dialog .form-erro {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  font-size: 14px;
+  color: var(--red-dark);
+  background: rgba(192, 57, 43, 0.08);
+  border: 1px solid rgba(192, 57, 43, 0.25);
+  border-radius: 7px;
+}
+
+.acao-modal-dialog .form-erro[hidden] {
+  display: none;
+}
+
+.acao-modal-dialog .form-actions {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.acao-modal-dialog .acao-modal-btn {
+  padding: 10px 28px;
+  font-family: inherit;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.acao-modal-dialog .acao-modal-btn:active {
+  transform: translateY(1px);
+}
+
+.acao-modal-dialog .acao-modal-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.acao-modal-dialog .acao-modal-btn-salvar {
+  background: var(--green);
+}
+
+.acao-modal-dialog .acao-modal-btn-salvar:hover:not(:disabled) {
+  background: var(--green-dark);
+}
+
+.acao-modal-dialog .acao-modal-btn-cancelar {
+  background: var(--red);
+}
+
+.acao-modal-dialog .acao-modal-btn-cancelar:hover:not(:disabled) {
+  background: var(--red-dark);
+}
+
+
+/* ------- Responsividade ------- */
+
+/* Em telas estreitas as duas colunas ficam empilhadas e não cabem na altura fixa:
+   aí o corpo inteiro passa a rolar. */
+@media (max-width: 900px) {
+  .acao-modal-dialog .acao-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    overflow-y: auto;
+  }
+
+  .acao-modal-dialog .acao-col,
+  .acao-modal-dialog .form-card {
+    display: block;
+  }
+
+  .acao-modal-dialog .form-card-dados {
+    overflow: visible;
+  }
+
+  .acao-modal-dialog .etapas-list {
+    padding: 0;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 560px) {
+  .acao-modal-overlay {
+    padding: 8px;
+  }
+
+  .acao-modal-dialog {
+    height: calc(100vh - 16px);
+  }
+
+  .acao-modal-dialog .acao-header,
+  .acao-modal-dialog .acao-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .acao-modal-dialog .acao-body {
+    padding: 14px 16px;
+  }
+
+  .acao-modal-dialog .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .acao-modal-dialog .acao-footer {
+    flex-wrap: wrap;
+  }
+
+  .acao-modal-dialog .form-erro {
+    flex-basis: 100%;
+  }
+
+  .acao-modal-dialog .form-actions {
+    flex: 1;
+  }
+
+  .acao-modal-dialog .acao-modal-btn {
+    flex: 1;
+  }
+}
+
+
+/* ------- Animações de abrir e fechar (sutis) ------- */
+
+@keyframes acao-fundo-entra { from { opacity: 0; } to { opacity: 1; } }
+@keyframes acao-fundo-sai   { from { opacity: 1; } to { opacity: 0; } }
+
+@keyframes acao-entrada {
+  from { opacity: 0; transform: translateY(6px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes acao-saida {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(4px) scale(0.99); }
+}
+
+.acao-modal-overlay.open {
+  animation: acao-fundo-entra 0.2s ease-out;
+}
+
+.acao-modal-overlay.open .acao-modal-dialog {
+  animation: acao-entrada 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Fechando: o JS põe a classe "closing" e esconde o pop-up quando a animação termina */
+.acao-modal-overlay.closing {
+  pointer-events: none;
+  animation: acao-fundo-sai 0.15s ease-in forwards;
+}
+
+.acao-modal-overlay.closing .acao-modal-dialog {
+  animation: acao-saida 0.15s ease-in forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acao-modal-overlay.open,
+  .acao-modal-overlay.closing,
+  .acao-modal-overlay.open .acao-modal-dialog,
+  .acao-modal-overlay.closing .acao-modal-dialog {
+    animation: none;
+  }
+}
+
+/* ------- Cor de destaque fixa: textos, ícones e botões legíveis em qualquer cor de coluna ------- */
+
+.acao-modal-overlay {
+  --acao-destaque: #3e4a89;
+}
+
+.acao-modal-dialog .acao-badge {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.acao-modal-dialog .form-card-title i,
+.acao-modal-dialog .etapa-card-titulo,
+.acao-modal-dialog .acao-btn-sec {
+  color: var(--acao-destaque);
+}
+
+.acao-modal-dialog input:focus,
+.acao-modal-dialog select:focus,
+.acao-modal-dialog textarea:focus,
+.acao-modal-dialog .acao-btn-sec:hover {
+  border-color: var(--acao-destaque);
+}

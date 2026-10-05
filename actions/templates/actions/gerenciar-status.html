@@ -1,0 +1,206 @@
+{% extends "LayoutsBases/base.html" %}
+{% load static %}
+
+{% block title %}
+Gerenciar Status
+{% endblock %}
+
+{% block page_title %}
+Gerenciar Status
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'actions/css/gerenciar-status.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="status-page">
+  <section class="status-card">
+    <h2 class="status-card-title">{% if status_edicao %}Editar status{% else %}Cadastrar status{% endif %}</h2>
+
+    {% if status_edicao or not status_limite_atingido %}
+    <form method="post">
+      {% csrf_token %}
+
+      {{ form.non_field_errors }}
+
+      <div class="status-form-fields">
+        <div class="status-form-group">
+          <label for="{{ form.nome.id_for_label }}">Nome do status:</label>
+          {{ form.nome }}
+          {{ form.nome.errors }}
+        </div>
+
+        <div class="status-form-group">
+          <label for="{{ form.cor.id_for_label }}">Cor da coluna:</label>
+          <input type="text" name="cor" id="{{ form.cor.id_for_label }}"
+            value="{{ form.cor.value|default_if_none:'' }}" maxlength="45" required
+            aria-describedby="id_cor_helptext">
+          <small class="status-help-text" id="id_cor_helptext">
+            Digite o nome da cor (ex.: amarelo, azul, verde) ou em hexadecimal (ex.: #ffff00).
+          </small>
+          {{ form.cor.errors }}
+        </div>
+      </div>
+
+      <div class="status-form-actions">
+        <button type="submit" class="status-save-button">
+          {% if status_edicao %}Salvar alterações{% else %}Salvar status{% endif %}
+        </button>
+        {% if status_edicao %}
+        <a href="{% url 'gerenciar_status' %}" class="status-cancel-button">Cancelar</a>
+        {% endif %}
+      </div>
+    </form>
+    {% else %}
+    <div class="status-limit-message" role="status">
+      <div class="status-limit-content">
+        <div class="status-limit-heading">
+          <h3>Você já atingiu o limite de status</h3>
+          <span class="status-limit-count">{{ status_lista|length }} de {{ max_status_columns }}</span>
+        </div>
+        <p>
+          Para cadastrar outro, primeiro exclua um status que não tenha ações vinculadas.
+          Você pode fazer isso na lista de status abaixo.
+        </p>
+      </div>
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="status-card">
+    <h2 class="status-card-title">Status cadastrados</h2>
+    <div class="status-table-wrapper">
+      <table class="status-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Cor</th>
+            <th>Ações vinculadas</th>
+            <th class="status-table-actions-heading">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for status in status_lista %}
+          <tr>
+            <td>{{ status.nome }}</td>
+            <td class="status-color-cell">
+              <span class="status-color" style="background-color: {{ status.cor }};"></span>
+              {{ status.cor }}
+            </td>
+            <td>{{ status.total_acoes }}</td>
+            <td>
+              <div class="status-row-actions">
+                <a href="{% url 'editar_status' status.id %}" class="status-edit-button"
+                  aria-label="Editar status {{ status.nome }}" title="Editar">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/>
+                  </svg>
+                </a>
+                {% if status.total_acoes %}
+                <button type="button" class="status-delete-button status-delete-disabled"
+                  aria-label="Não é possível excluir {{ status.nome }} porque possui ações vinculadas"
+                  title="Não é possível excluir: há ações vinculadas" disabled>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 6h18"/>
+                    <path d="M8 6V4h8v2"/>
+                    <path d="m19 6-1 14H6L5 6"/>
+                    <path d="M10 11v5M14 11v5"/>
+                  </svg>
+                </button>
+                {% else %}
+                <form method="post" action="{% url 'excluir_status' status.id %}" class="status-delete-form">
+                  {% csrf_token %}
+                  <button type="submit" class="status-delete-button"
+                    aria-label="Excluir status {{ status.nome }}" title="Excluir"
+                    data-status-name="{{ status.nome }}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M3 6h18"/>
+                      <path d="M8 6V4h8v2"/>
+                      <path d="m19 6-1 14H6L5 6"/>
+                      <path d="M10 11v5M14 11v5"/>
+                    </svg>
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="status-table-empty">Nenhum status cadastrado.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+{% if messages %}
+<div class="status-messages" aria-live="polite" aria-atomic="false">
+  {% for message in messages %}
+  <div class="status-message status-message-{{ message.tags }}" role="status">
+    <span class="status-message-icon" aria-hidden="true">
+      {% if 'status-created' in message.tags %}
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="m5 12 4 4L19 6"/>
+      </svg>
+      {% elif 'status-updated' in message.tags %}
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 20h9"/>
+        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/>
+      </svg>
+      {% elif 'status-deleted' in message.tags %}
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 6h18"/>
+        <path d="M8 6V4h8v2"/>
+        <path d="m19 6-1 14H6L5 6"/>
+      </svg>
+      {% else %}
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M12 8v4m0 4h.01"/>
+      </svg>
+      {% endif %}
+    </span>
+    <span class="status-message-text">{{ message }}</span>
+    <button type="button" class="status-message-close" aria-label="Fechar notificação">&times;</button>
+    <span class="status-message-progress" aria-hidden="true"></span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="status-confirm-overlay" id="statusConfirmModal" hidden>
+  <section class="status-confirm-dialog" role="dialog" aria-modal="true"
+    aria-labelledby="statusConfirmTitle" aria-describedby="statusConfirmText">
+    <div class="status-confirm-icon" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6h18"/>
+        <path d="M8 6V4h8v2"/>
+        <path d="m19 6-1 14H6L5 6"/>
+        <path d="M10 11v5M14 11v5"/>
+      </svg>
+    </div>
+    <h2 class="status-confirm-title" id="statusConfirmTitle">Excluir status?</h2>
+    <p class="status-confirm-text" id="statusConfirmText">
+      Tem certeza de que deseja excluir este status? Esta ação não pode ser desfeita.
+    </p>
+    <div class="status-confirm-actions">
+      <button type="button" class="status-confirm-cancel" id="statusConfirmCancel">Cancelar</button>
+      <button type="button" class="status-confirm-delete" id="statusConfirmDelete">Excluir</button>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'actions/js/gerenciar-status.js' %}"></script>
+{% endblock %}

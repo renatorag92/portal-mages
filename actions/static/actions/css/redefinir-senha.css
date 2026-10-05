@@ -1,0 +1,72 @@
+/* Complementa o login.css: só o que a tela de redefinição tem a mais */
+
+/* mensagem de erro logo abaixo do campo, com símbolo vermelho */
+.erro-campo {
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #b3261e;
+  animation: erro-entrada 0.3s ease-out;
+}
+
+.erro-campo[hidden] { display: none; }
+
+/* símbolo: círculo vermelho com "!" */
+.erro-campo::before {
+  content: "!";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: #d62d20;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+/* regras da senha (vêm do Django, em lista) */
+.dica {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--texto-suave, #475569);
+
+  max-height: 0;
+  margin-top: -8px;
+  opacity: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: max-height 0.3s ease, margin-top 0.3s ease, opacity 0.2s ease, visibility 0.3s;
+}
+
+.campo:focus-within .dica {
+  max-height: 240px;
+  margin-top: 0;
+  opacity: 1;
+  visibility: visible;
+}
+
+.dica ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.dica li + li {
+  margin-top: 2px;
+}
+
+/* a lista de regras ocupa espaço: deixa o card respirar um pouco mais */
+.card {
+  max-width: 460px;
+}
+
+/* quem desativa animações no sistema não vê movimento */
+@media (prefers-reduced-motion: reduce) {
+  .erro-campo { animation: none; }
+}

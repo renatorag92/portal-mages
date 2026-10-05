@@ -22,45 +22,9 @@
 
         </a>
 
-
         <!-- ================================================= -->
-        <!-- CADASTRO DE AÇÕES -->
-        <!-- ================================================= -->
-
-        <a 
-            href="{% url 'cadastro_acoes' %}" 
-            class="menu-item {% if request.resolver_match.url_name == 'cadastro_acoes' %}active{% endif %}"
-        >
-
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5"/>
-            </svg>
-
-            <span class="label">
-                Cadastro de Ações
-            </span>
-
-        </a>
-
-
-        <!-- ================================================= -->
-        <!-- PLANO DE EXECUÇÃO -->
-        <!-- ================================================= -->
-
-        <a
-            href="/plano-execucao/"
-            class="menu-item {% if request.resolver_match.url_name == 'plano_execucao' %}active{% endif %}"
-        >
-
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar4" viewBox="0 0 16 16">
-                <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M2 2a1 1 0 0 0-1 1v1h14V3a1 1 0 0 0-1-1zm13 3H1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1z"/>
-            </svg>
-
-            <span class="label">
-                Plano de Execução
-            </span>
-
-        </a>
+        <!-- PLANO DE EXECUÇÃO --> 
+        <!-- ================= retirado no momento ================================ -->
 
 
         <!-- ================================================= -->
@@ -79,6 +43,22 @@
 
             <span class="label">
                 Kanban de Governança
+            </span>
+
+        </a>
+
+        <a
+            href="{% url 'gerenciar_status' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'gerenciar_status' %}active{% endif %}"
+        >
+
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-tags" viewBox="0 0 16 16">
+                <path d="M3 2v4.586l6.707 6.707a1 1 0 0 0 1.414 0l2.172-2.172a1 1 0 0 0 0-1.414L6.586 3H3zm1 1h2.172l6.414 6.414-2.172 2.172L4 6.172V3zm1.5 2a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z"/>
+                <path d="M1 1h5.586l7.707 7.707a2 2 0 0 1 0 2.828l-2.172 2.172a2 2 0 0 1-2.828 0L1.586 6H1V1zm1 1v3.586l6.707 6.707a1 1 0 0 0 1.414 0l2.172-2.172a1 1 0 0 0 0-1.414L6.586 2H2z"/>
+            </svg>
+
+            <span class="label">
+                Gerenciar Status
             </span>
 
         </a>
