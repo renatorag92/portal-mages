@@ -75,6 +75,14 @@ document.addEventListener("DOMContentLoaded", function () {
       .trim();
   }
 
+    // Escolhe texto escuro ou branco conforme o brilho da cor de fundo, para o texto sempre ficar legível
+  function corDoTexto(hex) {
+    const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(hex || "").trim());
+    if (!m) return "#fff";
+    const brilho = (parseInt(m[1], 16) * 299 + parseInt(m[2], 16) * 587 + parseInt(m[3], 16) * 114) / 1000;
+    return brilho > 150 ? "#2b2b2b" : "#fff";
+  }
+
   function fmtData(iso) {
     if (!iso) return "Não informado";
     const partes = iso.split("-");
@@ -187,6 +195,7 @@ document.addEventListener("DOMContentLoaded", function () {
     elSubtitulo.textContent = a.nome || "";
     elBadge.textContent = a.status.nome;
     elBadge.style.backgroundColor = a.status.cor;
+    elBadge.style.color = corDoTexto(a.status.cor);
     overlay.style.setProperty("--det-cor", a.status.cor);
   }
 
@@ -465,6 +474,7 @@ document.addEventListener("DOMContentLoaded", function () {
     elSubtitulo.textContent = "";
     elBadge.textContent = "";
     elBadge.style.backgroundColor = "";
+    elBadge.style.color = "";
     elRodape.hidden = true;
     elAcao.innerHTML = '<div class="det-card"><p class="det-vazio">Carregando...</p></div>';
     elEtapas.innerHTML = "";
