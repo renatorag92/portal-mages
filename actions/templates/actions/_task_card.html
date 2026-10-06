@@ -17,6 +17,16 @@
   <!-- NOME -->
   <div class="task-desc">{{ acao.acao_catalogo.nome }}</div>
 
+  <!-- ANDAMENTO DAS ETAPAS (escondido quando a ação não tem etapas).
+       O kanban-detalhes.js atualiza este bloco ao marcar, adicionar ou excluir etapas. -->
+  <div class="task-progress{% if acao.total_etapas and acao.etapas_concluidas == acao.total_etapas %} completo{% endif %}"
+    style="--andamento: {% widthratio acao.etapas_concluidas acao.total_etapas 100 %};"
+    {% if not acao.total_etapas %}hidden{% endif %}>
+    <div class="task-progress-barra"><div class="task-progress-preenchido"></div></div>
+    <span class="task-progress-texto">{{ acao.etapas_concluidas }}/{{ acao.total_etapas }}</span>
+    <i class="bi bi-check-circle-fill task-progress-check" title="Todas as etapas concluídas"></i>
+  </div>
+
   {% if status.nome|slugify != 'cancelado' %}
   <!-- FORMULÁRIO DE STATUS (usado pelo arrastar e pelos botões do pop-up) -->
   <form action="{% url 'atualizar_status_acao' acao.codigo %}" method="post">

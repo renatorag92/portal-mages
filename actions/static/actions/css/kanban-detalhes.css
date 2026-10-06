@@ -841,3 +841,75 @@ select.det-input {
 .det-status-dot {
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
 }
+
+/* ------- Etapas recolhidas: só a primeira linha aparece; a seta abre os detalhes ------- */
+
+/* Recolhida, a linha não deixa espaço embaixo (o espaço passa a fazer parte dos detalhes) */
+.det-etapa:not(.editando) .det-etapa-topo {
+  margin-bottom: 0;
+}
+
+.det-etapa-detalhes {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition: grid-template-rows 0.25s ease, visibility 0s linear 0.25s;
+}
+
+.det-etapa.aberta .det-etapa-detalhes {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition: grid-template-rows 0.25s ease, visibility 0s;
+}
+
+.det-etapa-detalhes-interno {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.det-etapa-detalhes .det-grid {
+  margin-top: 12px;
+}
+
+.det-etapa-toggle {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: #555;
+  background: #fff;
+  border: 1px solid #d8d5cc;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.det-etapa-toggle:hover {
+  background: #f2f1ec;
+}
+
+.det-etapa-toggle:focus-visible {
+  outline: 2px solid var(--det-destaque, #3e4a89);
+  outline-offset: 2px;
+}
+
+.det-etapa-toggle svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.2s ease;
+}
+
+.det-etapa.aberta .det-etapa-toggle svg {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .det-etapa-detalhes,
+  .det-etapa.aberta .det-etapa-detalhes,
+  .det-etapa-toggle svg {
+    transition: none;
+  }
+}
