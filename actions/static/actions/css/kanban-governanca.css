@@ -741,3 +741,69 @@
     display: none;
   }
 }
+
+/* =========================================================
+   ANDAMENTO DAS ETAPAS NO CARD
+   (cole este bloco no fim do kanban-governanca.css)
+   ========================================================= */
+
+.task-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.task-progress[hidden] {
+  display: none;
+}
+
+/* Trilho neutro: aparece bem em qualquer cor de card */
+.task-progress-barra {
+  flex: 1;
+  height: 5px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+/* --andamento (0 a 100) vem do template e é atualizada pelo JS */
+.task-progress-preenchido {
+  width: calc(var(--andamento, 0) * 1%);
+  height: 100%;
+  background: #2e8b57;
+  border-radius: 10px;
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.task-progress-texto {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: #555;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Todas as etapas concluídas: aparece o check ao lado do número */
+.task-progress-check {
+  display: none;
+  flex-shrink: 0;
+  font-size: 13px;
+  line-height: 1;
+  color: #2e8b57;
+}
+
+.task-progress.completo .task-progress-check {
+  display: block;
+}
+
+/* Ações canceladas: o andamento já não importa, então fica esmaecido */
+.col-cancelado .task-progress {
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task-progress-preenchido {
+    transition: none;
+  }
+}

@@ -149,7 +149,12 @@ def kanban_view(request):
 
     acoes = Acao.objects.filter(
         secretario__prefeitura=prefeitura_logada
-    ).select_related('acao_catalogo__eixo', 'status', 'secretario')
+    ).select_related(
+        'acao_catalogo__eixo', 'status', 'secretario'
+    ).annotate(
+        total_etapas=Count('etapas'),
+        etapas_concluidas=Count('etapas', filter=Q(etapas__concluida=True)),
+    )
 
     for st in todos_status:
         st.acoes_lista = [a for a in acoes if a.status_id == st.id]

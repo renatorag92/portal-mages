@@ -2,8 +2,8 @@
  * Pop-up de detalhes da ação (Kanban)
  *
  * Esquerda: dados da ação (botão "Editar ação").
- * Direita:  etapas da ação (botão "Adicionar etapa", botão "Editar etapa" em cada uma
- *           e caixa de concluída).
+ * Direita:  etapas da ação (botão "Adicionar etapa"). Cada etapa aparece recolhida, só com a
+ *           primeira linha (caixa de concluída, nome e botões); a seta abre os detalhes.
  * Os dados vêm do servidor em JSON, e o pop-up é desenhado aqui.
  */
 document.addEventListener("DOMContentLoaded", function () {
@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let timerFechar = null;
 
   let codigoAberto = null;
-  // estado = { acao, etapas, prioridades, editandoAcao, editandoEtapa, novaEtapa }
+  // estado = { acao, etapas, prioridades, editandoAcao, editandoEtapa, novaEtapa, expandidas }
   let estado = null;
 
   // Largura (em %) que a barra de progresso tinha no último desenho.
@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", function () {
       .trim();
   }
 
-    // Escolhe texto escuro ou branco conforme o brilho da cor de fundo, para o texto sempre ficar legível
+  // Escolhe texto escuro ou branco conforme o brilho da cor de fundo, para o texto sempre ficar legível
   function corDoTexto(hex) {
     const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(hex || "").trim());
     if (!m) return "#fff";
@@ -175,6 +175,14 @@ document.addEventListener("DOMContentLoaded", function () {
       (desabilitado ? " disabled" : "") + '><i class="bi bi-trash3"></i> Excluir</button>';
   }
 
+  // Seta que abre e fecha os detalhes de uma etapa
+  function botaoToggleEtapa(id, aberta) {
+    return '<button type="button" class="det-etapa-toggle" data-do="alternar-etapa" data-id="' + id + '"' +
+      ' aria-expanded="' + aberta + '" aria-label="Ver detalhes da etapa">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>' +
+      "</button>";
+  }
+
   function rodapeEdicao(salvar, cancelar, id) {
     const dado = id != null ? ' data-id="' + id + '"' : "";
     return '<div class="det-erro" role="alert" hidden></div>' +
@@ -206,7 +214,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let conteudo;
 
     if (!editando) {
-    conteudo =
+      conteudo =
         item("Código", esc(a.codigo)) +
         item("Eixo", esc(a.eixo || "Não informado")) +
         item("Nome", esc(a.nome || "Não informado"), true) +
@@ -249,7 +257,6 @@ document.addEventListener("DOMContentLoaded", function () {
       '<dl class="det-grid">' + conteudo + "</dl>" +
       (editando ? rodapeEdicao("salvar-acao", "cancelar-acao") : "") +
       "</div>";
-
   }
 
   // Formulário de etapa. Com id = edita a etapa; com id = null é o formulário de etapa nova.
@@ -279,32 +286,38 @@ document.addEventListener("DOMContentLoaded", function () {
       "</article>";
   }
 
+  // Etapa recolhida: só a primeira linha. Os detalhes ficam dentro de .det-etapa-detalhes
+  // e aparecem quando o <article> ganha a classe "aberta".
   function etapaHtml(e) {
     const algumaEdicao = emEdicao();
     const somenteLeitura = estado.acao.somente_leitura;
 
     if (estado.editandoEtapa === e.id) return formEtapaHtml(e, e.id);
 
-      const botoes = somenteLeitura ? "" :
-      '<div class="det-etapa-botoes">' +
+    const aberta = estado.expandidas.has(e.id);
+
+    // Em ação cancelada não há editar/excluir, mas a seta continua disponível
+    const acoes = somenteLeitura ? "" :
       botaoSecundario("editar-etapa", e.id, "Editar etapa", algumaEdicao) +
-      botaoExcluirEtapa(e.id, algumaEdicao) +
-      "</div>";
-          
-    return '<article class="det-etapa' + (e.concluida ? " concluida" : "") + '" data-id="' + e.id + '">' +
+      botaoExcluirEtapa(e.id, algumaEdicao);
+
+    return '<article class="det-etapa' + (e.concluida ? " concluida" : "") + (aberta ? " aberta" : "") + '" data-id="' + e.id + '">' +
       '<div class="det-etapa-topo">' +
       '<label class="det-check">' +
       '<input type="checkbox" class="det-check-input" data-id="' + e.id + '"' +
       (e.concluida ? " checked" : "") + (somenteLeitura || algumaEdicao ? " disabled" : "") + ">" +
       '<span class="det-etapa-nome">' + esc(e.nome) + "</span>" +
-      "</label>" + botoes +
+      "</label>" +
+      '<div class="det-etapa-botoes">' + acoes + botaoToggleEtapa(e.id, aberta) + "</div>" +
       "</div>" +
+      '<div class="det-etapa-detalhes"><div class="det-etapa-detalhes-interno">' +
       '<dl class="det-grid">' +
       item("Responsável", esc(e.responsavel) + ' <span class="det-cpf">' + esc(mascaraCpf(e.cpf)) + "</span>", true) +
       item("Prioridade", chipPrioridade(e.prioridade)) +
       item("Período", esc(fmtData(e.data_inicio)) + " até " + esc(fmtData(e.data_fim))) +
       item("Observações", e.observacoes ? esc(e.observacoes) : vazio("Sem observações."), true, "det-obs") +
       "</dl>" +
+      "</div></div>" +
       "</article>";
   }
 
@@ -367,11 +380,28 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // Atualiza o andamento mostrado no card do kanban (barra e "2/5"), sem recarregar a página.
+  // Roda a cada redesenho, então cobre marcar, adicionar e excluir etapas.
+  function atualizarAndamentoDoCard() {
+    const card = document.querySelector('.task-card[data-codigo="' + codigoAberto + '"]');
+    const andamento = card && card.querySelector(".task-progress");
+    if (!andamento || !estado) return;
+
+    const total = estado.etapas.length;
+    const feitas = estado.etapas.filter(function (e) { return e.concluida; }).length;
+
+    andamento.hidden = total === 0;
+    andamento.classList.toggle("completo", total > 0 && feitas === total);
+    andamento.style.setProperty("--andamento", total ? Math.round((feitas / total) * 100) : 0);
+    andamento.querySelector(".task-progress-texto").textContent = feitas + "/" + total;
+  }
+
   function render() {
     renderCabecalho();
     renderAcao();
     renderEtapas();
     renderRodape();
+    atualizarAndamentoDoCard();
   }
 
   // Rola até o formulário da etapa nova e coloca o cursor no primeiro campo
@@ -383,7 +413,8 @@ document.addEventListener("DOMContentLoaded", function () {
     if (primeiro) primeiro.focus({ preventScroll: true });
   }
 
-    /* =========================================================
+
+  /* =========================================================
      AVISO DE CONFIRMAÇÃO (no lugar do confirm/alert do navegador)
      ========================================================= */
 
@@ -456,8 +487,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-    // Deixa o aviso disponível para o pop-up de cadastro (kanban-modal.js)
-    window.confirmarSite = confirmar;
+  // Deixa o aviso disponível para o pop-up de cadastro (kanban-modal.js)
+  window.confirmarSite = confirmar;
+
 
   /* =========================================================
      ABRIR E FECHAR
@@ -492,7 +524,8 @@ document.addEventListener("DOMContentLoaded", function () {
         prioridades: dados.prioridades,
         editandoAcao: false,
         editandoEtapa: null,
-        novaEtapa: false
+        novaEtapa: false,
+        expandidas: new Set() // ids das etapas com os detalhes abertos
       };
       render();
     } catch (erro) {
@@ -515,7 +548,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }, DURACAO_SAIDA);
   }
 
-    async function tentarFechar() {
+  async function tentarFechar() {
     if (emEdicao() && !(await confirmarDescarte())) return;
     fechar();
   }
@@ -641,6 +674,7 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         estado.etapas = estado.etapas.map(function (e) { return e.id === id ? resposta.etapa : e; });
         estado.editandoEtapa = null;
+        estado.expandidas.add(id); // mostra os dados atualizados
       }
       render();
 
@@ -660,7 +694,7 @@ document.addEventListener("DOMContentLoaded", function () {
      MOVER PARA OUTRO STATUS
      ========================================================= */
 
-   async function mudarStatus(statusId) {
+  async function mudarStatus(statusId) {
     if (emEdicao() && !(await confirmarDescarte())) return;
 
     const card = document.querySelector('.task-card[data-codigo="' + codigoAberto + '"]');
@@ -671,6 +705,11 @@ document.addEventListener("DOMContentLoaded", function () {
     input.value = statusId;
     form.submit();
   }
+
+
+  /* =========================================================
+     EXCLUIR AÇÃO / EXCLUIR ETAPA / ABRIR DETALHES DA ETAPA
+     ========================================================= */
 
   async function excluirAcao(botao) {
     const confirmado = await confirmar({
@@ -714,12 +753,23 @@ document.addEventListener("DOMContentLoaded", function () {
       });
       if (!estado) return;
       estado.etapas = estado.etapas.filter(function (e) { return e.id !== id; });
+      estado.expandidas.delete(id);
       render();
     } catch (erro) {
       botao.disabled = false;
       confirmar({ titulo: "Não foi possível excluir", texto: erro.message, sim: "OK", nao: null });
     }
   }
+
+  // Abre ou fecha os detalhes de uma etapa. Não redesenha o pop-up, para a animação funcionar.
+  function alternarEtapa(id, botao) {
+    const expandir = !estado.expandidas.has(id);
+    if (expandir) estado.expandidas.add(id); else estado.expandidas.delete(id);
+
+    botao.closest(".det-etapa").classList.toggle("aberta", expandir);
+    botao.setAttribute("aria-expanded", String(expandir));
+  }
+
 
   /* =========================================================
      EVENTOS DENTRO DO POP-UP
@@ -735,18 +785,19 @@ document.addEventListener("DOMContentLoaded", function () {
     const id = botao.dataset.id ? Number(botao.dataset.id) : null;
 
     switch (botao.dataset.do) {
-      case "editar-acao":        estado.editandoAcao = true; render(); break;
-      case "cancelar-acao":      estado.editandoAcao = false; render(); break;
-      case "salvar-acao":        salvarAcao(botao); break;
-      case "editar-etapa":       estado.editandoEtapa = id; render(); break;
-      case "cancelar-etapa":     estado.editandoEtapa = null; render(); break;
-      case "salvar-etapa":       salvarEtapa(id, botao); break;
-      case "adicionar-etapa":    estado.novaEtapa = true; render(); focarNovaEtapa(); break;
+      case "editar-acao":         estado.editandoAcao = true; render(); break;
+      case "cancelar-acao":       estado.editandoAcao = false; render(); break;
+      case "salvar-acao":         salvarAcao(botao); break;
+      case "editar-etapa":        estado.editandoEtapa = id; render(); break;
+      case "cancelar-etapa":      estado.editandoEtapa = null; render(); break;
+      case "salvar-etapa":        salvarEtapa(id, botao); break;
+      case "adicionar-etapa":     estado.novaEtapa = true; render(); focarNovaEtapa(); break;
       case "cancelar-nova-etapa": estado.novaEtapa = false; render(); break;
-      case "salvar-nova-etapa":  salvarEtapa(null, botao); break;
-      case "mudar-status":       mudarStatus(botao.dataset.status); break;
-      case "excluir-acao":       excluirAcao(botao); break;
-      case "excluir-etapa":      excluirEtapa(id, botao); break;
+      case "salvar-nova-etapa":   salvarEtapa(null, botao); break;
+      case "excluir-etapa":       excluirEtapa(id, botao); break;
+      case "alternar-etapa":      alternarEtapa(id, botao); break;
+      case "mudar-status":        mudarStatus(botao.dataset.status); break;
+      case "excluir-acao":        excluirAcao(botao); break;
     }
   });
 
