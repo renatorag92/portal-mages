@@ -215,11 +215,6 @@
   color: #6b6b6b;
 }
 
-.column-status-delete-form {
-  display: flex;
-  margin: 0;
-}
-
 .column-status-action {
   display: inline-flex;
   width: 25px;

@@ -46,7 +46,13 @@
     <!-- NAVBAR -->
     <!-- ===================================================== -->
 
-    {% include "LayoutsBases/partials/navbar.html" %}
+    <div class="topbar">
+      <div class="topbar-left">
+        <img src="{% static 'actions/images/portal-mages.png' %}" alt="Logo MAGES" class="navbar-logo">
+        <h1>{% block page_title %}{% endblock %}</h1>
+      </div>
+      {% include "LayoutsBases/partials/navbar.html" %}
+    </div>
 
 
     <!-- ===================================================== -->

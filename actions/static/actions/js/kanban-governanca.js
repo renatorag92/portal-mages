@@ -192,52 +192,6 @@ document.addEventListener("DOMContentLoaded", function () {
     event.dataTransfer.setData("text/plain", "kanban-card");
   });
 
-  document.addEventListener("click", async function (event) {
-    const button = event.target.closest && event.target.closest("[data-confirm-status]");
-    if (!button) return;
-
-    const form = button.closest("form");
-    if (!form) return;
-
-    const nomeStatus = button.dataset.confirmStatus;
-    const confirmar = window.confirmarSite;
-    const confirmado = typeof confirmar === "function"
-      ? await confirmar({
-        titulo: "Excluir status?",
-        texto: 'Tem certeza de que deseja excluir o status "' + nomeStatus + '"? Esta ação não pode ser desfeita.',
-        sim: "Excluir",
-        nao: "Cancelar"
-      })
-      : window.confirm('Tem certeza de que deseja excluir o status "' + nomeStatus + '"? Esta ação não pode ser desfeita.');
-
-    if (!confirmado) return;
-    button.disabled = true;
-    const token = form.querySelector('[name="csrfmiddlewaretoken"]').value;
-    try {
-      const response = await fetch(form.action, {
-        method: "POST",
-        headers: { "X-CSRFToken": token }
-      });
-      let data;
-      try {
-        data = await response.json();
-      } catch (erro) {
-        throw new Error("Não foi possível excluir o status. Tente novamente.");
-      }
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Não foi possível excluir o status.");
-      }
-
-      const column = button.closest(".column");
-      if (column) column.remove();
-      window.mostrarKanbanToast(data.message, "status-deleted");
-    } catch (erro) {
-      button.disabled = false;
-      window.mostrarKanbanToast(erro.message, "error");
-    }
-  });
-
   document.addEventListener("dragend", function () {
     if (draggedCard) draggedCard.classList.remove("dragging");
     document.querySelectorAll(".column-body.drag-over").forEach(function (body) {
@@ -350,11 +304,9 @@ document.addEventListener("DOMContentLoaded", function () {
     toast.setAttribute("role", "status");
     const icone = categoria === "status-updated"
       ? '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/>'
-      : categoria === "status-deleted"
-        ? '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/>'
-        : categoria === "error"
-          ? '<circle cx="12" cy="12" r="9"/><path d="M12 8v4m0 4h.01"/>'
-          : '<path d="m5 12 4 4L19 6"/>';
+      : categoria === "error"
+        ? '<circle cx="12" cy="12" r="9"/><path d="M12 8v4m0 4h.01"/>'
+        : '<path d="m5 12 4 4L19 6"/>';
     toast.innerHTML =
       '<span class="status-message-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + icone + '</svg></span>' +
       '<span class="status-message-text"></span>' +

@@ -106,12 +106,13 @@ class KanbanStatusEditTests(TestCase):
         self.status.refresh_from_db()
         self.assertEqual(self.status.cor, '#123456')
 
-    def test_deletes_status_from_kanban_without_redirecting(self):
-        response = self.client.post(
-            reverse('excluir_status_kanban', args=[self.status.pk]),
-        )
+    def test_kanban_has_no_status_delete_action(self):
+        response = self.client.get(reverse('kanban'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.json()['success'])
-        self.assertIn('excluído com sucesso', response.json()['message'])
-        self.assertFalse(Status.objects.filter(pk=self.status.pk).exists())
+        self.assertRegex(
+            response.content.decode(),
+            r'<h1>\s*Kanban de Governança\s*</h1>',
+        )
+        self.assertContains(response, 'Editar status Em andamento')
+        self.assertNotContains(response, 'Excluir status Em andamento')

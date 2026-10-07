@@ -228,25 +228,6 @@ def editar_status_kanban_view(request, status_id):
 
 @login_required
 @require_POST
-def excluir_status_kanban_view(request, status_id):
-    status = get_object_or_404(Status, pk=status_id)
-    nome_status = status.nome
-    try:
-        status.delete()
-    except ProtectedError:
-        return JsonResponse({
-            'success': False,
-            'error': 'Este status não pode ser excluído porque está vinculado a uma ou mais ações.',
-        }, status=409)
-
-    return JsonResponse({
-        'success': True,
-        'message': f'Status "{nome_status}" excluído com sucesso.',
-    })
-
-
-@login_required
-@require_POST
 def excluir_status_view(request, status_id):
     status = get_object_or_404(Status, pk=status_id)
 
