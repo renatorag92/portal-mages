@@ -104,10 +104,6 @@ body {
    AVATAR + DROPDOWN
    ========================================================= */
 
-.avatar-wrapper {
-    position: relative;
-}
-
 .avatar {
     width: 30px;
     height: 30px;
@@ -124,67 +120,6 @@ body {
     height: 16px;
     color: #fff;
 }
-
-.avatar-menu {
-    display: none;
-    position: absolute;
-    top: calc(100% + 12px);
-    right: 0;
-    width: 170px;
-    background: #ffffff;
-    border: 1px solid #ddd9cf;
-    border-radius: 10px;
-    box-shadow:
-        0 12px 35px rgba(0, 0, 0, 0.18),
-        0 3px 10px rgba(0, 0, 0, 0.08);
-    z-index: 10000;
-    padding: 6px;
-    animation: actionMenuOpen 0.16s ease-out;
-}
-
-.avatar-menu.open {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.avatar-menu-item {
-    width: 100%;
-    text-align: left;
-    padding: 8px 10px;
-    border: none;
-    background: transparent;
-    border-radius: 6px;
-    font-size: 13px;
-    color: #2b2b2b;
-    cursor: pointer;
-    transition: background 0.15s ease;
-}
-
-.avatar-menu-item:hover {
-    background: #f4f3ef;
-}
-
-.avatar-menu-item-danger {
-    color: #c0392b;
-}
-
-.avatar-menu-item-danger:hover {
-    background: rgba(192, 57, 43, 0.08);
-}
-
-@keyframes actionMenuOpen {
-    from {
-        opacity: 0;
-        transform: translateY(-5px) scale(0.98);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
 
 /* =========================================================
    ÁREA ABAIXO DA NAVBAR

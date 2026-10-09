@@ -57,38 +57,4 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
     });
-
-
-    /* =========================================================
-       MENU DO AVATAR
-       ========================================================= */
-
-    const avatarToggle = document.getElementById("avatarToggle");
-    const avatarMenu = document.getElementById("avatarMenu");
-
-    if (avatarToggle && avatarMenu) {
-
-        avatarToggle.addEventListener("click", function (event) {
-
-            event.stopPropagation();
-
-            avatarMenu.classList.toggle("open");
-
-        });
-
-        document.addEventListener("click", function (event) {
-
-            if (
-                !event.target.closest("#avatarMenu") &&
-                !event.target.closest("#avatarToggle")
-            ) {
-
-                avatarMenu.classList.remove("open");
-
-            }
-
-        });
-
-    }
-
 });

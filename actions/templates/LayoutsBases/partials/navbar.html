@@ -10,26 +10,75 @@
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </svg>
 
-    <div class="avatar-wrapper" id="avatarWrapper">
+    <div class="avatar-wrapper user-menu-wrapper">
 
-      <div class="avatar" id="avatarToggle">
-        <svg viewBox="0 0 24 24" fill="currentColor">
+      <button
+        type="button"
+        class="avatar user-menu-toggle"
+        id="userMenuToggle"
+        aria-haspopup="menu"
+        aria-expanded="false"
+        aria-label="Abrir menu do usuário"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <circle cx="12" cy="8" r="4" />
           <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" />
         </svg>
+      </button>
+
+      <div class="user-menu-dropdown" id="userMenu" role="menu" aria-labelledby="userMenuToggle" hidden>
+        <div class="user-menu-heading">{{ request.user.get_full_name|default:request.user.username }}</div>
+        <div class="user-menu-divider" role="separator"></div>
+
+        <!-- TODO: trocar pela rota -->
+        <a href="#" class="user-menu-item" role="menuitem">
+          <i class="bi bi-person" aria-hidden="true"></i>
+          <span>Minha Conta</span>
+        </a>
+
+        <a href="{% url 'redefinir-senha' %}" class="user-menu-item" id="userMenuSecurity" role="menuitem">
+          <i class="bi bi-shield-lock" aria-hidden="true"></i>
+          <span>Segurança</span>
+        </a>
+
+        <!-- TODO: trocar pela rota -->
+        <a href="#" class="user-menu-item" role="menuitem">
+          <i class="bi bi-question-circle" aria-hidden="true"></i>
+          <span>Ajuda</span>
+        </a>
+
+        <div class="user-menu-divider" role="separator"></div>
+
+        <form action="{% url 'logout' %}" method="post" class="user-menu-logout-form" role="none">
+          {% csrf_token %}
+          <button type="submit" class="user-menu-item user-menu-item-danger" role="menuitem">
+            <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+            <span>Sair</span>
+          </button>
+        </form>
       </div>
 
-      <div class="avatar-menu" id="avatarMenu">
-        <button type="button" class="avatar-menu-item">Minha Conta</button>
-        <button type="button" class="avatar-menu-item">Segurança</button>
-        <button type="button" class="avatar-menu-item">Ajuda</button>
-        <!-- Formulário para logout -->
-        <form action="{% url 'logout' %}" method="post" style="display: inline;">
-          {% csrf_token %}
-          <button type="submit" class="avatar-menu-item avatar-menu-item-danger">Sair</button>
-        </form>
     </div>
 
-  </div>
+    <div class="user-menu-modal-backdrop" id="userMenuConfirm" hidden>
+      <section
+        class="user-menu-confirm-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="userMenuConfirmTitle"
+        aria-describedby="userMenuConfirmDescription"
+      >
+        <h2 id="userMenuConfirmTitle">Alterar senha</h2>
+        <p id="userMenuConfirmDescription">Deseja mudar sua senha agora?</p>
+        <div class="user-menu-confirm-actions">
+          <button type="button" class="user-menu-confirm-button user-menu-confirm-cancel" id="userMenuConfirmCancel">
+            Cancelar
+          </button>
+          <button type="button" class="user-menu-confirm-button user-menu-confirm-continue" id="userMenuConfirmContinue">
+            Sim, alterar senha
+          </button>
+        </div>
+      </section>
+    </div>
 
 </div>
