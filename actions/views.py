@@ -4,7 +4,7 @@ import webcolors
 from decimal import Decimal, InvalidOperation
 from django import forms
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.db.models.deletion import ProtectedError
 from django.http import JsonResponse
@@ -13,10 +13,11 @@ from django.utils.dateparse import parse_date
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.urls import reverse_lazy
-from .models import AcaoCatalogo, Acao, Etapa, Eixo, Status, Funcionario
+from .forms import ConsultoriaForm, PrefeituraForm
+from .models import AcaoCatalogo, Acao, Etapa, Eixo, Status, Funcionario, Prefeitura, Consultoria
 
 PT_EN = dict(zip(
     'azul vermelho verde amarelo laranja roxo rosa preto branco cinza marrom ciano dourado prata turquesa bege lilás violeta magenta índigo salmão coral vinho lima'.split(),
@@ -34,6 +35,161 @@ def _cor_para_edicao(status):
     except ValueError:
         return status.cor
     return EN_PT.get(nome_cor, nome_cor)
+
+
+def _formatar_cnpj(cnpj):
+    digitos = re.sub(r'\D', '', cnpj or '')
+    if len(digitos) == 14:
+        return f'{digitos[:2]}.{digitos[2:5]}.{digitos[5:8]}/{digitos[8:12]}-{digitos[12:]}'
+    return digitos
+
+
+def _carregar_json(request):
+    try:
+        dados = json.loads(request.body or '{}')
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    return dados if isinstance(dados, dict) else None
+
+
+def _erros_formulario(form):
+    return {
+        campo: [erro['message'] for erro in erros]
+        for campo, erros in form.errors.get_json_data().items()
+    }
+
+
+def _serializar_cadastro(registro, consultoria=False):
+    dados = {
+        'id': registro.pk,
+        'cnpj': registro.cnpj,
+        'cnpj_formatado': _formatar_cnpj(registro.cnpj),
+        'nome_fantasia': registro.nome_fantasia,
+        'nome_juridico': registro.nome_juridico,
+        'endereco': registro.endereco,
+    }
+    if consultoria:
+        dados['prefeitura_id'] = registro.prefeitura_id
+        dados['prefeitura_nome'] = registro.prefeitura.nome_fantasia
+    return dados
+
+
+def _usuario_configuracoes(user):
+    return user.is_staff or user.is_superuser
+
+
+@login_required
+@user_passes_test(_usuario_configuracoes)
+def gerenciar_prefeitura_view(request):
+    registro = Prefeitura.objects.order_by('pk').first()
+    return render(request, 'actions/cadastro-entidade.html', {
+        'tipo_entidade': 'prefeitura',
+        'titulo_entidade': 'Prefeitura',
+        'registro': registro,
+        'cnpj_formatado': _formatar_cnpj(registro.cnpj) if registro else '',
+        'form': PrefeituraForm(instance=registro),
+    })
+
+
+@login_required
+@user_passes_test(_usuario_configuracoes)
+@require_POST
+def salvar_prefeitura_view(request):
+    dados = _carregar_json(request)
+    if dados is None:
+        return JsonResponse({'success': False, 'errors': {'__all__': ['Requisição inválida.']}}, status=400)
+
+    registro = Prefeitura.objects.order_by('pk').first()
+    registro_id = dados.get('id')
+    if registro and str(registro.pk) != str(registro_id):
+        return JsonResponse({
+            'success': False,
+            'errors': {'__all__': ['Já existe uma prefeitura cadastrada. Edite o registro atual.']},
+        }, status=409)
+    if registro is None and registro_id:
+        return JsonResponse({'success': False, 'errors': {'__all__': ['Prefeitura não encontrada.']}}, status=404)
+
+    form = PrefeituraForm(dados, instance=registro)
+    if not form.is_valid():
+        return JsonResponse({'success': False, 'errors': _erros_formulario(form)}, status=400)
+
+    try:
+        with transaction.atomic():
+            if registro is None and Prefeitura.objects.exists():
+                return JsonResponse({
+                    'success': False,
+                    'errors': {'__all__': ['Já existe uma prefeitura cadastrada.']},
+                }, status=409)
+            registro = registro or Prefeitura()
+            for campo in ('cnpj', 'nome_fantasia', 'nome_juridico', 'endereco'):
+                setattr(registro, campo, form.cleaned_data[campo])
+            registro.save()
+    except IntegrityError:
+        return JsonResponse({
+            'success': False,
+            'errors': {'cnpj': ['CNPJ já cadastrado.']},
+        }, status=409)
+
+    return JsonResponse({'success': True, 'registro': _serializar_cadastro(registro)})
+
+
+@login_required
+@user_passes_test(_usuario_configuracoes)
+def gerenciar_consultoria_view(request):
+    registro = Consultoria.objects.select_related('prefeitura').order_by('pk').first()
+    sem_prefeituras = not Prefeitura.objects.exists()
+    return render(request, 'actions/cadastro-entidade.html', {
+        'tipo_entidade': 'consultoria',
+        'titulo_entidade': 'Consultoria',
+        'registro': registro,
+        'cnpj_formatado': _formatar_cnpj(registro.cnpj) if registro else '',
+        'form': ConsultoriaForm(instance=registro) if not sem_prefeituras else None,
+        'sem_prefeituras': sem_prefeituras,
+    })
+
+
+@login_required
+@user_passes_test(_usuario_configuracoes)
+@require_POST
+def salvar_consultoria_view(request):
+    dados = _carregar_json(request)
+    if dados is None:
+        return JsonResponse({'success': False, 'errors': {'__all__': ['Requisição inválida.']}}, status=400)
+
+    registro_atual = Consultoria.objects.order_by('pk').first()
+    registro_id = dados.get('id')
+    if registro_atual and str(registro_atual.pk) != str(registro_id):
+        return JsonResponse({
+            'success': False,
+            'errors': {'__all__': ['Já existe uma consultoria cadastrada. Edite o registro atual.']},
+        }, status=409)
+    if registro_atual is None and registro_id:
+        return JsonResponse({'success': False, 'errors': {'__all__': ['Consultoria não encontrada.']}}, status=404)
+
+    form = ConsultoriaForm(dados, instance=registro_atual)
+    if not form.is_valid():
+        return JsonResponse({'success': False, 'errors': _erros_formulario(form)}, status=400)
+
+    try:
+        with transaction.atomic():
+            if registro_atual is None and Consultoria.objects.exists():
+                return JsonResponse({
+                    'success': False,
+                    'errors': {'__all__': ['Já existe uma consultoria cadastrada.']},
+                }, status=409)
+            registro = registro_atual or Consultoria()
+            for campo in ('cnpj', 'nome_fantasia', 'nome_juridico', 'endereco', 'prefeitura'):
+                setattr(registro, campo, form.cleaned_data[campo])
+            registro.save()
+    except IntegrityError:
+        cnpj_duplicado = Consultoria.objects.filter(
+            cnpj=form.cleaned_data['cnpj'],
+        ).exclude(pk=registro_atual.pk if registro_atual else None).exists()
+        campo = 'cnpj' if cnpj_duplicado else 'prefeitura'
+        mensagem = 'CNPJ já cadastrado.' if cnpj_duplicado else 'Esta prefeitura já possui uma consultoria vinculada.'
+        return JsonResponse({'success': False, 'errors': {campo: [mensagem]}}, status=409)
+
+    return JsonResponse({'success': True, 'registro': _serializar_cadastro(registro, consultoria=True)})
 
 
 class StatusForm(forms.ModelForm):

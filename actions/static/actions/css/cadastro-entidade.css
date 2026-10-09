@@ -1,0 +1,236 @@
+.entity-page {
+  width: 100%;
+  min-height: 100%;
+  overflow-y: auto;
+  padding: 20px 24px 32px;
+  background: #eeece7;
+}
+
+.entity-card {
+  width: 100%;
+  padding: 20px 22px;
+  background: #fff;
+  border: 1px solid #e0ddd4;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.entity-card-title {
+  margin: 0 0 20px;
+  color: #2b2b2b;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.entity-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 19px 24px;
+  max-width: 900px;
+}
+
+.entity-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.entity-field label {
+  color: #2b2b2b;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.entity-value {
+  min-height: 37px;
+  padding: 9px 11px;
+  color: #353535;
+  background: #f5f4f0;
+  border: 1px solid #e8e6e0;
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.entity-field input,
+.entity-field select {
+  width: 100%;
+  min-height: 37px;
+  padding: 8px 10px;
+  color: #2b2b2b;
+  background: #fff;
+  border: 1px solid #d8d5cc;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.entity-field input:focus,
+.entity-field select:focus {
+  outline: 3px solid rgba(46, 139, 87, 0.18);
+  border-color: #2e8b57;
+}
+
+.entity-actions,
+.entity-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 21px;
+}
+
+.entity-button {
+  min-height: 36px;
+  padding: 8px 15px;
+  border: 0;
+  border-radius: 6px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.entity-button:focus-visible {
+  outline: 3px solid rgba(46, 139, 87, 0.3);
+  outline-offset: 2px;
+}
+
+.entity-button:hover {
+  transform: translateY(-1px);
+}
+
+.entity-save {
+  background: #2e8b57;
+}
+
+.entity-save:hover {
+  background: #24704a;
+}
+
+.entity-edit,
+.entity-keep {
+  color: #2b2b2b;
+  background: #eeece7;
+}
+
+.entity-edit:hover,
+.entity-keep:hover {
+  background: #e0ddd4;
+}
+
+.entity-cancel {
+  background: #c0392b;
+}
+
+.entity-cancel:hover {
+  background: #a5301f;
+}
+
+.entity-errors {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  color: #8f261c;
+  background: #fff0ee;
+  border: 1px solid #edc5bf;
+  border-radius: 7px;
+  font-size: 13px;
+}
+
+.entity-errors ul {
+  margin: 0;
+  padding-left: 19px;
+}
+
+.entity-errors li + li {
+  margin-top: 4px;
+}
+
+.entity-notice {
+  max-width: 680px;
+  padding: 15px 17px;
+  color: #654b13;
+  background: #fff8e7;
+  border: 1px solid #f0dfb5;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.entity-notice p {
+  margin: 0 0 9px;
+}
+
+.entity-notice a {
+  color: #285b8f;
+  font-weight: 700;
+}
+
+.entity-confirm-overlay {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(25, 29, 27, 0.38);
+  backdrop-filter: blur(4px);
+}
+
+.entity-confirm-overlay[hidden],
+.entity-field [hidden],
+.entity-actions [hidden],
+.entity-errors[hidden] {
+  display: none;
+}
+
+.entity-confirm-dialog {
+  width: min(100%, 410px);
+  padding: 22px;
+  background: #fff;
+  border: 1px solid #e0ddd4;
+  border-radius: 10px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.2);
+  animation: entity-dialog-enter 0.18s ease-out;
+}
+
+.entity-confirm-dialog h2 {
+  margin: 0 0 8px;
+  color: #2b2b2b;
+  font-size: 16px;
+}
+
+.entity-confirm-dialog p {
+  margin: 0;
+  color: #6b6b6b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.entity-confirm-actions {
+  justify-content: flex-end;
+}
+
+@keyframes entity-dialog-enter {
+  from { opacity: 0; transform: translateY(6px) scale(0.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 640px) {
+  .entity-page { padding: 14px 12px 24px; }
+  .entity-card { padding: 17px 15px; }
+  .entity-fields { grid-template-columns: minmax(0, 1fr); gap: 15px; }
+  .entity-confirm-actions { justify-content: stretch; }
+  .entity-confirm-actions .entity-button { flex: 1 1 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

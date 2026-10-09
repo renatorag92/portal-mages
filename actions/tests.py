@@ -1,8 +1,10 @@
+import json
+
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import PerfilUsuario, Status, Eixo
+from .models import PerfilUsuario, Status, Eixo, Prefeitura, Consultoria
 from .views import MAX_STATUS_COLUMNS, StatusForm, EixoForm
 
 
@@ -205,3 +207,111 @@ class KanbanStatusEditTests(TestCase):
             response.content.decode(),
             rf'<select id="eixoFilter">[\s\S]*?<option value="{eixo.nome}">{eixo.nome}</option>',
         )
+
+
+class EntityManagementTests(TestCase):
+    def setUp(self):
+        user = User.objects.create_user(
+            username='config-manager',
+            password='test-password',
+            is_staff=True,
+        )
+        self.client.force_login(user)
+
+    def post_json(self, route, dados):
+        return self.client.post(
+            reverse(route),
+            data=json.dumps(dados),
+            content_type='application/json',
+        )
+
+    def dados_prefeitura(self, cnpj='12345678000195'):
+        return {
+            'cnpj': cnpj,
+            'nome_fantasia': 'Prefeitura Central',
+            'nome_juridico': 'Prefeitura Municipal Central',
+            'endereco': 'Rua Principal, 10',
+        }
+
+    def test_create_prefeitura_formats_and_normalizes_cnpj(self):
+        dados = self.dados_prefeitura('12.345.678/0001-95')
+
+        response = self.post_json('salvar_prefeitura', dados)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Prefeitura.objects.get().cnpj, '12345678000195')
+        self.assertEqual(response.json()['registro']['cnpj_formatado'], '12.345.678/0001-95')
+
+    def test_second_prefeitura_creation_is_rejected_server_side(self):
+        registro = Prefeitura.objects.create(**self.dados_prefeitura())
+
+        response = self.post_json('salvar_prefeitura', self.dados_prefeitura('98765432000110'))
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(Prefeitura.objects.count(), 1)
+        registro.refresh_from_db()
+        self.assertEqual(registro.cnpj, '12345678000195')
+
+    def test_incomplete_and_duplicate_cnpj_are_rejected(self):
+        incompleto = self.post_json('salvar_prefeitura', self.dados_prefeitura('12345'))
+        self.assertEqual(incompleto.status_code, 400)
+        self.assertIn('CNPJ incompleto', incompleto.json()['errors']['cnpj'][0])
+
+        Prefeitura.objects.create(**self.dados_prefeitura())
+        outro = Prefeitura.objects.create(**self.dados_prefeitura('98765432000110'))
+        response = self.post_json('salvar_prefeitura', {
+            **self.dados_prefeitura(outro.cnpj),
+            'id': Prefeitura.objects.order_by('pk').first().pk,
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()['errors']['cnpj'], ['CNPJ já cadastrado.'])
+
+    def test_legacy_short_cnpj_can_be_corrected(self):
+        registro = Prefeitura.objects.create(**self.dados_prefeitura('12345'))
+        page = self.client.get(reverse('gerenciar_prefeitura'))
+
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'value="12345"')
+
+        response = self.post_json('salvar_prefeitura', {
+            **self.dados_prefeitura(),
+            'id': registro.pk,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        registro.refresh_from_db()
+        self.assertEqual(registro.cnpj, '12345678000195')
+
+    def test_consultoria_requires_prefeitura_and_uses_available_choice(self):
+        response = self.client.get(reverse('gerenciar_consultoria'))
+        self.assertContains(response, 'Nenhuma prefeitura cadastrada.')
+        self.assertContains(response, reverse('gerenciar_prefeitura'))
+
+        prefeitura = Prefeitura.objects.create(**self.dados_prefeitura())
+        dados = {
+            'cnpj': '11222333000181',
+            'nome_fantasia': 'Consultoria Central',
+            'nome_juridico': 'Consultoria Central Ltda',
+            'endereco': 'Avenida Central, 20',
+            'prefeitura': prefeitura.pk,
+        }
+        saved = self.post_json('salvar_consultoria', dados)
+
+        self.assertEqual(saved.status_code, 200)
+        self.assertEqual(Consultoria.objects.get().prefeitura_id, prefeitura.pk)
+        form_page = self.client.get(reverse('gerenciar_consultoria'))
+        self.assertContains(form_page, 'Dados da consultoria')
+        self.assertContains(form_page, prefeitura.nome_fantasia)
+
+    def test_non_staff_user_cannot_access_entity_pages_or_save(self):
+        self.client.logout()
+        user = User.objects.create_user(username='regular-user', password='test-password')
+        self.client.force_login(user)
+
+        page = self.client.get(reverse('gerenciar_prefeitura'))
+        saved = self.post_json('salvar_prefeitura', self.dados_prefeitura())
+
+        self.assertEqual(page.status_code, 302)
+        self.assertEqual(saved.status_code, 302)
+        self.assertFalse(Prefeitura.objects.exists())

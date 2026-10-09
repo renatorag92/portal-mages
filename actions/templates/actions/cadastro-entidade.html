@@ -1,0 +1,103 @@
+{% extends "LayoutsBases/base.html" %}
+{% load static %}
+
+{% block title %}{{ titulo_entidade }}{% endblock %}
+{% block page_title %}{{ titulo_entidade }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'actions/css/gerenciar-status.css' %}">
+<link rel="stylesheet" href="{% static 'actions/css/cadastro-entidade.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="entity-page" id="entityPage"
+  data-kind="{{ tipo_entidade }}"
+  data-save-url="{% if tipo_entidade == 'prefeitura' %}{% url 'salvar_prefeitura' %}{% else %}{% url 'salvar_consultoria' %}{% endif %}"
+  data-record-id="{% if registro %}{{ registro.pk }}{% endif %}"
+  data-existing="{% if registro %}true{% else %}false{% endif %}">
+  <section class="entity-card" aria-labelledby="entityTitle">
+    <h2 class="entity-card-title" id="entityTitle">
+      {% if registro %}Dados da {{ titulo_entidade|lower }}{% else %}Cadastrar {{ titulo_entidade|lower }}{% endif %}
+    </h2>
+
+    {% if tipo_entidade == 'consultoria' and sem_prefeituras %}
+    <div class="entity-notice" role="status">
+      <p>Nenhuma prefeitura cadastrada. Cadastre uma prefeitura antes de continuar.</p>
+      <a href="{% url 'gerenciar_prefeitura' %}">Ir para Prefeitura</a>
+    </div>
+    {% else %}
+    <form id="entityForm" class="entity-form" novalidate>
+      {% csrf_token %}
+      <div class="entity-errors" id="entityErrors" role="alert" aria-live="assertive" tabindex="-1" hidden></div>
+
+      <div class="entity-fields">
+        <div class="entity-field">
+          <label for="entityCnpj">CNPJ</label>
+          <span class="entity-value" data-display="cnpj" {% if not registro %}hidden{% endif %}>{% if registro %}{{ cnpj_formatado }}{% endif %}</span>
+          <input id="entityCnpj" name="cnpj" type="text" inputmode="numeric" autocomplete="off"
+            maxlength="18" data-input="cnpj" data-cnpj-mask required
+            value="{{ form.cnpj.value|default_if_none:'' }}" {% if registro %}hidden{% endif %}>
+        </div>
+        <div class="entity-field">
+          <label for="entityNomeFantasia">Nome fantasia</label>
+          <span class="entity-value" data-display="nome_fantasia" {% if not registro %}hidden{% endif %}>{% if registro %}{{ registro.nome_fantasia }}{% endif %}</span>
+          <input id="entityNomeFantasia" name="nome_fantasia" type="text" maxlength="45"
+            data-input="nome_fantasia" required value="{{ form.nome_fantasia.value|default_if_none:'' }}"
+            {% if registro %}hidden{% endif %}>
+        </div>
+        <div class="entity-field">
+          <label for="entityNomeJuridico">Nome jurídico</label>
+          <span class="entity-value" data-display="nome_juridico" {% if not registro %}hidden{% endif %}>{% if registro %}{{ registro.nome_juridico }}{% endif %}</span>
+          <input id="entityNomeJuridico" name="nome_juridico" type="text" maxlength="45"
+            data-input="nome_juridico" required value="{{ form.nome_juridico.value|default_if_none:'' }}"
+            {% if registro %}hidden{% endif %}>
+        </div>
+        <div class="entity-field">
+          <label for="entityEndereco">Endereço</label>
+          <span class="entity-value" data-display="endereco" {% if not registro %}hidden{% endif %}>{% if registro %}{{ registro.endereco }}{% endif %}</span>
+          <input id="entityEndereco" name="endereco" type="text" maxlength="45"
+            data-input="endereco" required value="{{ form.endereco.value|default_if_none:'' }}"
+            {% if registro %}hidden{% endif %}>
+        </div>
+        {% if tipo_entidade == 'consultoria' %}
+        <div class="entity-field">
+          <label for="entityPrefeitura">Prefeitura</label>
+          <span class="entity-value" data-display="prefeitura" {% if not registro %}hidden{% endif %}>{% if registro %}{{ registro.prefeitura.nome_fantasia }}{% endif %}</span>
+          <select id="entityPrefeitura" name="prefeitura" data-input="prefeitura" required {% if registro %}hidden{% endif %}>
+            <option value="">Selecione uma prefeitura</option>
+            {% for prefeitura in form.fields.prefeitura.queryset %}
+            <option value="{{ prefeitura.pk }}" {% if registro and registro.prefeitura_id == prefeitura.pk %}selected{% endif %}>
+              {{ prefeitura.nome_fantasia }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="entity-actions">
+        <button type="button" class="entity-button entity-edit" id="entityEdit" {% if not registro %}hidden{% endif %}>Editar</button>
+        <button type="submit" class="entity-button entity-save" id="entitySave" {% if registro %}hidden{% endif %}>Salvar</button>
+        <button type="button" class="entity-button entity-cancel" id="entityCancel" hidden>Cancelar</button>
+      </div>
+    </form>
+    {% endif %}
+  </section>
+</div>
+
+<div class="entity-confirm-overlay" id="discardDialog" hidden>
+  <section class="entity-confirm-dialog" role="dialog" aria-modal="true"
+    aria-labelledby="discardTitle" aria-describedby="discardText">
+    <h2 id="discardTitle">Descartar alterações?</h2>
+    <p id="discardText">As alterações feitas ainda não foram salvas.</p>
+    <div class="entity-confirm-actions">
+      <button type="button" class="entity-button entity-keep" id="keepEditing">Continuar editando</button>
+      <button type="button" class="entity-button entity-cancel" id="discardChanges">Descartar alterações</button>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'actions/js/cadastro-entidade.js' %}"></script>
+{% endblock %}
