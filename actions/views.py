@@ -96,6 +96,24 @@ class StatusForm(forms.ModelForm):
         return status
 
 
+class EixoForm(forms.ModelForm):
+    class Meta:
+        model = Eixo
+        fields = ('nome', 'descricao')
+
+    def clean_nome(self):
+        nome = (self.cleaned_data.get('nome') or '').strip()
+        if not nome:
+            raise ValidationError('Informe o nome do eixo.')
+        if Eixo.objects.filter(nome__iexact=nome).exclude(pk=self.instance.pk).exists():
+            raise ValidationError('Já existe um eixo com esse nome.')
+        return nome
+
+    def clean_descricao(self):
+        descricao = (self.cleaned_data.get('descricao') or '').strip()
+        return descricao
+
+
 class CustomLoginView(LoginView):
     template_name = 'actions/login.html'
     redirect_authenticated_user = True
@@ -174,6 +192,47 @@ def kanban_view(request):
     }
 
     return render(request, 'actions/kanban-governanca.html', context)
+
+
+@login_required
+def gerenciar_eixo_view(request, eixo_id=None):
+    eixo = get_object_or_404(Eixo, pk=eixo_id) if eixo_id else None
+
+    if request.method == 'POST':
+        form = EixoForm(request.POST, instance=eixo)
+        if form.is_valid():
+            form.save()
+            if eixo:
+                messages.success(request, 'Eixo atualizado com sucesso.', extra_tags='eixo-updated')
+            else:
+                messages.success(request, 'Eixo cadastrado com sucesso.', extra_tags='eixo-created')
+            return redirect('gerenciar_eixo')
+    else:
+        form = EixoForm(instance=eixo)
+
+    eixo_lista = Eixo.objects.annotate(total_acoes=Count('acoes')).order_by('nome')
+    return render(request, 'actions/gerenciar-eixo.html', {
+        'form': form,
+        'eixo_lista': eixo_lista,
+        'eixo_edicao': eixo,
+    })
+
+
+@login_required
+@require_POST
+def excluir_eixo_view(request, eixo_id):
+    eixo = get_object_or_404(Eixo, pk=eixo_id)
+
+    try:
+        eixo.delete()
+        messages.success(request, 'Eixo excluído com sucesso.', extra_tags='eixo-deleted')
+    except ProtectedError:
+        messages.error(
+            request,
+            'Este eixo não pode ser excluído porque está vinculado a um ou mais itens do catálogo.',
+            extra_tags='eixo-delete-blocked',
+        )
+    return redirect('gerenciar_eixo')
 
 
 @login_required

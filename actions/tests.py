@@ -2,8 +2,8 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import PerfilUsuario, Status
-from .views import MAX_STATUS_COLUMNS, StatusForm
+from .models import PerfilUsuario, Status, Eixo
+from .views import MAX_STATUS_COLUMNS, StatusForm, EixoForm
 
 
 class StatusFormLimitTests(TestCase):
@@ -38,6 +38,84 @@ class StatusFormLimitTests(TestCase):
         )
 
         self.assertTrue(form.is_valid(), form.errors)
+
+
+class EixoFormTests(TestCase):
+    def test_rejects_duplicate_eixo_name(self):
+        Eixo.objects.create(nome='Infraestrutura', descricao='Descrição do eixo')
+
+        form = EixoForm({'nome': 'infraestrutura', 'descricao': 'Outro texto'})
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('Já existe um eixo com esse nome.', form.errors['nome'])
+
+
+class EixoManagementTests(TestCase):
+    def setUp(self):
+        user = User.objects.create_user(username='eixo-manager', password='test-password')
+        PerfilUsuario.objects.create(
+            usuario=user,
+            cargo='Administrador',
+            primeiro_acesso=False,
+        )
+        self.client.force_login(user)
+
+    def assert_dismissible_eixo_toast(self, response, action):
+        self.assertContains(
+            response,
+            f'class="status-message status-message-success status-message-eixo-{action}"',
+        )
+        self.assertContains(response, 'class="status-message-close"')
+        self.assertContains(response, 'actions/js/gerenciar-status.js')
+
+    def test_eixo_delete_uses_confirmation_modal(self):
+        Eixo.objects.create(nome='Mobilidade', descricao='Transporte urbano')
+
+        response = self.client.get(reverse('gerenciar_eixo'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="statusConfirmModal" hidden')
+        self.assertContains(response, 'id="statusConfirmTitle">Excluir eixo?</h2>')
+        self.assertContains(response, 'data-confirm-type="eixo"')
+        self.assertContains(response, 'id="statusConfirmCancel"')
+        self.assertContains(response, 'id="statusConfirmDelete"')
+
+    def test_create_eixo_via_management_page(self):
+        response = self.client.post(
+            reverse('gerenciar_eixo'),
+            {'nome': 'Saúde', 'descricao': 'Eixo de saúde pública'},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(Eixo.objects.filter(nome='Saúde').exists())
+        self.assertContains(response, 'Eixo cadastrado com sucesso.')
+        self.assert_dismissible_eixo_toast(response, 'created')
+
+    def test_update_eixo_via_management_page(self):
+        eixo = Eixo.objects.create(nome='Mobilidade', descricao='Transporte urbano')
+
+        response = self.client.post(
+            reverse('editar_eixo', args=[eixo.pk]),
+            {'nome': 'Mobilidade sustentável', 'descricao': 'Transporte urbano limpo'},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        eixo.refresh_from_db()
+        self.assertEqual(eixo.nome, 'Mobilidade sustentável')
+        self.assertContains(response, 'Eixo atualizado com sucesso.')
+        self.assert_dismissible_eixo_toast(response, 'updated')
+
+    def test_delete_eixo_without_catalog_items(self):
+        eixo = Eixo.objects.create(nome='Mobilidade', descricao='Transporte urbano')
+
+        response = self.client.post(reverse('excluir_eixo', args=[eixo.pk]), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Eixo.objects.filter(pk=eixo.pk).exists())
+        self.assertContains(response, 'Eixo excluído com sucesso.')
+        self.assert_dismissible_eixo_toast(response, 'deleted')
 
 
 class KanbanStatusEditTests(TestCase):
@@ -116,3 +194,14 @@ class KanbanStatusEditTests(TestCase):
         )
         self.assertContains(response, 'Editar status Em andamento')
         self.assertNotContains(response, 'Excluir status Em andamento')
+
+    def test_eixo_filter_includes_axes_without_board_actions(self):
+        eixo = Eixo.objects.create(nome='Mobilidade', descricao='Transporte urbano')
+
+        response = self.client.get(reverse('kanban'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertRegex(
+            response.content.decode(),
+            rf'<select id="eixoFilter">[\s\S]*?<option value="{eixo.nome}">{eixo.nome}</option>',
+        )

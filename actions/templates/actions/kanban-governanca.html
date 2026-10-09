@@ -40,6 +40,9 @@ active
 
   <select id="eixoFilter">
     <option value="">Selecione o eixo específico</option>
+    {% for eixo in eixos %}
+    <option value="{{ eixo.nome }}">{{ eixo.nome }}</option>
+    {% endfor %}
   </select>
 
   <input id="actionSearch" class="search" type="text" placeholder="🔍 Buscar ação..." autocomplete="off">

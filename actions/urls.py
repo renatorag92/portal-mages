@@ -4,6 +4,9 @@ from django.contrib.auth.views import LogoutView
 
 urlpatterns = [
     path('', views.kanban_view, name='kanban'),  # Rota para a página do Kanban
+    path('kanban/eixos/', views.gerenciar_eixo_view, name='gerenciar_eixo'),
+    path('kanban/eixos/<int:eixo_id>/editar/', views.gerenciar_eixo_view, name='editar_eixo'),
+    path('kanban/eixos/<int:eixo_id>/excluir/', views.excluir_eixo_view, name='excluir_eixo'),
     path('kanban/status/', views.gerenciar_status_view, name='gerenciar_status'),
     path('kanban/status/<int:status_id>/editar/', views.gerenciar_status_view, name='editar_status'), # Rota para alterar dados de um status
     path('kanban/status/<int:status_id>/editar-no-kanban/', views.editar_status_kanban_view, name='editar_status_kanban'),

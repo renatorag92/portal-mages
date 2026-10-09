@@ -371,6 +371,58 @@
   background: #d98a1f;
 }
 
+.status-message-eixo-created {
+  color: #24704a;
+  border-color: #c8e2d1;
+}
+
+.status-message-eixo-created .status-message-icon {
+  background: #e2f1e8;
+}
+
+.status-message-eixo-created .status-message-progress {
+  background: #2e8b57;
+}
+
+.status-message-eixo-updated {
+  color: #285b8f;
+  border-color: #c9dced;
+}
+
+.status-message-eixo-updated .status-message-icon {
+  background: #e6f0fa;
+}
+
+.status-message-eixo-updated .status-message-progress {
+  background: #3478b8;
+}
+
+.status-message-eixo-deleted {
+  color: #a5301f;
+  border-color: #edcbc6;
+}
+
+.status-message-eixo-deleted .status-message-icon {
+  background: #f9e5e2;
+}
+
+.status-message-eixo-deleted .status-message-progress {
+  background: #c0392b;
+}
+
+.status-message-eixo-delete-blocked {
+  color: #8a5a00;
+  border-color: #f0dfb5;
+}
+
+.status-message-eixo-delete-blocked .status-message-icon {
+  background: #fff3d6;
+}
+
+.status-message-eixo-delete-blocked .status-message-progress {
+  background: #d98a1f;
+}
+
 .status-message-close {
   position: absolute;
   top: 9px;

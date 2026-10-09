@@ -244,37 +244,10 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Lista no filtro os eixos que têm pelo menos uma ação no quadro
-  function populateEixoFilter() {
-    if (!eixoFilter) return;
-
-    const selecionado = eixoFilter.value;
-    while (eixoFilter.options.length > 1) eixoFilter.remove(1);
-
-    const eixos = new Map();
-    document.querySelectorAll(".task-card").forEach(function (card) {
-      const eixo = String(card.dataset.eixo || "").trim();
-      if (eixo && !eixos.has(normalizeText(eixo))) {
-        eixos.set(normalizeText(eixo), eixo);
-      }
-    });
-
-    Array.from(eixos.values())
-      .sort(function (a, b) {
-        return normalizeText(a).localeCompare(normalizeText(b), "pt-BR");
-      })
-      .forEach(function (eixo) {
-        eixoFilter.add(new Option(eixo, eixo));
-      });
-
-    eixoFilter.value = selecionado;
-  }
-
   if (searchInput) searchInput.addEventListener("input", applyFilters);
   if (eixoFilter) eixoFilter.addEventListener("change", applyFilters);
 
   aplicarContrasteCabecalhos();
-  populateEixoFilter();
   applyFilters();
 
     /* =========================================================
