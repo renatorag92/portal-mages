@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 import webcolors
@@ -17,6 +18,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils.dateparse import parse_date
+from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 
@@ -680,6 +682,54 @@ def marcar_notificacao_lida_view(request, tipo, item_id):
     else:
         return redirect('kanban')
 
+    return redirect('kanban')
+
+
+@login_required
+@require_POST
+def remover_notificacao_view(request, tipo, item_id):
+    prefeitura = _prefeitura_ativa(request)
+    if prefeitura is None:
+        return JsonResponse({'success': False}, status=400)
+
+    limite = timezone.localdate() + timedelta(days=7)
+    status_encerrados = ('Concluído', 'Cancelado')
+    if tipo == 'acao':
+        alvo = get_object_or_404(
+            Acao.objects.filter(
+                prefeitura=prefeitura,
+                data_fim__lte=limite,
+            ).exclude(status__nome__in=status_encerrados),
+            pk=item_id,
+        )
+        notificacao, _ = NotificacaoLida.objects.get_or_create(
+            usuario=request.user,
+            acao=alvo,
+            etapa=None,
+        )
+    elif tipo == 'etapa':
+        alvo = get_object_or_404(
+            Etapa.objects.filter(
+                acao__prefeitura=prefeitura,
+                concluida=False,
+                data_fim__lte=limite,
+            ).exclude(acao__status__nome__in=status_encerrados),
+            pk=item_id,
+        )
+        notificacao, _ = NotificacaoLida.objects.get_or_create(
+            usuario=request.user,
+            acao=None,
+            etapa=alvo,
+        )
+    else:
+        return JsonResponse({'success': False}, status=404)
+
+    if not notificacao.removida:
+        notificacao.removida = True
+        notificacao.save(update_fields=['removida'])
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'success': True})
     return redirect('kanban')
 
 

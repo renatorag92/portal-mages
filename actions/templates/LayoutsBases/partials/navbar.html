@@ -9,6 +9,7 @@
         aria-expanded="false"
         aria-controls="notificationPanel"
         aria-label="Notificações: {{ notification_count }}"
+        data-unread-count="{{ notification_count }}"
       >
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -27,13 +28,17 @@
       >
         <header class="notification-panel-header">
           <h2 id="notificationHeading">Notificações</h2>
-          <span>{{ notification_count }}</span>
+          <div class="notification-header-actions">
+            <span class="notification-total-count" id="notificationHeaderCount">{{ notification_total_count }}</span>
+          </div>
         </header>
+
+        <p class="notification-action-status" id="notificationActionStatus" role="status" aria-live="polite" hidden></p>
 
         {% if notifications %}
           <ul class="notification-list">
             {% for notification in notifications %}
-              <li>
+              <li class="notification-row" data-notification-id="{{ notification.alvo_tipo }}-{{ notification.alvo_id }}">
                 <form class="notification-form" action="{{ notification.url }}" method="post">
                   {% csrf_token %}
                   <button
@@ -58,14 +63,27 @@
                   </span>
                   </button>
                 </form>
+                <form class="notification-delete-form" action="{{ notification.remover_url }}" method="post">
+                  {% csrf_token %}
+                  <button
+                    type="submit"
+                    class="notification-delete-button"
+                    aria-label="Remover {{ notification.titulo }}"
+                    title="Remover notificação"
+                  >
+                    <i class="bi bi-trash3" aria-hidden="true"></i>
+                  </button>
+                </form>
               </li>
             {% endfor %}
           </ul>
-          {% if notification_total_count > notifications|length %}
-            <p class="notification-more">Exibindo {{ notifications|length }} de {{ notification_total_count }} notificações.</p>
-          {% endif %}
+          <p class="notification-more" id="notificationMore" {% if notification_total_count <= notifications|length %}hidden{% endif %}>
+            Exibindo <span id="notificationVisibleCount">{{ notifications|length }}</span> de
+            <span id="notificationTotalCount">{{ notification_total_count }}</span> notificações.
+          </p>
+          <p class="notification-empty" id="notificationEmpty" hidden>Você não tem notificações no momento.</p>
         {% else %}
-          <p class="notification-empty">Você não tem notificações no momento.</p>
+          <p class="notification-empty" id="notificationEmpty">Você não tem notificações no momento.</p>
         {% endif %}
       </section>
     </div>

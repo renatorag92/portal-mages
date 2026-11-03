@@ -72,6 +72,10 @@ class NotificationCenterTests(TestCase):
         )
         self.assertEqual(response.context['notification_count'], 2)
         self.assertContains(response, 'id="notificationToggle"')
+        self.assertNotContains(response, 'id="notificationTrash"')
+        self.assertNotContains(response, 'data-notification-drag')
+        self.assertContains(response, 'class="notification-delete-button"')
+        self.assertContains(response, 'id="notificationHeaderCount">2</span>')
         self.assertContains(response, 'Ação atrasada')
 
     def test_clicking_action_notification_marks_it_read_and_redirects(self):
@@ -109,6 +113,75 @@ class NotificationCenterTests(TestCase):
 
         self.assertEqual(response.status_code, 404)
         self.assertFalse(NotificacaoLida.objects.filter(acao=acao).exists())
+
+    def test_removing_notification_hides_it_and_updates_counts(self):
+        acao_removida = self.criar_acao('Ação removida', self.hoje + timedelta(days=1))
+        acao_restante = self.criar_acao('Ação restante', self.hoje + timedelta(days=3))
+        url = reverse('remover_notificacao', args=['acao', acao_removida.pk])
+
+        response = self.client.post(
+            url,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'success': True})
+        registro = NotificacaoLida.objects.get(usuario=self.user, acao=acao_removida)
+        self.assertTrue(registro.removida)
+
+        page = self.client.get(reverse('kanban'))
+        self.assertEqual(page.context['notification_count'], 1)
+        self.assertEqual(page.context['notification_total_count'], 1)
+        self.assertEqual(
+            [item['titulo'] for item in page.context['notifications']],
+            [f'Ação: {acao_restante.nome}'],
+        )
+
+    def test_user_cannot_remove_notification_from_another_municipality(self):
+        outra_prefeitura = Prefeitura.objects.create(
+            cnpj='98765432000110',
+            nome_juridico='Outra Prefeitura',
+            nome_fantasia='Outra Prefeitura',
+            endereco='Rua Secundária, 2',
+        )
+        acao = self.criar_acao(
+            'Ação de outra prefeitura',
+            self.hoje + timedelta(days=2),
+            prefeitura=outra_prefeitura,
+        )
+        url = reverse('remover_notificacao', args=['acao', acao.pk])
+
+        response = self.client.post(
+            url,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(NotificacaoLida.objects.filter(acao=acao).exists())
+
+    def test_removing_stage_notification_hides_it(self):
+        acao = self.criar_acao('Ação em andamento', self.hoje + timedelta(days=14))
+        etapa = Etapa.objects.create(
+            nome='Etapa removida',
+            data_inicio=self.hoje,
+            data_fim=self.hoje + timedelta(days=2),
+            acao=acao,
+            responsavel=self.user,
+        )
+        url = reverse('remover_notificacao', args=['etapa', etapa.pk])
+
+        response = self.client.post(
+            url,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'success': True})
+        self.assertTrue(
+            NotificacaoLida.objects.get(usuario=self.user, etapa=etapa).removida
+        )
+        page = self.client.get(reverse('kanban'))
+        self.assertEqual(page.context['notification_total_count'], 0)
 
     def test_clicking_stage_notification_marks_it_read_and_redirects(self):
         acao = self.criar_acao('Ação em andamento', self.hoje + timedelta(days=14))

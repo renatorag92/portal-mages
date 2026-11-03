@@ -63,14 +63,110 @@ document.addEventListener("DOMContentLoaded", function () {
     const notificationPanel = document.getElementById("notificationPanel");
 
     if (notificationWrapper && notificationToggle && notificationPanel) {
+        const notificationList = notificationPanel.querySelector(".notification-list");
+        const headerCount = document.getElementById("notificationHeaderCount");
+        const visibleCount = document.getElementById("notificationVisibleCount");
+        const totalCount = document.getElementById("notificationTotalCount");
+        const moreMessage = document.getElementById("notificationMore");
+        const emptyMessage = document.getElementById("notificationEmpty");
+        const actionStatus = document.getElementById("notificationActionStatus");
+
         function setNotificationsOpen(isOpen) {
             notificationToggle.setAttribute("aria-expanded", String(isOpen));
             notificationPanel.hidden = !isOpen;
         }
 
+        function updateNotificationCounts(removedUnread) {
+            const unread = Math.max(
+                0,
+                Number(notificationToggle.dataset.unreadCount || 0) - (removedUnread ? 1 : 0),
+            );
+            const total = Math.max(
+                0,
+                Number(headerCount ? headerCount.textContent : 0) - 1,
+            );
+            const visible = notificationList ? notificationList.children.length : 0;
+
+            if (headerCount) {
+                headerCount.textContent = String(total);
+            }
+            if (visibleCount) {
+                visibleCount.textContent = String(visible);
+            }
+            if (totalCount) {
+                totalCount.textContent = String(total);
+            }
+            if (moreMessage) {
+                moreMessage.hidden = total <= visible;
+            }
+            if (emptyMessage) {
+                emptyMessage.hidden = visible > 0;
+            }
+            notificationToggle.dataset.unreadCount = String(unread);
+            let badge = notificationToggle.querySelector(".notification-badge");
+            if (unread > 0) {
+                if (!badge) {
+                    badge = document.createElement("span");
+                    badge.className = "notification-badge";
+                    badge.setAttribute("aria-hidden", "true");
+                    notificationToggle.appendChild(badge);
+                }
+                badge.textContent = String(unread);
+            } else if (badge) {
+                badge.remove();
+            }
+            notificationToggle.setAttribute("aria-label", "Notificações: " + unread);
+        }
+
+        async function removeNotification(form) {
+            const row = form.closest(".notification-row");
+            if (!row || row.dataset.removing === "true") {
+                return;
+            }
+
+            row.dataset.removing = "true";
+            if (actionStatus) {
+                actionStatus.hidden = true;
+                actionStatus.textContent = "";
+            }
+
+            try {
+                const response = await fetch(form.action, {
+                    method: "POST",
+                    body: new FormData(form),
+                    credentials: "same-origin",
+                    headers: {"X-Requested-With": "XMLHttpRequest"},
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error("Não foi possível remover esta notificação.");
+                }
+
+                const item = row.querySelector(".notification-item");
+                const wasUnread = item && !item.classList.contains("notification-item-read");
+                row.remove();
+                updateNotificationCounts(wasUnread);
+            } catch (error) {
+                delete row.dataset.removing;
+                if (actionStatus) {
+                    actionStatus.textContent = error.message || "Erro ao remover a notificação. Tente novamente.";
+                    actionStatus.hidden = false;
+                }
+            }
+        }
+
         notificationToggle.addEventListener("click", function () {
             setNotificationsOpen(notificationPanel.hidden);
         });
+
+        if (notificationList) {
+            notificationList.querySelectorAll(".notification-delete-form").forEach(function (form) {
+                form.addEventListener("submit", function (event) {
+                    event.preventDefault();
+                    removeNotification(form);
+                });
+            });
+        }
 
         document.addEventListener("click", function (event) {
             if (!notificationWrapper.contains(event.target)) {

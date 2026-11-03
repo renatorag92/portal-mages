@@ -349,6 +349,7 @@ class NotificacaoLida(models.Model):
         related_name='leituras_notificacao',
     )
     lida_em = models.DateTimeField(auto_now_add=True)
+    removida = models.BooleanField(default=False)
 
     class Meta:
         constraints = [

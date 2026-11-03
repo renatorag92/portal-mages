@@ -32,6 +32,7 @@ urlpatterns = [
     path('escolher-prefeitura/', views.escolher_prefeitura_view, name='escolher_prefeitura'), # Rota para escolher a prefeitura
     path('minha-conta/', views.minha_conta_view, name='minha_conta'),
     path('notificacoes/<str:tipo>/<int:item_id>/lida/', views.marcar_notificacao_lida_view, name='marcar_notificacao_lida'),
+    path('notificacoes/<str:tipo>/<int:item_id>/remover/', views.remover_notificacao_view, name='remover_notificacao'),
     path('login/', views.CustomLoginView.as_view(), name='login'),  # Rota do login
     path('redefinir-senha/', views.CustomPasswordChangeView.as_view(), name='redefinir-senha'),  # Rota para alterar a senha
     path('actions/<int:acao_id>/atualizar_status/', views.atualizar_status_acao, name='atualizar_status_acao'),  # Rota para atualizar o status da ação

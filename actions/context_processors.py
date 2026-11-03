@@ -44,6 +44,7 @@ def notifications(request):
         NotificacaoLida.objects.filter(
             usuario=request.user,
             acao__prefeitura=prefeitura,
+            removida=False,
         ).values_list('acao_id', flat=True)
     )
     for acao in acoes:
@@ -78,6 +79,7 @@ def notifications(request):
         NotificacaoLida.objects.filter(
             usuario=request.user,
             etapa__acao__prefeitura=prefeitura,
+            removida=False,
         ).values_list('etapa_id', flat=True)
     )
     for etapa in etapas:
@@ -101,12 +103,37 @@ def notifications(request):
             'lida': etapa.pk in etapas_lidas,
         })
 
+    acoes_removidas = set(
+        NotificacaoLida.objects.filter(
+            usuario=request.user,
+            acao__prefeitura=prefeitura,
+            removida=True,
+        ).values_list('acao_id', flat=True)
+    )
+    etapas_removidas = set(
+        NotificacaoLida.objects.filter(
+            usuario=request.user,
+            etapa__acao__prefeitura=prefeitura,
+            removida=True,
+        ).values_list('etapa_id', flat=True)
+    )
+    avisos = [
+        aviso for aviso in avisos
+        if not (
+            aviso['alvo_tipo'] == 'acao' and aviso['alvo_id'] in acoes_removidas
+            or aviso['alvo_tipo'] == 'etapa' and aviso['alvo_id'] in etapas_removidas
+        )
+    ]
     avisos.sort(key=lambda aviso: aviso['data'])
     notificacoes = [
         {
             **aviso,
             'url': reverse(
                 'marcar_notificacao_lida',
+                args=[aviso['alvo_tipo'], aviso['alvo_id']],
+            ),
+            'remover_url': reverse(
+                'remover_notificacao',
                 args=[aviso['alvo_tipo'], aviso['alvo_id']],
             ),
         }
