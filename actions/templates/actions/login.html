@@ -33,7 +33,9 @@
 
           <div class="campo">
             <label for="contrato">CPF</label>
-            <input id="contrato" name="contrato" type="text" placeholder="Ex.:000.000.000-00"
+            <input id="contrato" name="contrato" type="text" placeholder="Digite seu CPF (somente números)" 
+                   pattern="[0-9]{11}" 
+                   title="Digite um CPF válido com 11 dígitos numéricos."
             inputmode="numeric" maxlength="14" 
                    autocomplete="username" required
                    value="{{ contrato_digitado }}"
