@@ -26,7 +26,7 @@ from datetime import date, timedelta
 
 from .forms import (
     ConsultoriaForm, FuncionarioForm, LoginCPFForm, MinhaContaForm,
-    PrefeituraForm, preparar_senha,
+    PrefeituraForm, gerar_senha_provisoria, preparar_senha,
 )
 from .models import (
     Acao, AcaoCatalogo, Consultoria, Eixo, Etapa, Funcionario,
@@ -575,6 +575,29 @@ def excluir_status_view(request, status_id):
         )
     return redirect('gerenciar_status')
 
+@login_required
+@user_passes_test(_usuario_configuracoes)
+@require_POST
+def gerar_senha_funcionario_view(request, funcionario_id):
+    funcionario = get_object_or_404(Funcionario, pk=funcionario_id)
+
+    if not funcionario.tem_acesso:
+        messages.error(request, 'Este funcionário não tem acesso ao sistema.',
+                       extra_tags='funcionario-senha-erro')
+        return redirect('gerenciar_funcionario')
+
+    senha = gerar_senha_provisoria()
+    funcionario.set_password(senha)
+    funcionario.primeiro_acesso = True
+    funcionario.save()
+
+    messages.warning(
+        request,
+        f'Nova senha provisória de {funcionario.nome} (CPF {funcionario.username}): {senha}. '
+        'A senha anterior deixou de valer. Informe agora; ela não será exibida novamente.',
+        extra_tags='funcionario-senha',
+    )
+    return redirect('gerenciar_funcionario')
 
 # =========================================================
 # LOGIN, PRIMEIRO ACESSO E PREFEITURA ATIVA
