@@ -16,6 +16,7 @@
   data-record-id="{% if registro %}{{ registro.pk }}{% endif %}"
   data-existing="{% if registro %}true{% else %}false{% endif %}">
   <section class="entity-card" aria-labelledby="entityTitle">
+
     <h2 class="entity-card-title" id="entityTitle">
       {% if registro %}Dados da {{ titulo_entidade|lower }}{% else %}Cadastrar {{ titulo_entidade|lower }}{% endif %}
     </h2>
@@ -41,32 +42,32 @@
         <div class="entity-field">
           <label for="entityNomeFantasia">Nome fantasia</label>
           <span class="entity-value" data-display="nome_fantasia" {% if not registro %}hidden{% endif %}>{% if registro %}{{ registro.nome_fantasia }}{% endif %}</span>
-          <input id="entityNomeFantasia" name="nome_fantasia" type="text" maxlength="45"
+          <input id="entityNomeFantasia" name="nome_fantasia" type="text" maxlength="100"
             data-input="nome_fantasia" required value="{{ form.nome_fantasia.value|default_if_none:'' }}"
             {% if registro %}hidden{% endif %}>
         </div>
         <div class="entity-field">
           <label for="entityNomeJuridico">Nome jurídico</label>
           <span class="entity-value" data-display="nome_juridico" {% if not registro %}hidden{% endif %}>{% if registro %}{{ registro.nome_juridico }}{% endif %}</span>
-          <input id="entityNomeJuridico" name="nome_juridico" type="text" maxlength="45"
+          <input id="entityNomeJuridico" name="nome_juridico" type="text" maxlength="100"
             data-input="nome_juridico" required value="{{ form.nome_juridico.value|default_if_none:'' }}"
             {% if registro %}hidden{% endif %}>
         </div>
         <div class="entity-field">
           <label for="entityEndereco">Endereço</label>
           <span class="entity-value" data-display="endereco" {% if not registro %}hidden{% endif %}>{% if registro %}{{ registro.endereco }}{% endif %}</span>
-          <input id="entityEndereco" name="endereco" type="text" maxlength="45"
+          <input id="entityEndereco" name="endereco" type="text" maxlength="150"
             data-input="endereco" required value="{{ form.endereco.value|default_if_none:'' }}"
             {% if registro %}hidden{% endif %}>
         </div>
         {% if tipo_entidade == 'consultoria' %}
         <div class="entity-field">
           <label for="entityPrefeitura">Prefeitura</label>
-          <span class="entity-value" data-display="prefeitura" {% if not registro %}hidden{% endif %}>{% if registro %}{{ registro.prefeitura.nome_fantasia }}{% endif %}</span>
+          <span class="entity-value" data-display="prefeitura" {% if not registro %}hidden{% endif %}>{% if registro %}{{ prefeitura_atual.nome_fantasia }}{% endif %}</span>
           <select id="entityPrefeitura" name="prefeitura" data-input="prefeitura" required {% if registro %}hidden{% endif %}>
             <option value="">Selecione uma prefeitura</option>
             {% for prefeitura in form.fields.prefeitura.queryset %}
-            <option value="{{ prefeitura.pk }}" {% if registro and registro.prefeitura_id == prefeitura.pk %}selected{% endif %}>
+            <option value="{{ prefeitura.pk }}" {% if registro and prefeitura_atual_id == prefeitura.pk %}selected{% endif %}>
               {{ prefeitura.nome_fantasia }}
             </option>
             {% endfor %}
@@ -85,6 +86,28 @@
   </section>
 </div>
 
+{% if messages %}
+<div class="status-messages" aria-live="polite" aria-atomic="false">
+  {% for message in messages %}
+  <div class="status-message status-message-{{ message.level_tag }} status-message-{{ message.extra_tags }}" role="status">
+    <span class="status-message-icon" aria-hidden="true">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        {% if 'created' in message.tags or 'updated' in message.tags or 'deleted' in message.tags %}
+        <path d="m5 12 4 4L19 6"/>
+        {% else %}
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M12 8v4m0 4h.01"/>
+        {% endif %}
+      </svg>
+    </span>
+    <span class="status-message-text">{{ message }}</span>
+    <button type="button" class="status-message-close" aria-label="Fechar notificação">&times;</button>
+    <span class="status-message-progress" aria-hidden="true"></span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
 <div class="entity-confirm-overlay" id="discardDialog" hidden>
   <section class="entity-confirm-dialog" role="dialog" aria-modal="true"
     aria-labelledby="discardTitle" aria-describedby="discardText">
@@ -100,4 +123,5 @@
 
 {% block extra_js %}
 <script src="{% static 'actions/js/cadastro-entidade.js' %}"></script>
+<script src="{% static 'actions/js/gerenciar-status.js' %}"></script>
 {% endblock %}

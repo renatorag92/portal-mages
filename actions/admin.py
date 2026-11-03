@@ -1,32 +1,39 @@
-from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.contrib.auth.models import User
+from django.contrib import admin, messages
+from .forms import FuncionarioForm, preparar_senha
+
+from .forms import FuncionarioForm
 from .models import (
-    Prefeitura, Consultoria, Funcionario, Secretario, 
-    Eixo, Status, Acao, Etapa, PerfilUsuario, AcaoCatalogo
+    Prefeitura, Consultoria, Funcionario, Eixo, Status, AcaoCatalogo, Acao, Etapa,
 )
 
-# --- Configuração de Inline para Unificar Usuário e PerfilUsuario ---
 
-class PerfilUsuarioInline(admin.StackedInline):
-    model = PerfilUsuario
-    can_delete = False
-    verbose_name = 'Perfil do Usuário'
-    verbose_name_plural = 'Perfil do Usuário'
-    fk_name = 'usuario'
+# ---------------------------------------------------------------------------
+# Base: somente consultores (e superusuário) acessam as telas de configuração
+# ---------------------------------------------------------------------------
+class SomenteConsultorAdmin(admin.ModelAdmin):
+    def _pode(self, request):
+        usuario = request.user
+        return usuario.is_authenticated and (usuario.is_superuser or usuario.e_consultor)
 
-class UserAdmin(BaseUserAdmin):
-    inlines = (PerfilUsuarioInline,)
+    def has_module_permission(self, request):
+        return self._pode(request)
 
-# Re-registra o modelo User do Django
-admin.site.unregister(User)
-admin.site.register(User, UserAdmin)
+    def has_view_permission(self, request, obj=None):
+        return self._pode(request)
 
-# --- Demais Modelos do Sistema ---
+    def has_add_permission(self, request):
+        return self._pode(request)
 
-class RegistroUnicoAdmin(admin.ModelAdmin):
-    # Base para modelos que só podem ter um registro (Prefeitura e Consultoria)
-    sortable_by = ()  # Desativa a ordenação nos cabeçalhos das colunas
+    def has_change_permission(self, request, obj=None):
+        return self._pode(request)
+
+    def has_delete_permission(self, request, obj=None):
+        return self._pode(request)
+
+
+class RegistroUnicoAdmin(SomenteConsultorAdmin):
+    """Prefeitura e Consultoria: só um registro (sistema atende um município)."""
+    sortable_by = ()
     save_as_continue = False
 
     def has_add_permission(self, request):
@@ -45,59 +52,92 @@ class RegistroUnicoAdmin(admin.ModelAdmin):
 
 @admin.register(Prefeitura)
 class PrefeituraAdmin(RegistroUnicoAdmin):
-    list_display = ('nome_fantasia', 'cnpj', 'nome_juridico', 'endereco')
+    list_display = ('nome_fantasia', 'cnpj', 'nome_juridico', 'endereco', 'consultoria')
 
 
 @admin.register(Consultoria)
 class ConsultoriaAdmin(RegistroUnicoAdmin):
-    list_display = ('nome_fantasia', 'nome_juridico', 'cnpj', 'endereco', 'prefeitura')
+    list_display = ('nome_fantasia', 'nome_juridico', 'cnpj', 'endereco', 'get_prefeitura')
+
+    @admin.display(description='Prefeitura')
+    def get_prefeitura(self, obj):
+        # Relação 1:1 reversa: pode não existir ainda
+        prefeitura = getattr(obj, 'prefeitura', None)
+        return prefeitura.nome_fantasia if prefeitura else '—'
 
 
+# ---------------------------------------------------------------------------
+# Funcionário: único cadastro de pessoas (com ou sem login)
+# ---------------------------------------------------------------------------
 @admin.register(Funcionario)
-class FuncionarioAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'cpf', 'email', 'cargo')
-    search_fields = ('nome', 'cpf')
+class FuncionarioAdmin(SomenteConsultorAdmin):
+    form = FuncionarioForm
+    list_display = ('nome', 'username', 'cargo', 'prefeitura', 'consultoria', 'tem_acesso')
+    list_filter = ('prefeitura', 'consultoria', 'tem_acesso')
+    search_fields = ('nome', 'username', 'email')
+    fieldsets = (
+    ('Dados pessoais', {'fields': ('nome', 'username', 'email', 'telefone', 'endereco')}),
+    ('Vínculo', {'fields': ('cargo', 'vinculo')}),
+    ('Acesso ao sistema', {'fields': ('tem_acesso',)}),
+)
 
+class FuncionarioAdmin(SomenteConsultorAdmin):
+    # ... restante igual
 
-@admin.register(Secretario)
-class SecretarioAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'cpf', 'email')
+    def save_model(self, request, obj, form, change):
+        senha = preparar_senha(obj)
+        super().save_model(request, obj, form, change)
+        if senha:
+            messages.warning(
+                request,
+                f'Senha provisória de {obj.nome} (CPF {obj.username}): {senha}. '
+                'Copie e informe ao usuário; ela não será exibida novamente.',
+            )
 
-
+# ---------------------------------------------------------------------------
+# Tabelas de apoio (configuração)
+# ---------------------------------------------------------------------------
 @admin.register(Eixo)
-class EixoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'nome', 'descricao')
+class EixoAdmin(SomenteConsultorAdmin):
+    list_display = ('id', 'nome')
 
 
 @admin.register(Status)
-class StatusAdmin(admin.ModelAdmin):
-    list_display = ('id', 'nome', 'cor')
+class StatusAdmin(SomenteConsultorAdmin):
+    list_display = ('id', 'nome', 'cor', 'ordem')
 
 
 @admin.register(AcaoCatalogo)
-class AcaoCatalogoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'nome', 'eixo')
-    search_fields = ('eixo',)
-    list_filter = ('nome',)
+class AcaoCatalogoAdmin(SomenteConsultorAdmin):
+    list_display = ('nome', 'eixo', 'ativa')
+    list_filter = ('eixo', 'ativa')
+    search_fields = ('nome', 'eixo__nome')
+
+
+# ---------------------------------------------------------------------------
+# Operação: Ações e Etapas, com auditoria automática
+# ---------------------------------------------------------------------------
+class AuditoriaAdminMixin:
+    """Preenche criado_por e atualizado_por com o usuário logado."""
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.criado_por = request.user
+        obj.atualizado_por = request.user
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(Acao)
-class AcaoAdmin(admin.ModelAdmin):
-    list_display = (
-        'codigo', 'get_nome_acao', 'prioridade',
-        'data_inicio', 'data_fim'
-    )
-    list_filter = ('prioridade', 'status')
-    search_fields = ('codigo', 'acao_catalogo__nome', 'nova_acao_texto')
-
-    @admin.display(description='Ação')
-    def get_nome_acao(self, obj):
-        if obj.acao_catalogo:
-            return obj.acao_catalogo.nome
-        return obj.nova_acao_texto or 'Sem nome'
+class AcaoAdmin(AuditoriaAdminMixin, SomenteConsultorAdmin):
+    list_display = ('codigo', 'nome', 'prefeitura', 'prioridade', 'data_inicio', 'data_fim')
+    list_filter = ('prefeitura', 'prioridade', 'status')
+    search_fields = ('nome', 'modelo__nome')
+    readonly_fields = ('codigo', 'criado_em', 'atualizado_em', 'criado_por', 'atualizado_por')
 
 
 @admin.register(Etapa)
-class EtapaAdmin(admin.ModelAdmin):
-    list_display = ('id', 'nome', 'acao', 'responsavel')
-    list_filter = ('nome',)
+class EtapaAdmin(AuditoriaAdminMixin, SomenteConsultorAdmin):
+    list_display = ('id', 'nome', 'acao', 'responsavel', 'concluida')
+    list_filter = ('concluida', 'acao__prefeitura')
+    search_fields = ('nome',)
+    readonly_fields = ('criado_em', 'atualizado_em', 'criado_por', 'atualizado_por')

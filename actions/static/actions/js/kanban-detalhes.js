@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const DURACAO_SAIDA = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 150;
   let timerFechar = null;
 
-  let codigoAberto = null;
+  let idAberto = null;
   // estado = { acao, etapas, prioridades, editandoAcao, editandoEtapa, novaEtapa, expandidas }
   let estado = null;
 
@@ -383,7 +383,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Atualiza o andamento mostrado no card do kanban (barra e "2/5"), sem recarregar a página.
   // Roda a cada redesenho, então cobre marcar, adicionar e excluir etapas.
   function atualizarAndamentoDoCard() {
-    const card = document.querySelector('.task-card[data-codigo="' + codigoAberto + '"]');
+    const card = document.querySelector('.task-card[data-id="' + idAberto + '"]');
     const andamento = card && card.querySelector(".task-progress");
     if (!andamento || !estado) return;
 
@@ -495,14 +495,14 @@ document.addEventListener("DOMContentLoaded", function () {
      ABRIR E FECHAR
      ========================================================= */
 
-  async function abrir(codigo) {
+  async function abrir(id) {
     clearTimeout(timerFechar);
     overlay.classList.remove("closing");
-    codigoAberto = codigo;
+    idAberto = id;
     estado = null;
     ultimoPorcento = null;
 
-    elTitulo.textContent = "AÇÃO " + codigo;
+    elTitulo.textContent = "Ação";
     elSubtitulo.textContent = "";
     elBadge.textContent = "";
     elBadge.style.backgroundColor = "";
@@ -516,8 +516,8 @@ document.addEventListener("DOMContentLoaded", function () {
     document.body.style.overflow = "hidden";
 
     try {
-      const dados = await pedir(urlDe(urls.detalhes, codigo));
-      if (codigoAberto !== codigo) return; // fechou enquanto carregava
+      const dados = await pedir(urlDe(urls.detalhes, id));
+      if (idAberto !== id) return; // fechou enquanto carregava
       estado = {
         acao: dados.acao,
         etapas: dados.etapas,
@@ -537,7 +537,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (overlay.classList.contains("closing")) return;
 
     estado = null;
-    codigoAberto = null;
+    idAberto = null;
     ultimoPorcento = null;
 
     overlay.classList.add("closing");
@@ -558,7 +558,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const botao = event.target.closest(".status-menu-toggle");
     if (!botao) return;
     const card = botao.closest(".task-card");
-    if (card && card.dataset.codigo) abrir(card.dataset.codigo);
+    if (card && card.dataset.id) abrir(card.dataset.id);
   });
 
   $("detFechar").addEventListener("click", tentarFechar);
@@ -602,7 +602,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     botao.disabled = true;
     try {
-      const resposta = await pedir(urlDe(urls.editarAcao, codigoAberto), {
+      const resposta = await pedir(urlDe(urls.editarAcao, idAberto), {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-CSRFToken": csrf() },
         body: JSON.stringify(corpo)
@@ -658,7 +658,7 @@ document.addEventListener("DOMContentLoaded", function () {
       observacoes: ler("observacoes").value.trim()
     };
 
-    const url = nova ? urlDe(urls.adicionarEtapa, codigoAberto) : urlDe(urls.editarEtapa, id);
+    const url = nova ? urlDe(urls.adicionarEtapa, idAberto) : urlDe(urls.editarEtapa, id);
 
     botao.disabled = true;
     try {
@@ -697,7 +697,7 @@ document.addEventListener("DOMContentLoaded", function () {
   async function mudarStatus(statusId) {
     if (emEdicao() && !(await confirmarDescarte())) return;
 
-    const card = document.querySelector('.task-card[data-codigo="' + codigoAberto + '"]');
+    const card = document.querySelector('.task-card[data-id="' + idAberto + '"]');
     const form = card && card.querySelector("form");
     const input = form && form.querySelector('input[name="status"]');
     if (!input) return;
@@ -722,7 +722,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     botao.disabled = true;
     try {
-      await pedir(urlDe(urls.excluirAcao, codigoAberto), {
+      await pedir(urlDe(urls.excluirAcao, idAberto), {
         method: "POST",
         headers: { "X-CSRFToken": csrf() }
       });

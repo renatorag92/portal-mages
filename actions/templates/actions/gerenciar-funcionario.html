@@ -1,0 +1,205 @@
+{% extends "LayoutsBases/base.html" %}
+{% load static %}
+
+{% block title %}Gerenciar Funcionários{% endblock %}
+{% block page_title %}Gerenciar Funcionários{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'actions/css/gerenciar-status.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="status-page">
+  <section class="status-card">
+    <h2 class="status-card-title">{% if funcionario_edicao %}Editar funcionário{% else %}Cadastrar funcionário{% endif %}</h2>
+
+    <form method="post">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+
+      <div class="status-form-fields">
+        <div class="status-form-group">
+          <label for="{{ form.nome.id_for_label }}">Nome:</label>
+          {{ form.nome }}
+          {{ form.nome.errors }}
+        </div>
+
+        <div class="status-form-group">
+          <label for="{{ form.username.id_for_label }}">CPF:</label>
+          {{ form.username }}
+          {{ form.username.errors }}
+        </div>
+
+        <div class="status-form-group">
+          <label for="{{ form.email.id_for_label }}">E-mail:</label>
+          {{ form.email }}
+          {{ form.email.errors }}
+        </div>
+
+        <div class="status-form-group">
+          <label for="{{ form.telefone.id_for_label }}">Telefone:</label>
+          {{ form.telefone }}
+          {{ form.telefone.errors }}
+        </div>
+
+        <div class="status-form-group">
+          <label for="{{ form.endereco.id_for_label }}">Endereço:</label>
+          {{ form.endereco }}
+          {{ form.endereco.errors }}
+        </div>
+
+        <div class="status-form-group">
+          <label for="{{ form.cargo.id_for_label }}">Cargo:</label>
+          {{ form.cargo }}
+          {{ form.cargo.errors }}
+        </div>
+
+       <div class="status-form-group">
+         <label>Vínculo:</label>
+        <div class="status-radio-group">
+         {% for radio in form.vinculo %}
+         <label class="status-radio">
+          {{ radio.tag }} {{ radio.choice_label }}
+         </label>
+        {% endfor %}
+        </div>
+        {{ form.vinculo.errors }}
+       </div>
+
+        <div class="status-form-group">
+          <label>{{ form.tem_acesso }} Pode acessar o sistema</label>
+          {{ form.tem_acesso.errors }}
+        </div>
+      </div>
+
+      <p class="status-help-text">
+        Escolha se a pessoa é da prefeitura ou da consultoria. Como cada entidade tem um único registro,
+  o vínculo é feito automaticamente com ela.
+      </p>
+
+      <div class="status-form-actions">
+        <button type="submit" class="status-save-button">
+          {% if funcionario_edicao %}Salvar alterações{% else %}Salvar funcionário{% endif %}
+        </button>
+        {% if funcionario_edicao %}
+        <a href="{% url 'gerenciar_funcionario' %}" class="status-cancel-button">Cancelar</a>
+        {% endif %}
+      </div>
+    </form>
+  </section>
+
+  <section class="status-card">
+    <h2 class="status-card-title">Funcionários cadastrados</h2>
+    <div class="status-table-wrapper">
+      <table class="status-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>CPF</th>
+            <th>Cargo</th>
+            <th>Vínculo</th>
+            <th>Acesso</th>
+            <th class="status-table-actions-heading">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in funcionario_lista %}
+          <tr>
+            <td>{{ f.nome }}</td>
+            <td>{{ f.username }}</td>
+            <td>{{ f.cargo|default:'-' }}</td>
+            <td>
+              {% if f.prefeitura %}{{ f.prefeitura.nome_fantasia }}
+              {% elif f.consultoria %}{{ f.consultoria.nome_fantasia }} (consultoria)
+              {% else %}-{% endif %}
+            </td>
+            <td>{% if f.tem_acesso %}Sim{% else %}Não{% endif %}</td>
+            <td>
+              <div class="status-row-actions">
+                <a href="{% url 'editar_funcionario' f.id %}" class="status-edit-button"
+                  aria-label="Editar {{ f.nome }}" title="Editar">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/>
+                  </svg>
+                </a>
+                {% if f.pk != request.user.pk %}
+                <form method="post" action="{% url 'excluir_funcionario' f.id %}" class="status-delete-form">
+                  {% csrf_token %}
+                  <button type="submit" class="status-delete-button"
+                    aria-label="Excluir {{ f.nome }}" title="Excluir"
+                    data-status-name="{{ f.nome }}" data-confirm-type="funcionário">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M3 6h18"/>
+                      <path d="M8 6V4h8v2"/>
+                      <path d="m19 6-1 14H6L5 6"/>
+                      <path d="M10 11v5M14 11v5"/>
+                    </svg>
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="status-table-empty">Nenhum funcionário cadastrado.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+{% if messages %}
+<div class="status-messages" aria-live="polite" aria-atomic="false">
+  {% for message in messages %}
+  <div class="status-message status-message-{{ message.level_tag }} status-message-{{ message.extra_tags }}" role="status">
+    <span class="status-message-icon" aria-hidden="true">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        {% if 'created' in message.tags or 'updated' in message.tags or 'deleted' in message.tags %}
+        <path d="m5 12 4 4L19 6"/>
+        {% else %}
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M12 8v4m0 4h.01"/>
+        {% endif %}
+      </svg>
+    </span>
+    <span class="status-message-text">{{ message }}</span>
+    <button type="button" class="status-message-close" aria-label="Fechar notificação">&times;</button>
+    <span class="status-message-progress" aria-hidden="true"></span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="status-confirm-overlay" id="statusConfirmModal" hidden>
+  <section class="status-confirm-dialog" role="dialog" aria-modal="true"
+    aria-labelledby="statusConfirmTitle" aria-describedby="statusConfirmText">
+    <div class="status-confirm-icon" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6h18"/>
+        <path d="M8 6V4h8v2"/>
+        <path d="m19 6-1 14H6L5 6"/>
+        <path d="M10 11v5M14 11v5"/>
+      </svg>
+    </div>
+    <h2 class="status-confirm-title" id="statusConfirmTitle">Excluir?</h2>
+    <p class="status-confirm-text" id="statusConfirmText">
+      Tem certeza de que deseja excluir? Esta ação não pode ser desfeita.
+    </p>
+    <div class="status-confirm-actions">
+      <button type="button" class="status-confirm-cancel" id="statusConfirmCancel">Cancelar</button>
+      <button type="button" class="status-confirm-delete" id="statusConfirmDelete">Excluir</button>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'actions/js/gerenciar-status.js' %}"></script>
+{% endblock %}

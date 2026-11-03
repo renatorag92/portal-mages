@@ -1,23 +1,28 @@
 import json
+import logging
 import re
-import webcolors
 from decimal import Decimal, InvalidOperation
+
+import webcolors
 from django import forms
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.db.models.deletion import ProtectedError
 from django.http import JsonResponse
-from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse_lazy
 from django.utils.dateparse import parse_date
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth.views import LoginView, PasswordChangeView
-from django.urls import reverse_lazy
-from .forms import ConsultoriaForm, PrefeituraForm
-from .models import AcaoCatalogo, Acao, Etapa, Eixo, Status, Funcionario, Prefeitura, Consultoria
+
+from .forms import ConsultoriaForm, FuncionarioForm, LoginCPFForm, PrefeituraForm, preparar_senha
+from .models import Acao, AcaoCatalogo, Consultoria, Eixo, Etapa, Funcionario, Prefeitura, Status
+
+logger = logging.getLogger(__name__)
 
 PT_EN = dict(zip(
     'azul vermelho verde amarelo laranja roxo rosa preto branco cinza marrom ciano dourado prata turquesa bege lilás violeta magenta índigo salmão coral vinho lima'.split(),
@@ -26,6 +31,10 @@ PT_EN = dict(zip(
 MAX_STATUS_COLUMNS = 7
 EN_PT = {ingles: portugues for portugues, ingles in PT_EN.items()}
 
+
+# =========================================================
+# UTILITÁRIOS GERAIS
+# =========================================================
 
 def _cor_para_edicao(status):
     if status.cor_nome:
@@ -59,6 +68,59 @@ def _erros_formulario(form):
     }
 
 
+def _erro(mensagem, status=400):
+    return JsonResponse({'success': False, 'error': mensagem}, status=status)
+
+
+def _por_pk(queryset, valor):
+    # Evita erro de conversão quando o valor não é um número
+    if not str(valor or '').isdigit():
+        return None
+    return queryset.filter(pk=valor).first()
+
+
+def _converter_data(valor):
+    try:
+        return parse_date(valor or '')
+    except ValueError:
+        return None
+
+
+def _iso(data):
+    return data.isoformat() if hasattr(data, 'isoformat') else (data or '')
+
+
+def _usuario_configuracoes(user):
+    # Só consultor (ou superusuário) acessa cadastro e configuração
+    return user.is_authenticated and (user.is_superuser or user.e_consultor)
+
+
+def _prefeitura_ativa(request):
+    """
+    Prefeitura que o usuário está operando agora.
+    - Usuário da prefeitura: sempre a sua.
+    - Consultor: a que ele escolheu (guardada na sessão), entre todas da consultoria.
+    """
+    usuario = request.user
+    if not usuario.is_authenticated:
+        return None
+
+    permitidas = usuario.prefeituras_permitidas()
+    escolhida = _por_pk(permitidas, request.session.get('prefeitura_id'))
+    if escolhida:
+        return escolhida
+
+    opcoes = list(permitidas[:2])
+    if len(opcoes) == 1:
+        request.session['prefeitura_id'] = opcoes[0].pk
+        return opcoes[0]
+    return None
+
+
+# =========================================================
+# CADASTRO DE PREFEITURA E CONSULTORIA (1:1)
+# =========================================================
+
 def _serializar_cadastro(registro, consultoria=False):
     dados = {
         'id': registro.pk,
@@ -69,13 +131,10 @@ def _serializar_cadastro(registro, consultoria=False):
         'endereco': registro.endereco,
     }
     if consultoria:
-        dados['prefeitura_id'] = registro.prefeitura_id
-        dados['prefeitura_nome'] = registro.prefeitura.nome_fantasia
+        prefeitura = Prefeitura.objects.filter(consultoria=registro).first()
+        dados['prefeitura_id'] = prefeitura.pk if prefeitura else None
+        dados['prefeitura_nome'] = prefeitura.nome_fantasia if prefeitura else ''
     return dados
-
-
-def _usuario_configuracoes(user):
-    return user.is_staff or user.is_superuser
 
 
 @login_required
@@ -136,7 +195,7 @@ def salvar_prefeitura_view(request):
 @login_required
 @user_passes_test(_usuario_configuracoes)
 def gerenciar_consultoria_view(request):
-    registro = Consultoria.objects.select_related('prefeitura').order_by('pk').first()
+    registro = Consultoria.objects.order_by('pk').first()
     sem_prefeituras = not Prefeitura.objects.exists()
     return render(request, 'actions/cadastro-entidade.html', {
         'tipo_entidade': 'consultoria',
@@ -171,31 +230,28 @@ def salvar_consultoria_view(request):
         return JsonResponse({'success': False, 'errors': _erros_formulario(form)}, status=400)
 
     try:
-        with transaction.atomic():
-            if registro_atual is None and Consultoria.objects.exists():
-                return JsonResponse({
-                    'success': False,
-                    'errors': {'__all__': ['Já existe uma consultoria cadastrada.']},
-                }, status=409)
-            registro = registro_atual or Consultoria()
-            for campo in ('cnpj', 'nome_fantasia', 'nome_juridico', 'endereco', 'prefeitura'):
-                setattr(registro, campo, form.cleaned_data[campo])
-            registro.save()
+        # O formulário grava a consultoria e o vínculo 1:1 com a prefeitura
+        registro = form.salvar()
     except IntegrityError:
         cnpj_duplicado = Consultoria.objects.filter(
             cnpj=form.cleaned_data['cnpj'],
         ).exclude(pk=registro_atual.pk if registro_atual else None).exists()
-        campo = 'cnpj' if cnpj_duplicado else 'prefeitura'
-        mensagem = 'CNPJ já cadastrado.' if cnpj_duplicado else 'Esta prefeitura já possui uma consultoria vinculada.'
-        return JsonResponse({'success': False, 'errors': {campo: [mensagem]}}, status=409)
+        if cnpj_duplicado:
+            return JsonResponse({'success': False, 'errors': {'cnpj': ['CNPJ já cadastrado.']}}, status=409)
+        return JsonResponse({
+            'success': False,
+            'errors': {'__all__': ['Não foi possível salvar a consultoria. Tente novamente.']},
+        }, status=409)
 
     return JsonResponse({'success': True, 'registro': _serializar_cadastro(registro, consultoria=True)})
 
 
+# =========================================================
+# STATUS E EIXOS (configuração)
+# =========================================================
+
 class StatusForm(forms.ModelForm):
-    cor = forms.CharField(
-        max_length=45,
-    )
+    cor = forms.CharField(max_length=45)
 
     class Meta:
         model = Status
@@ -251,11 +307,24 @@ class StatusForm(forms.ModelForm):
             self.save_m2m()
         return status
 
-
 class EixoForm(forms.ModelForm):
+    pai = forms.ModelChoiceField(
+        queryset=Eixo.objects.none(),
+        required=False,
+        label='Eixo pai',
+        empty_label='Nenhum (eixo principal)',
+    )
+
     class Meta:
         model = Eixo
-        fields = ('nome', 'descricao')
+        fields = ('nome', 'pai')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        qs = Eixo.objects.filter(pai__isnull=True)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        self.fields['pai'].queryset = qs
 
     def clean_nome(self):
         nome = (self.cleaned_data.get('nome') or '').strip()
@@ -265,92 +334,8 @@ class EixoForm(forms.ModelForm):
             raise ValidationError('Já existe um eixo com esse nome.')
         return nome
 
-    def clean_descricao(self):
-        descricao = (self.cleaned_data.get('descricao') or '').strip()
-        return descricao
-
-
-class CustomLoginView(LoginView):
-    template_name = 'actions/login.html'
-    redirect_authenticated_user = True
-
-    def get_form_kwargs(self):
-        # O HTML envia "contrato" e "senha"; o Django espera "username" e "password".
-        kwargs = super().get_form_kwargs()
-        if 'data' in kwargs:
-            data = kwargs['data'].copy()
-            data['username'] = data.get('contrato', '')
-            data['password'] = data.get('senha', '')
-            kwargs['data'] = data
-        return kwargs
-
-    def form_invalid(self, form):
-        # Guarda o erro e o contrato digitado, e volta para a tela de login.
-        # Assim, ao recarregar (F5), o erro não reaparece.
-        self.request.session['login_erro'] = True
-        self.request.session['login_contrato'] = self.request.POST.get('contrato', '')
-        return redirect('login')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # pop() lê e apaga, então o erro aparece uma vez só
-        context['erro_login'] = self.request.session.pop('login_erro', False)
-        context['contrato_digitado'] = self.request.session.pop('login_contrato', '')
-        return context
-
-    def get_success_url(self):
-        user = self.request.user
-        # Corrigido para user.perfil
-        if hasattr(user, 'perfil') and user.perfil.primeiro_acesso:
-            return reverse_lazy('redefinir-senha')
-        return reverse_lazy('kanban')
-
-
-class CustomPasswordChangeView(PasswordChangeView):
-    template_name = 'actions/redefinir-senha.html'
-    success_url = reverse_lazy('kanban')
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        self.request.user.perfil.primeiro_acesso = False
-        self.request.user.perfil.save()
-        return response
-
 @login_required
-def kanban_view(request):
-    prefeitura_logada = request.user.perfil.prefeitura
-    todos_status = Status.objects.annotate(total_acoes=Count('acoes')).order_by('ordem', 'id')
-
-    acoes = Acao.objects.filter(
-        secretario__prefeitura=prefeitura_logada
-    ).select_related(
-        'acao_catalogo__eixo', 'status', 'secretario'
-    ).annotate(
-        total_etapas=Count('etapas'),
-        etapas_concluidas=Count('etapas', filter=Q(etapas__concluida=True)),
-    )
-
-    for st in todos_status:
-        st.acoes_lista = [a for a in acoes if a.status_id == st.id]
-        st.cor_para_edicao = _cor_para_edicao(st)
-
-    # Dados adicionais necessários para popular o modal de cadastro de ação
-    eixos = Eixo.objects.all()
-    acoes_catalogo = AcaoCatalogo.objects.select_related('eixo').all()
-    acoes_catalogo_list = [{'id': a.id, 'nome': a.nome, 'eixo_id': a.eixo.id} for a in acoes_catalogo]
-
-    context = {
-        'kanban': todos_status,
-        'eixos': eixos,
-        'acoes_catalogo_list': acoes_catalogo_list,
-        'prioridades': Acao.Status_Prioridade.choices,
-        'toast': request.session.pop('kanban_toast', None),
-    }
-
-    return render(request, 'actions/kanban-governanca.html', context)
-
-
-@login_required
+@user_passes_test(_usuario_configuracoes)
 def gerenciar_eixo_view(request, eixo_id=None):
     eixo = get_object_or_404(Eixo, pk=eixo_id) if eixo_id else None
 
@@ -366,7 +351,7 @@ def gerenciar_eixo_view(request, eixo_id=None):
     else:
         form = EixoForm(instance=eixo)
 
-    eixo_lista = Eixo.objects.annotate(total_acoes=Count('acoes')).order_by('nome')
+    eixo_lista = Eixo.objects.annotate(total_vinculos=Count('acoes')).order_by('nome')
     return render(request, 'actions/gerenciar-eixo.html', {
         'form': form,
         'eixo_lista': eixo_lista,
@@ -375,6 +360,7 @@ def gerenciar_eixo_view(request, eixo_id=None):
 
 
 @login_required
+@user_passes_test(_usuario_configuracoes)
 @require_POST
 def excluir_eixo_view(request, eixo_id):
     eixo = get_object_or_404(Eixo, pk=eixo_id)
@@ -390,8 +376,125 @@ def excluir_eixo_view(request, eixo_id):
         )
     return redirect('gerenciar_eixo')
 
+class AcaoCatalogoForm(forms.ModelForm):
+    class Meta:
+        model = AcaoCatalogo
+        fields = ('nome', 'eixo', 'ativa')
+        labels = {'ativa': 'Disponível para escolha'}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Ação só pode ficar em eixo "folha": subeixo, ou eixo sem subeixos
+        self.fields['eixo'].queryset = (
+            Eixo.objects.filter(subeixos__isnull=True).select_related('pai').order_by('nome'))
+        self.fields['eixo'].label_from_instance = lambda e: (
+            f'{e.pai.nome} › {e.nome}' if e.pai_id else e.nome)
+
+    def clean_nome(self):
+        nome = (self.cleaned_data.get('nome') or '').strip()
+        if not nome:
+            raise ValidationError('Informe o nome da ação.')
+        if AcaoCatalogo.objects.filter(nome__iexact=nome).exclude(pk=self.instance.pk).exists():
+            raise ValidationError('Já existe uma ação com esse nome no catálogo.')
+        return nome
 
 @login_required
+@user_passes_test(_usuario_configuracoes)
+def gerenciar_funcionario_view(request, funcionario_id=None):
+    funcionario = get_object_or_404(Funcionario, pk=funcionario_id) if funcionario_id else None
+
+    if request.method == 'POST':
+        form = FuncionarioForm(request.POST, instance=funcionario)
+        if form.is_valid():
+            registro = form.save(commit=False)
+            senha = preparar_senha(registro)
+            registro.save()
+            if senha:
+                messages.warning(
+                    request,
+                    f'Senha provisória de {registro.nome} (CPF {registro.username}): {senha}. '
+                    'Informe agora; ela não será exibida novamente.',
+                    extra_tags='funcionario-senha',
+                )
+            messages.success(
+                request,
+                'Funcionário atualizado com sucesso.' if funcionario else 'Funcionário cadastrado com sucesso.',
+                extra_tags='funcionario-updated' if funcionario else 'funcionario-created',
+            )
+            return redirect('gerenciar_funcionario')
+    else:
+        form = FuncionarioForm(instance=funcionario)
+
+    funcionario_lista = Funcionario.objects.select_related('prefeitura', 'consultoria').order_by('nome')
+    return render(request, 'actions/gerenciar-funcionario.html', {
+        'form': form,
+        'funcionario_lista': funcionario_lista,
+        'funcionario_edicao': funcionario,
+    })
+
+@login_required
+@user_passes_test(_usuario_configuracoes)
+@require_POST
+def excluir_funcionario_view(request, funcionario_id):
+    funcionario = get_object_or_404(Funcionario, pk=funcionario_id)
+
+    if funcionario.pk == request.user.pk:
+        messages.error(request, 'Você não pode excluir o seu próprio cadastro.',
+                       extra_tags='funcionario-delete-blocked')
+    else:
+        try:
+            funcionario.delete()
+            messages.success(request, 'Funcionário excluído com sucesso.', extra_tags='funcionario-deleted')
+        except ProtectedError:
+            messages.error(
+                request,
+                'Este funcionário não pode ser excluído porque está vinculado a ações ou etapas.',
+                extra_tags='funcionario-delete-blocked',
+            )
+    return redirect('gerenciar_funcionario')
+
+@login_required
+@user_passes_test(_usuario_configuracoes)
+def gerenciar_catalogo_view(request, modelo_id=None):
+    modelo = get_object_or_404(AcaoCatalogo, pk=modelo_id) if modelo_id else None
+
+    if request.method == 'POST':
+        form = AcaoCatalogoForm(request.POST, instance=modelo)
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request,
+                'Ação do catálogo atualizada com sucesso.' if modelo else 'Ação do catálogo cadastrada com sucesso.',
+                extra_tags='catalogo-updated' if modelo else 'catalogo-created',
+            )
+            return redirect('gerenciar_catalogo')
+    else:
+        form = AcaoCatalogoForm(instance=modelo)
+
+    catalogo_lista = (
+        AcaoCatalogo.objects.select_related('eixo', 'eixo__pai')
+        .annotate(total_acoes=Count('instancias'))
+        .order_by('eixo__nome', 'nome')
+    )
+    return render(request, 'actions/gerenciar-catalogo.html', {
+        'form': form,
+        'catalogo_lista': catalogo_lista,
+        'catalogo_edicao': modelo,
+    })
+
+
+@login_required
+@user_passes_test(_usuario_configuracoes)
+@require_POST
+def excluir_catalogo_view(request, modelo_id):
+    modelo = get_object_or_404(AcaoCatalogo, pk=modelo_id)
+    # As ações já criadas guardam o nome copiado, então continuam existindo (on_delete=SET_NULL)
+    modelo.delete()
+    messages.success(request, 'Ação do catálogo excluída com sucesso.', extra_tags='catalogo-deleted')
+    return redirect('gerenciar_catalogo')
+
+@login_required
+@user_passes_test(_usuario_configuracoes)
 def gerenciar_status_view(request, status_id=None):
     status = get_object_or_404(Status, pk=status_id) if status_id else None
 
@@ -419,6 +522,7 @@ def gerenciar_status_view(request, status_id=None):
 
 
 @login_required
+@user_passes_test(_usuario_configuracoes)
 @require_POST
 def editar_status_kanban_view(request, status_id):
     status = get_object_or_404(Status, pk=status_id)
@@ -438,15 +542,12 @@ def editar_status_kanban_view(request, status_id):
     }
     return JsonResponse({
         'success': True,
-        'status': {
-            'id': status.id,
-            'nome': status.nome,
-            'cor': status.cor,
-        },
+        'status': {'id': status.id, 'nome': status.nome, 'cor': status.cor},
     })
 
 
 @login_required
+@user_passes_test(_usuario_configuracoes)
 @require_POST
 def excluir_status_view(request, status_id):
     status = get_object_or_404(Status, pk=status_id)
@@ -455,7 +556,7 @@ def excluir_status_view(request, status_id):
         status.delete()
         messages.success(request, 'Status excluído com sucesso.', extra_tags='status-deleted')
     except ProtectedError:
-        # As ações usam on_delete=PROTECT: status com ações vinculadas não pode ser excluído
+        # Ações usam on_delete=PROTECT: status com ações vinculadas não pode ser excluído
         messages.error(
             request,
             'Este status não pode ser excluído porque está vinculado a uma ou mais ações.',
@@ -464,84 +565,144 @@ def excluir_status_view(request, status_id):
     return redirect('gerenciar_status')
 
 
+# =========================================================
+# LOGIN, PRIMEIRO ACESSO E PREFEITURA ATIVA
+# =========================================================
+
+class CustomLoginView(LoginView):
+    template_name = 'actions/login.html'
+    authentication_form = LoginCPFForm
+    redirect_authenticated_user = True
+
+    def get_form_kwargs(self):
+        # O HTML envia "contrato" e "senha"; o Django espera "username" e "password".
+        kwargs = super().get_form_kwargs()
+        if 'data' in kwargs:
+            data = kwargs['data'].copy()
+            data['username'] = data.get('contrato', '')
+            data['password'] = data.get('senha', '')
+            kwargs['data'] = data
+        return kwargs
+
+    def form_invalid(self, form):
+        # Guarda o erro e o contrato digitado, e volta para a tela de login.
+        # Assim, ao recarregar (F5), o erro não reaparece.
+        self.request.session['login_erro'] = True
+        self.request.session['login_contrato'] = self.request.POST.get('contrato', '')
+        return redirect('login')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # pop() lê e apaga, então o erro aparece uma vez só
+        context['erro_login'] = self.request.session.pop('login_erro', False)
+        context['contrato_digitado'] = self.request.session.pop('login_contrato', '')
+        return context
+
+    def get_success_url(self):
+        if self.request.user.primeiro_acesso:
+            return reverse_lazy('redefinir-senha')
+        return reverse_lazy('kanban')
+
+
+class CustomPasswordChangeView(PasswordChangeView):
+    template_name = 'actions/redefinir-senha.html'
+    success_url = reverse_lazy('kanban')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        usuario = self.request.user
+        usuario.primeiro_acesso = False
+        usuario.save(update_fields=['primeiro_acesso'])
+        return response
+
+
 @login_required
-@require_POST
-def atualizar_status_acao(request, acao_id):
-    # Só encontra a ação se ela for da prefeitura do usuário logado
-    acao = _acao_da_prefeitura(request, acao_id)
-
-    # Ação inexistente, de outra prefeitura ou cancelada (definitiva): não muda nada
-    if acao is None or _acao_cancelada(acao):
-        return redirect('kanban')
-
-    novo_status = request.POST.get('status')
-
-    # Só salva (e avisa) se o status realmente mudou
-    if novo_status and novo_status.isdigit() and str(acao.status_id) != novo_status:
-        status_destino = get_object_or_404(Status, pk=novo_status)
-        acao.status = status_destino
-        acao.save()
-        request.session['kanban_toast'] = {
-            'mensagem': f'Ação {acao.codigo} movida para "{status_destino.nome}".'
-        }
-
-    return redirect('kanban')
+def escolher_prefeitura_view(request):
+    # Consultor escolhe em qual prefeitura vai trabalhar
+    prefeituras = request.user.prefeituras_permitidas().order_by('nome_fantasia')
+    if request.method == 'POST':
+        escolhida = _por_pk(prefeituras, request.POST.get('prefeitura'))
+        if escolhida:
+            request.session['prefeitura_id'] = escolhida.pk
+            return redirect('kanban')
+        messages.error(request, 'Selecione uma prefeitura da lista.')
+    return render(request, 'actions/escolher-prefeitura.html', {'prefeituras': prefeituras})
 
 
 # =========================================================
-# APOIO (ações e etapas)
+# KANBAN
 # =========================================================
 
-def _erro(mensagem, status=400):
-    return JsonResponse({'success': False, 'error': mensagem}, status=status)
+@login_required
+def kanban_view(request):
+    prefeitura = _prefeitura_ativa(request)
+    if prefeitura is None:
+        return redirect('escolher_prefeitura')
+
+    # Contagem só das ações desta prefeitura
+    todos_status = Status.objects.annotate(
+        total_acoes=Count('acoes', filter=Q(acoes__prefeitura=prefeitura)),
+    ).order_by('ordem', 'id')
+
+    acoes = Acao.objects.filter(prefeitura=prefeitura).select_related(
+        'modelo', 'eixo', 'status', 'responsavel',
+    ).annotate(
+        total_etapas=Count('etapas'),
+        etapas_concluidas=Count('etapas', filter=Q(etapas__concluida=True)),
+    )
+
+    for st in todos_status:
+        st.acoes_lista = [a for a in acoes if a.status_id == st.id]
+        st.cor_para_edicao = _cor_para_edicao(st)
+
+    eixos_raiz = Eixo.objects.filter(pai__isnull=True).prefetch_related('subeixos')
+    acoes_catalogo = AcaoCatalogo.objects.filter(ativa=True).select_related('eixo')
+    acoes_catalogo_list = [{'id': a.id, 'nome': a.nome, 'eixo_id': a.eixo_id} for a in acoes_catalogo]
+
+    # Dicionário de eixos, incluindo subeixos, para exibir no filtro do kanban
+    context = {
+        'prefeitura': prefeitura,
+        'kanban': todos_status,
+        'eixos_raiz': eixos_raiz,
+        'acoes_catalogo_list': acoes_catalogo_list,
+        'prioridades': Acao.Status_Prioridade.choices,
+        'toast': request.session.pop('kanban_toast', None),
+    }
+    return render(request, 'actions/kanban-governanca.html', context)
 
 
-def _prefeitura_do_usuario(request):
-    perfil = getattr(request.user, 'perfil', None)
-    return perfil.prefeitura if perfil else None
-
-
-def _converter_data(valor):
-    try:
-        return parse_date(valor or '')
-    except ValueError:
-        return None
-
+# =========================================================
+# AÇÕES E ETAPAS (operação)
+# =========================================================
 
 def _funcionario_por_cpf(cpf, prefeitura):
-    # Aceita o CPF com ou sem máscara, e só procura entre os funcionários da prefeitura
+    # Aceita o CPF com ou sem máscara; o CPF é salvo só com dígitos
     digitos = re.sub(r'\D', '', cpf or '')
-    if len(digitos) != 11:
+    if prefeitura is None or len(digitos) != 11:
         return None
-    mascarado = f'{digitos[:3]}.{digitos[3:6]}.{digitos[6:9]}-{digitos[9:]}'
-    return (
-        Funcionario.objects
-        .filter(prefeitura=prefeitura)
-        .filter(Q(cpf=digitos) | Q(cpf=mascarado))
-        .first()
-    )
+    return Funcionario.objects.filter(prefeitura=prefeitura, username=digitos).first()
 
 
 def _acao_da_prefeitura(request, acao_id):
-    prefeitura = _prefeitura_do_usuario(request)
-    if prefeitura is None:
+    prefeitura = _prefeitura_ativa(request)
+    if prefeitura is None or not str(acao_id).isdigit():
         return None
     return (
         Acao.objects
-        .select_related('acao_catalogo__eixo', 'status', 'secretario')
-        .filter(codigo=str(acao_id), secretario__prefeitura=prefeitura)
+        .select_related('modelo', 'eixo', 'status', 'responsavel')
+        .filter(prefeitura=prefeitura, pk=int(acao_id))
         .first()
     )
 
 
 def _etapa_da_prefeitura(request, etapa_id):
-    prefeitura = _prefeitura_do_usuario(request)
+    prefeitura = _prefeitura_ativa(request)
     if prefeitura is None:
         return None
     return (
         Etapa.objects
-        .select_related('acao__status', 'acao__secretario', 'responsavel')
-        .filter(pk=etapa_id, acao__secretario__prefeitura=prefeitura)
+        .select_related('acao__status', 'acao__eixo', 'acao__responsavel', 'responsavel')
+        .filter(pk=etapa_id, acao__prefeitura=prefeitura)
         .first()
     )
 
@@ -551,22 +712,18 @@ def _acao_cancelada(acao):
     return slugify(acao.status.nome) == 'cancelado'
 
 
-def _iso(data):
-    return data.isoformat() if hasattr(data, 'isoformat') else (data or '')
-
-
 def _serializar_acao(acao):
-    catalogo = acao.acao_catalogo
     return {
+        'id': acao.id,
         'codigo': acao.codigo,
-        'nome': catalogo.nome if catalogo else (acao.nova_acao_texto or ''),
-        'eixo': catalogo.eixo.nome if catalogo else '',
+        'nome': acao.nome,
+        'eixo': acao.eixo.nome,
         'prioridade': acao.prioridade,
         'custo': acao.custo,
         'data_inicio': _iso(acao.data_inicio),
         'data_fim': _iso(acao.data_fim),
         'observacoes': acao.observacoes or '',
-        'responsavel': acao.secretario.nome,
+        'responsavel': acao.responsavel.nome,
         'status': {'id': acao.status.id, 'nome': acao.status.nome, 'cor': acao.status.cor},
         'somente_leitura': _acao_cancelada(acao),
     }
@@ -586,103 +743,155 @@ def _serializar_etapa(etapa):
     }
 
 
-# =========================================================
-# CADASTRO DE AÇÃO (pop-up do Kanban)
-# =========================================================
+@login_required
+@require_POST
+def atualizar_status_acao(request, acao_id):
+    # Só encontra a ação se ela for da prefeitura ativa
+    acao = _acao_da_prefeitura(request, acao_id)
 
+    # Ação inexistente, de outra prefeitura ou cancelada (definitiva): não muda nada
+    if acao is None or _acao_cancelada(acao):
+        return redirect('kanban')
+
+    novo_status = request.POST.get('status')
+
+    # Só salva (e avisa) se o status realmente mudou
+    if novo_status and novo_status.isdigit() and str(acao.status_id) != novo_status:
+        status_destino = get_object_or_404(Status, pk=novo_status)
+        acao.status = status_destino
+        acao.atualizado_por = request.user
+        acao.save()
+        request.session['kanban_toast'] = {
+            'mensagem': f'Ação {acao.codigo} movida para "{status_destino.nome}".'
+        }
+
+    return redirect('kanban')
+
+
+@login_required
 @require_POST
 def criar_acao_kanban_view(request):
+    prefeitura = _prefeitura_ativa(request)
+    if prefeitura is None:
+        return _erro('Selecione uma prefeitura antes de criar ações.', 403)
+
     try:
         if request.content_type == 'application/json':
             data = json.loads(request.body)
         else:
             data = request.POST
+    except (ValueError, TypeError):
+        return _erro('Dados inválidos.')
 
-        eixo_id = data.get('eixo')
-        acao_catalogo_id = data.get('acao')
-        acao_texto_custom = data.get('novaAcao', '').strip()
+    eixo_id = data.get('eixo')
+    acao_catalogo_id = data.get('acao')
+    acao_texto_custom = (data.get('novaAcao') or '').strip()
+    status_id = data.get('status')
+    prioridade = data.get('prioridade')
 
-        status_id = data.get('status')
-        prioridade = data.get('prioridade')
+    if prioridade not in Acao.Status_Prioridade.values:
+        return _erro('Prioridade inválida.')
 
-        # Tratamento do custo.
-        # O pop-up já manda o valor como "2121.22" (ponto decimal). Só um formulário comum
-        # manda no formato brasileiro ("2.121,22"), que precisa ser convertido.
-        custo_raw = str(data.get('custo', '0')).strip()
-        if request.content_type != 'application/json':
-            custo_raw = custo_raw.replace('.', '').replace(',', '.')
-        try:
-            custo = float(custo_raw)
-        except ValueError:
-            custo = 0.0
+    # O pop-up manda o custo com ponto decimal ("2121.22"); o formulário comum manda "2.121,22"
+    custo_raw = str(data.get('custo', '0')).strip()
+    if request.content_type != 'application/json':
+        custo_raw = custo_raw.replace('.', '').replace(',', '.')
+    try:
+        custo = float(custo_raw)
+    except ValueError:
+        custo = 0.0
 
-        data_inicio = data.get('dataInicio') or data.get('data_inicio')
-        data_fim = data.get('dataFim') or data.get('data_fim')
-        observacoes = data.get('observacoes')
+    data_inicio = _converter_data(data.get('dataInicio') or data.get('data_inicio'))
+    data_fim = _converter_data(data.get('dataFim') or data.get('data_fim'))
+    if not data_inicio or not data_fim:
+        return _erro('Informe datas válidas.')
+    if data_fim < data_inicio:
+        return _erro('A data de fim não pode ser anterior à data de início.')
 
-        # Obtém o funcionário/secretário padrão da prefeitura do usuário logado
-        prefeitura_logada = request.user.perfil.prefeitura
-        secretario = Funcionario.objects.filter(prefeitura=prefeitura_logada).first()
+    observacoes = (data.get('observacoes') or '').strip() or None
 
-        if not secretario:
-            return JsonResponse({
-                'success': False,
-                'error': 'Cadastre pelo menos um Secretário/Funcionário no Admin antes de criar ações.'
-            }, status=400)
+    # Nome e eixo: do catálogo, ou digitados pelo usuário (sem criar nada no catálogo)
+    if acao_catalogo_id and acao_catalogo_id != 'outra':
+        modelo = AcaoCatalogo.objects.select_related('eixo').filter(
+            pk=acao_catalogo_id, ativa=True).first() if str(acao_catalogo_id).isdigit() else None
+        if modelo is None:
+            return _erro('Ação do catálogo não encontrada.')
+        nome_acao, eixo_obj = modelo.nome, modelo.eixo
+    else:
+        if not acao_texto_custom:
+            return _erro('Informe o nome da ação.')
+        modelo = None
+        eixo_obj = _por_pk(Eixo.objects.all(), eixo_id)
+        if eixo_obj is None:
+            return _erro('Eixo não encontrado.')
+        nome_acao = acao_texto_custom
 
-        # Valida o CPF de cada etapa ANTES de criar qualquer coisa
-        etapas_validadas = []
-        if request.content_type == 'application/json':
-            for item in data.get('etapas', []):
-                nome_etapa = item.get('nome') or item.get('etapaNome')
-                if not nome_etapa:
-                    continue
+    status_obj = _por_pk(Status.objects.all(), status_id) if status_id else Status.objects.first()
+    if status_obj is None:
+        return _erro('Status não encontrado.')
 
-                responsavel = _funcionario_por_cpf(item.get('cpf'), prefeitura_logada)
-                if responsavel is None:
-                    return JsonResponse({
-                        'success': False,
-                        'error': f'O CPF informado na etapa "{nome_etapa}" não foi encontrado entre os funcionários da sua prefeitura.'
-                    }, status=400)
+    # Responsável: CPF enviado pelo formulário, ou o próprio usuário se ele for da prefeitura
+    cpf_responsavel = data.get('responsavel')
+    if cpf_responsavel:
+        responsavel = _funcionario_por_cpf(cpf_responsavel, prefeitura)
+    elif request.user.prefeitura_id == prefeitura.pk:
+        responsavel = request.user
+    else:
+        responsavel = None
+    if responsavel is None:
+        return _erro('Informe o responsável pela ação entre os funcionários da prefeitura.')
 
-                etapas_validadas.append((item, nome_etapa, responsavel))
+    # Valida o CPF de cada etapa ANTES de criar qualquer coisa
+    etapas_validadas = []
+    if request.content_type == 'application/json':
+        for item in data.get('etapas', []):
+            nome_etapa = item.get('nome') or item.get('etapaNome')
+            if not nome_etapa:
+                continue
+            resp_etapa = _funcionario_por_cpf(item.get('cpf'), prefeitura)
+            if resp_etapa is None:
+                return _erro(
+                    f'O CPF informado na etapa "{nome_etapa}" não foi encontrado '
+                    'entre os funcionários da sua prefeitura.'
+                )
+            etapas_validadas.append((item, nome_etapa, resp_etapa))
 
+    try:
         with transaction.atomic():
-            eixo_obj = Eixo.objects.get(id=eixo_id)
-
-            if acao_catalogo_id and acao_catalogo_id != 'outra':
-                acao_catalogo_obj = AcaoCatalogo.objects.get(id=acao_catalogo_id)
-            else:
-                acao_catalogo_obj = AcaoCatalogo.objects.create(nome=acao_texto_custom, eixo=eixo_obj)
-
-            status_obj = Status.objects.get(id=status_id) if status_id else Status.objects.first()
-
             nova_acao = Acao.objects.create(
-                acao_catalogo=acao_catalogo_obj,
-                secretario=secretario,
+                prefeitura=prefeitura,
+                nome=nome_acao,
+                eixo=eixo_obj,
+                modelo=modelo,
+                responsavel=responsavel,
                 status=status_obj,
                 prioridade=prioridade,
                 custo=custo,
                 data_inicio=data_inicio,
                 data_fim=data_fim,
                 observacoes=observacoes,
+                criado_por=request.user,
+                atualizado_por=request.user,
             )
 
-            # --- CRIAÇÃO DAS ETAPAS ---
             if request.content_type == 'application/json':
-                for item, nome_etapa, responsavel in etapas_validadas:
-                    # O pop-up manda "inicio" e "fim"
-                    e_inicio = item.get('inicio') or item.get('data_inicio') or item.get('dataInicio') or item.get('etapaInicio') or data_inicio
-                    e_fim = item.get('fim') or item.get('data_fim') or item.get('dataFim') or item.get('etapaFim') or data_fim
-
+                for item, nome_etapa, resp_etapa in etapas_validadas:
+                    e_inicio = _converter_data(
+                        item.get('inicio') or item.get('data_inicio') or item.get('dataInicio')
+                        or item.get('etapaInicio')) or data_inicio
+                    e_fim = _converter_data(
+                        item.get('fim') or item.get('data_fim') or item.get('dataFim')
+                        or item.get('etapaFim')) or data_fim
                     Etapa.objects.create(
                         acao=nova_acao,
                         nome=nome_etapa,
-                        responsavel=responsavel,
+                        responsavel=resp_etapa,
                         data_inicio=e_inicio,
                         data_fim=e_fim,
                         prioridade=item.get('prioridade') or '',
-                        observacoes=item.get('observacoes', '')
+                        observacoes=item.get('observacoes', ''),
+                        criado_por=request.user,
+                        atualizado_por=request.user,
                     )
             else:
                 nomes = request.POST.getlist('etapaNome[]')
@@ -693,32 +902,29 @@ def criar_acao_kanban_view(request):
 
                 for i, nome in enumerate(nomes):
                     if nome.strip():
-                        d_inicio = inicios[i] if (i < len(inicios) and inicios[i]) else data_inicio
-                        d_fim = fims[i] if (i < len(fims) and fims[i]) else data_fim
-                        prio = prioridades[i] if i < len(prioridades) else ''
-                        obs = obs_list[i] if i < len(obs_list) else ''
-
+                        d_inicio = _converter_data(inicios[i]) if i < len(inicios) else None
+                        d_fim = _converter_data(fims[i]) if i < len(fims) else None
                         Etapa.objects.create(
                             acao=nova_acao,
                             nome=nome.strip(),
-                            responsavel=secretario,
-                            data_inicio=d_inicio,
-                            data_fim=d_fim,
-                            prioridade=prio,
-                            observacoes=obs
+                            responsavel=responsavel,
+                            data_inicio=d_inicio or data_inicio,
+                            data_fim=d_fim or data_fim,
+                            prioridade=prioridades[i] if i < len(prioridades) else '',
+                            observacoes=obs_list[i] if i < len(obs_list) else '',
+                            criado_por=request.user,
+                            atualizado_por=request.user,
                         )
+    except IntegrityError:
+        # Dois cadastros simultâneos podem gerar o mesmo código da ação
+        logger.exception('Conflito ao criar ação na prefeitura %s', prefeitura.pk)
+        return _erro('Não foi possível salvar a ação. Tente novamente.', 409)
+    except Exception:
+        logger.exception('Erro inesperado ao criar ação na prefeitura %s', prefeitura.pk)
+        return _erro('Erro interno ao criar a ação.', 500)
 
-        return JsonResponse({'success': True, 'message': 'Ação criada com sucesso!'}, status=201)
+    return JsonResponse({'success': True, 'message': 'Ação criada com sucesso!'}, status=201)
 
-    except Eixo.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Eixo não encontrado.'}, status=400)
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
-
-
-# =========================================================
-# DETALHES, EDIÇÃO E ETAPAS (pop-up de detalhes)
-# =========================================================
 
 @login_required
 def obter_detalhes_acao_view(request, acao_id):
@@ -727,7 +933,6 @@ def obter_detalhes_acao_view(request, acao_id):
         return _erro('Ação não encontrada.', 404)
 
     etapas = acao.etapas.select_related('responsavel').order_by('id')
-
     return JsonResponse({
         'success': True,
         'acao': _serializar_acao(acao),
@@ -773,6 +978,7 @@ def editar_acao_view(request, acao_id):
     acao.data_inicio = data_inicio
     acao.data_fim = data_fim
     acao.observacoes = (data.get('observacoes') or '').strip() or None
+    acao.atualizado_por = request.user
     acao.save()
 
     return JsonResponse({'success': True, 'acao': _serializar_acao(acao)})
@@ -802,7 +1008,7 @@ def _dados_etapa(request):
     if data_fim < data_inicio:
         return None, _erro('A data de fim não pode ser anterior à data de início.')
 
-    responsavel = _funcionario_por_cpf(data.get('cpf'), _prefeitura_do_usuario(request))
+    responsavel = _funcionario_por_cpf(data.get('cpf'), _prefeitura_ativa(request))
     if responsavel is None:
         return None, _erro('CPF do responsável não encontrado entre os funcionários da sua prefeitura.')
 
@@ -829,7 +1035,8 @@ def adicionar_etapa_view(request, acao_id):
     if erro:
         return erro
 
-    etapa = Etapa.objects.create(acao=acao, **dados)
+    etapa = Etapa.objects.create(
+        acao=acao, criado_por=request.user, atualizado_por=request.user, **dados)
     return JsonResponse({'success': True, 'etapa': _serializar_etapa(etapa)}, status=201)
 
 
@@ -848,6 +1055,7 @@ def editar_etapa_view(request, etapa_id):
 
     for campo, valor in dados.items():
         setattr(etapa, campo, valor)
+    etapa.atualizado_por = request.user
     etapa.save()
 
     return JsonResponse({'success': True, 'etapa': _serializar_etapa(etapa)})
@@ -864,8 +1072,10 @@ def alterar_etapa_view(request, etapa_id):
         return _erro('Uma ação cancelada não pode ser editada.', 403)
 
     etapa.concluida = not etapa.concluida
-    etapa.save(update_fields=['concluida'])
+    etapa.atualizado_por = request.user
+    etapa.save(update_fields=['concluida', 'atualizado_por', 'atualizado_em'])
     return JsonResponse({'success': True, 'concluida': etapa.concluida})
+
 
 @login_required
 @require_POST

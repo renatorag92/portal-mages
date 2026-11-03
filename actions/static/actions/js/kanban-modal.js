@@ -5,6 +5,8 @@
  */
 document.addEventListener("DOMContentLoaded", function () {
 
+  const $ = function (id) { return document.getElementById(id); };
+
   const overlay = document.getElementById("acaoModalOverlay");
   const form = document.getElementById("formCadastroAcao");
   if (!overlay || !form) return;
@@ -12,7 +14,17 @@ document.addEventListener("DOMContentLoaded", function () {
   // Move o pop-up para o <body>, assim nenhum container do layout limita o position: fixed
   document.body.appendChild(overlay);
 
-  const $ = function (id) { return document.getElementById(id); };
+  const campoResponsavel = $("responsavel");
+  if (campoResponsavel) {
+   campoResponsavel.addEventListener("input", function (event) {
+    event.target.value = event.target.value
+      .replace(/\D/g, "")
+      .slice(0, 11)
+      .replace(/^(\d{3})(\d)/, "$1.$2")
+      .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1-$2");
+  });
+}
 
   const selEixo = $("eixo");
   const acaoTexto = $("acaoTexto");
@@ -347,6 +359,9 @@ document.addEventListener("DOMContentLoaded", function () {
       return mostrarErro("A data de fim não pode ser anterior à data de início.");
     }
 
+    if (campoResponsavel && campoResponsavel.value.replace(/\D/g, "").length !== 11) {
+      return mostrarErro("Informe o CPF do responsável pela ação.");
+  }
     const etapas = [];
     const cartoes = etapasList.querySelectorAll(".etapa-card");
 
@@ -390,6 +405,7 @@ document.addEventListener("DOMContentLoaded", function () {
       dataInicio: valor("dataInicio"),
       dataFim: valor("dataFim"),
       observacoes: valor("observacoes"),
+      responsavel: campoResponsavel ? campoResponsavel.value : "",
       etapas: etapas
     };
 

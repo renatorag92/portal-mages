@@ -1,0 +1,40 @@
+{% extends "LayoutsBases/base.html" %}
+{% load static %}
+
+{% block title %}Escolher prefeitura{% endblock %}
+{% block page_title %}Escolher prefeitura{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'actions/css/gerenciar-status.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="status-page">
+  <section class="status-card">
+    <h2 class="status-card-title">Em qual prefeitura você vai trabalhar?</h2>
+
+    {% for message in messages %}
+      <p class="status-limit-message">{{ message }}</p>
+    {% endfor %}
+
+    {% if prefeituras %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="status-form-fields">
+        {% for prefeitura in prefeituras %}
+        <label>
+          <input type="radio" name="prefeitura" value="{{ prefeitura.pk }}" required>
+          {{ prefeitura.nome_fantasia }}
+        </label>
+        {% endfor %}
+      </div>
+      <div class="status-form-actions">
+        <button type="submit" class="status-save-button">Continuar</button>
+      </div>
+    </form>
+    {% else %}
+      <p>Nenhuma prefeitura disponível para o seu usuário.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

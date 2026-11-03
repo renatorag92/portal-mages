@@ -27,8 +27,8 @@ form.addEventListener('submit', function (e) {
   campos.forEach(limparErro);
 
   const erros = []; // [campo, mensagem]
-  if (!contrato.value.trim()) erros.push([contrato, 'Preencha o número do contrato.']);
-  if (!senha.value) erros.push([senha, 'Preencha a senha.']);
+  if (!contrato.value.trim()) erros.push([contrato, 'Digite o CPF.']);
+  if (!senha.value) erros.push([senha, 'Digite a senha.']);
 
   if (erros.length === 0) return; // tudo preenchido: envia normalmente
 

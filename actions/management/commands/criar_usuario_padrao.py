@@ -1,30 +1,62 @@
-from django.core.management import BaseCommand
-from django.contrib.auth.models import User
-from actions.models import PerfilUsuario
+# actions/management/commands/criar_usuario_padrao.py
+from django.core.management.base import BaseCommand
+
+from actions.models import Consultoria, Funcionario, Prefeitura
+
+SENHA_TESTE = 'senha123'
+
 
 class Command(BaseCommand):
-    help = 'Crea un perfil de usuario para cada usuario existente'
+    help = 'Cria consultoria, prefeitura, um consultor e um secretário para testes.'
 
-    def handle(self, *args, **options): 
-        username_padrao = '11111' # Numero do contrato padrão
-        senha_padrao = '12345678' # Senha padrão para os desenvolvedores
-        
-        # Cria ou pega o usuário se ele já existir
-        user, created = User.objects.get_or_create(username=username_padrao, defaults={'is_staff': True, 'is_superuser': True}) # Permite acesso ao admin também
-        
-        if created:
-            user.set_password(senha_padrao)
-            user.save()
-            self.stdout.write(self.style.SUCCESS(f'Usuário "{username_padrao}" criado com sucesso.'))
-            
-        else:
-            self.stdout.write(self.style.WARNING(f'Usuário "{username_padrao}" já existe.'))
-            
-        # Garante que o perfil do usuário seja criado e defina a flag primeiro_acesso como False
-        perfil, _ = PerfilUsuario.objects.get_or_create(usuario=user)
-        perfil.primeiro_acesso = False
-        perfil.save()
-        
-        self.stdout.write(self.style.SUCCESS('Flag definida como False com sucesso'))
-        
-        
+    def handle(self, *args, **options):
+        consultoria, _ = Consultoria.objects.get_or_create(
+            cnpj='00000000000100',
+            defaults={
+                'nome_juridico': 'Consultoria Teste LTDA',
+                'nome_fantasia': 'Consultoria Teste',
+                'endereco': 'Rua Teste, 100',
+            },
+        )
+
+        prefeitura, _ = Prefeitura.objects.get_or_create(
+            cnpj='00000000000191',
+            defaults={
+                'nome_juridico': 'Prefeitura Municipal de Teste',
+                'nome_fantasia': 'Prefeitura Teste',
+                'endereco': 'Praça Central, 1',
+                'consultoria': consultoria,
+            },
+        )
+
+        consultor, criado = Funcionario.objects.get_or_create(
+            username='12345678909',
+            defaults={
+                'nome': 'Consultor Teste',
+                'consultoria': consultoria,
+                'tem_acesso': True,
+                'primeiro_acesso': False,
+            },
+        )
+        if criado:
+            consultor.set_password(SENHA_TESTE)
+            consultor.save()
+
+        secretario, criado = Funcionario.objects.get_or_create(
+            username='98765432100',
+            defaults={
+                'nome': 'Secretário Teste',
+                'prefeitura': prefeitura,
+                'cargo': 'Secretário',
+                'tem_acesso': True,
+                'primeiro_acesso': False,
+            },
+        )
+        if criado:
+            secretario.set_password(SENHA_TESTE)
+            secretario.save()
+
+        self.stdout.write(self.style.SUCCESS(
+            f'Pronto. Logins: CPF 12345678909 (consultor) e CPF 98765432100 (secretário). '
+            f'Senha: {SENHA_TESTE}'
+        ))
