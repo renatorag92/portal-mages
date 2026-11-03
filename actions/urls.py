@@ -15,6 +15,7 @@ urlpatterns = [
     path('configuracoes/funcionarios/', views.gerenciar_funcionario_view, name='gerenciar_funcionario'),
     path('configuracoes/funcionarios/<int:funcionario_id>/editar/', views.gerenciar_funcionario_view, name='editar_funcionario'),
     path('configuracoes/funcionarios/<int:funcionario_id>/excluir/', views.excluir_funcionario_view, name='excluir_funcionario'),
+    path('configuracoes/funcionarios/<int:funcionario_id>/nova-senha/', views.gerar_senha_funcionario_view, name='gerar_senha_funcionario'),
     path('configuracoes/catalogo/', views.gerenciar_catalogo_view, name='gerenciar_catalogo'),
     path('configuracoes/catalogo/<int:modelo_id>/editar/', views.gerenciar_catalogo_view, name='editar_catalogo'),
     path('configuracoes/catalogo/<int:modelo_id>/excluir/', views.excluir_catalogo_view, name='excluir_catalogo'),

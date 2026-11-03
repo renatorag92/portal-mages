@@ -99,6 +99,7 @@
             <th>Cargo</th>
             <th>Vínculo</th>
             <th>Acesso</th>
+            <th>Senha</th>
             <th class="status-table-actions-heading">Ações</th>
           </tr>
         </thead>
@@ -114,6 +115,25 @@
               {% else %}-{% endif %}
             </td>
             <td>{% if f.tem_acesso %}Sim{% else %}Não{% endif %}</td>
+            <td>
+            {% if f.tem_acesso and f.primeiro_acesso %}
+              <span class="status-limit-count">Provisória</span>
+              <form method="post" action="{% url 'gerar_senha_funcionario' f.id %}" style="display:inline">
+                {% csrf_token %}
+                  <button type="submit" class="status-edit-button"
+                    aria-label="Gerar nova senha para {{ f.nome }}" title="Gerar nova senha">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                    </svg>
+                  </button>
+              </form>
+            {% elif f.tem_acesso %}
+              Trocada
+            {% else %}
+              -
+            {% endif %}
+          </td>
             <td>
               <div class="status-row-actions">
                 <a href="{% url 'editar_funcionario' f.id %}" class="status-edit-button"
@@ -145,7 +165,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="6" class="status-table-empty">Nenhum funcionário cadastrado.</td>
+            <td colspan="7" class="status-table-empty">Nenhum funcionário cadastrado.</td>
           </tr>
           {% endfor %}
         </tbody>
