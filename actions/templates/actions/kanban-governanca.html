@@ -39,12 +39,20 @@ active
 <div class="filters">
 
   <select id="eixoFilter">
-    <option value="">Selecione o eixo específico</option>
-    {% for eixo in eixos %}
-    <option value="{{ eixo.nome }}">{{ eixo.nome }}</option>
-    {% endfor %}
+   <option value="">Selecione o eixo específico</option>
+   {% for eixo in eixos_raiz %}
+    {% if eixo.subeixos.all %}
+      <optgroup label="{{ eixo.nome }}">
+        {% for sub in eixo.subeixos.all %}
+        <option value="{{ sub.nome }}">{{ sub.nome }}</option>
+        {% endfor %}
+      </optgroup>
+    {% else %}
+      <option value="{{ eixo.nome }}">{{ eixo.nome }}</option>
+    {% endif %}
+   {% endfor %}
   </select>
-
+  
   <input id="actionSearch" class="search" type="text" placeholder="🔍 Buscar ação..." autocomplete="off">
 
 </div>
@@ -88,6 +96,7 @@ active
               </span>
             </div>
           </div>
+          {% if request.user.e_consultor or request.user.is_superuser %}
           <button type="button" class="column-status-action column-status-edit"
             data-edit-url="{% url 'editar_status_kanban' status.id %}"
             data-status-name="{{ status.nome }}" data-status-color="{{ status.cor_para_edicao }}"
@@ -98,6 +107,7 @@ active
               <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/>
             </svg>
           </button>
+          {% endif %}
         </div>
       </div>
 
@@ -196,8 +206,16 @@ active
                 <label for="eixo" class="required">Eixo</label>
                 <select id="eixo" name="eixo">
                   <option value="">Selecione um Eixo...</option>
-                  {% for eixo in eixos %}
+                  {% for eixo in eixos_raiz %}
+                  {% if eixo.subeixos.all %}
+                  <optgroup label="{{ eixo.nome }}">
+                  {% for sub in eixo.subeixos.all %}
+                  <option value="{{ sub.id }}">{{ sub.nome }}</option>
+                  {% endfor %}
+                  </optgroup>
+                  {% else %}
                   <option value="{{ eixo.id }}">{{ eixo.nome }}</option>
+                  {% endif %}
                   {% endfor %}
                 </select>
               </div>
@@ -219,6 +237,14 @@ active
                   {% endfor %}
                 </select>
               </div>
+
+              {% if user.e_consultor %}
+              <div class="form-group">
+               <label for="responsavel" class="required">CPF do responsável</label>
+               <input type="text" id="responsavel" name="responsavel" inputmode="numeric"
+               placeholder="000.000.000-00" maxlength="14">
+              </div>
+              {% endif %}
 
               <div class="form-group">
                 <label for="custo" class="required">Custo total (R$)</label>

@@ -1,8 +1,8 @@
 {# Card de uma ação no Kanban. Os detalhes abrem no pop-up (kanban-detalhes.js). #}
 <div class="task-card {% if status.nome|slugify == 'cancelado' %}highlight{% endif %}"
   draggable="{% if status.nome|slugify == 'cancelado' %}false{% else %}true{% endif %}"
-  data-codigo="{{ acao.codigo }}"
-  data-eixo="{{ acao.acao_catalogo.eixo.nome }}" data-search="{{ acao.codigo }} {{ acao.acao_catalogo.nome }}">
+  data-id="{{ acao.id }}"
+  data-eixo="{{ acao.eixo.nome }}" data-search="{{ acao.codigo }} {{ acao.nome }}">
 
   <!-- BOTÃO QUE ABRE O POP-UP DE DETALHES -->
   <button type="button" class="status-menu-toggle" aria-label="Ver detalhes da ação {{ acao.codigo }}">
@@ -15,7 +15,7 @@
   <span class="task-id">AÇÃO {{ acao.codigo }}</span>
 
   <!-- NOME -->
-  <div class="task-desc">{{ acao.acao_catalogo.nome }}</div>
+  <div class="task-desc">{{ acao.nome }}</div>
 
   <!-- ANDAMENTO DAS ETAPAS (escondido quando a ação não tem etapas).
        O kanban-detalhes.js atualiza este bloco ao marcar, adicionar ou excluir etapas. -->
@@ -29,7 +29,7 @@
 
   {% if status.nome|slugify != 'cancelado' %}
   <!-- FORMULÁRIO DE STATUS (usado pelo arrastar e pelos botões do pop-up) -->
-  <form action="{% url 'atualizar_status_acao' acao.codigo %}" method="post">
+  <form action="{% url 'atualizar_status_acao' acao.id %}" method="post">
     {% csrf_token %}
     <input type="hidden" name="status" value="{{ status.id }}">
   </form>

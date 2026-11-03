@@ -1,5 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
-  document.querySelectorAll(".status-message").forEach(function (message) {
+
+  // Avisos somem sozinhos após 6s, exceto o da senha provisória (esse só fecha pelo X)
+  document.querySelectorAll(".status-message:not(.status-message-funcionario-senha)").forEach(function (message) {
     window.setTimeout(function () {
       message.classList.add("is-leaving");
       window.setTimeout(function () {

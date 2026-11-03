@@ -27,7 +27,7 @@
       </button>
 
       <div class="user-menu-dropdown" id="userMenu" role="menu" aria-labelledby="userMenuToggle" hidden>
-        <div class="user-menu-heading">{{ request.user.get_full_name|default:request.user.username }}</div>
+        <div class="user-menu-heading">{{ request.user.nome|default:request.user.cpf }}</div>
         <div class="user-menu-divider" role="separator"></div>
 
         <!-- TODO: trocar pela rota -->

@@ -29,11 +29,10 @@ Gerenciar Eixos
           {{ form.nome }}
           {{ form.nome.errors }}
         </div>
-
         <div class="status-form-group">
-          <label for="{{ form.descricao.id_for_label }}">Descrição:</label>
-          {{ form.descricao }}
-          {{ form.descricao.errors }}
+          <label for="{{ form.pai.id_for_label }}">Eixo principal (opcional):</label>
+          {{ form.pai }}
+          {{ form.pai.errors }}
         </div>
       </div>
 
@@ -55,7 +54,7 @@ Gerenciar Eixos
         <thead>
           <tr>
             <th>Nome</th>
-            <th>Descrição</th>
+            <th>Eixo pai</th>
             <th>Itens no catálogo</th>
             <th class="status-table-actions-heading">Ações</th>
           </tr>
@@ -64,8 +63,8 @@ Gerenciar Eixos
           {% for eixo in eixo_lista %}
           <tr>
             <td>{{ eixo.nome }}</td>
-            <td>{{ eixo.descricao|default:'-' }}</td>
-            <td>{{ eixo.total_acoes }}</td>
+            <td>{{ eixo.pai.nome|default:'-' }}</td>
+            <td>{{ eixo.total_vinculos }}</td>
             <td>
               <div class="status-row-actions">
                 <a href="{% url 'editar_eixo' eixo.id %}" class="status-edit-button"
@@ -76,7 +75,7 @@ Gerenciar Eixos
                     <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/>
                   </svg>
                 </a>
-                {% if eixo.total_acoes %}
+                {% if eixo.total_vinculos %}
                 <button type="button" class="status-delete-button status-delete-disabled"
                   aria-label="Não é possível excluir {{ eixo.nome }} porque possui itens no catálogo"
                   title="Não é possível excluir: há itens vinculados" disabled>
