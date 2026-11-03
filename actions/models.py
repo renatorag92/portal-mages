@@ -67,6 +67,7 @@ class Funcionario(AbstractUser):
     telefone = models.CharField(max_length=20, blank=True)
     endereco = models.CharField(max_length=150, blank=True)
     cargo = models.CharField(max_length=60, blank=True)  # texto livre (formulário sugere os já usados)
+    foto = models.ImageField(upload_to='profile_photos/', blank=True)
 
     # Pertence a UMA entidade: prefeitura OU consultoria
     prefeitura = models.ForeignKey(

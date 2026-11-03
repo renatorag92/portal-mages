@@ -38,11 +38,29 @@
 }
 
 .user-menu-heading {
-    overflow: hidden;
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
     padding: 10px 12px;
     color: #2b2b2b;
     font-size: 14px;
     font-weight: 600;
+}
+
+.user-menu-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-menu-role {
+    flex: 0 1 auto;
+    overflow: hidden;
+    color: #6b6b6b;
+    font-size: 12px;
+    font-weight: normal;
     text-overflow: ellipsis;
     white-space: nowrap;
 }

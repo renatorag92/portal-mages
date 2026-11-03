@@ -85,18 +85,26 @@
         aria-expanded="false"
         aria-label="Abrir menu do usuário"
       >
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <circle cx="12" cy="8" r="4" />
-          <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" />
-        </svg>
+        {% if request.user.foto %}
+          <img src="{{ request.user.foto.url }}" alt="">
+        {% else %}
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" />
+          </svg>
+        {% endif %}
       </button>
 
       <div class="user-menu-dropdown" id="userMenu" role="menu" aria-labelledby="userMenuToggle" hidden>
-        <div class="user-menu-heading">{{ request.user.nome|default:request.user.cpf }}</div>
+        <div class="user-menu-heading">
+          <span class="user-menu-name">{{ request.user.nome|default:request.user.cpf }}</span>
+          {% if request.user.cargo %}
+            <span class="user-menu-role">({{ request.user.cargo }})</span>
+          {% endif %}
+        </div>
         <div class="user-menu-divider" role="separator"></div>
 
-        <!-- TODO: trocar pela rota -->
-        <a href="#" class="user-menu-item" role="menuitem">
+        <a href="{% url 'minha_conta' %}" class="user-menu-item" role="menuitem">
           <i class="bi bi-person" aria-hidden="true"></i>
           <span>Minha Conta</span>
         </a>

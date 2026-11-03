@@ -1,0 +1,126 @@
+{% extends "LayoutsBases/base.html" %}
+{% load static %}
+
+{% block title %}Minha Conta{% endblock %}
+{% block page_title %}Minha Conta{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'actions/css/minha-conta.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="account-page">
+  <section class="account-card">
+    <header class="account-heading">
+      <div>
+        <h2>Dados pessoais</h2>
+        <p>Atualize suas informações e sua foto de perfil.</p>
+      </div>
+      <button
+        type="button"
+        class="account-avatar-trigger"
+        id="openProfilePhoto"
+        aria-label="Abrir opções da foto de perfil"
+        aria-haspopup="dialog"
+        aria-controls="profilePhotoDialog"
+      >
+        {% if request.user.foto %}
+          <img class="account-avatar" src="{{ request.user.foto.url }}" alt="">
+        {% else %}
+          <span class="account-avatar account-avatar-placeholder" aria-hidden="true">
+            <i class="bi bi-person-fill"></i>
+          </span>
+        {% endif %}
+        <span class="account-avatar-camera" aria-hidden="true"><i class="bi bi-camera-fill"></i></span>
+      </button>
+    </header>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="account-message account-message-{{ message.tags }}" role="status">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="account-form" id="accountForm" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="account-form-errors" role="alert">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="account-file-input" aria-hidden="true">{{ form.foto }}</div>
+      {% if form.foto.errors %}
+        {% for error in form.foto.errors %}<p class="account-field-error">{{ error }}</p>{% endfor %}
+      {% endif %}
+
+      <div class="account-fields">
+        {% for field in form %}
+          {% if field.name != 'foto' %}
+            <div class="account-field{% if field.errors %} account-field-invalid{% endif %}">
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% for error in field.errors %}<p class="account-field-error">{{ error }}</p>{% endfor %}
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <div class="account-actions">
+        <button type="submit" class="account-save-button">Salvar alterações</button>
+        <a href="{% url 'kanban' %}" class="account-cancel-button">Voltar</a>
+      </div>
+    </form>
+  </section>
+</div>
+
+<div class="account-photo-dialog-backdrop" id="profilePhotoDialog" hidden>
+  <section
+    class="account-photo-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="profilePhotoTitle"
+    aria-describedby="profilePhotoDescription"
+  >
+    <button type="button" class="account-photo-dialog-close" id="closeProfilePhoto" aria-label="Fechar">
+      <i class="bi bi-x-lg" aria-hidden="true"></i>
+    </button>
+    <h2 id="profilePhotoTitle">Foto de perfil</h2>
+    <p id="profilePhotoDescription">Escolha uma foto para personalizar sua conta.</p>
+
+    <div class="account-photo-preview">
+      {% if request.user.foto %}
+        <img id="profilePhotoPreview" src="{{ request.user.foto.url }}" alt="Prévia da foto de perfil">
+        <span id="profilePhotoPlaceholder" hidden><i class="bi bi-person-fill" aria-hidden="true"></i></span>
+      {% else %}
+        <img id="profilePhotoPreview" alt="Prévia da foto de perfil" hidden>
+        <span id="profilePhotoPlaceholder"><i class="bi bi-person-fill" aria-hidden="true"></i></span>
+      {% endif %}
+    </div>
+
+    <p class="account-photo-pending" id="profilePhotoPending" role="status" hidden></p>
+
+    <div class="account-photo-dialog-actions">
+      <button type="button" class="account-photo-action account-photo-import" id="chooseProfilePhoto">
+        <i class="bi bi-upload" aria-hidden="true"></i>
+        <span>Importar foto</span>
+      </button>
+      {% if request.user.foto %}
+        <button type="button" class="account-photo-action account-photo-remove" id="removeProfilePhoto">
+          <i class="bi bi-trash3" aria-hidden="true"></i>
+          <span>Remover foto</span>
+        </button>
+      {% endif %}
+    </div>
+
+    <div class="account-photo-dialog-footer">
+      <button type="button" class="account-cancel-button" id="cancelProfilePhoto">Cancelar</button>
+      <button type="submit" class="account-save-button" form="accountForm" id="saveProfilePhoto" disabled>
+        Salvar foto
+      </button>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'actions/js/minha-conta.js' %}"></script>
+{% endblock %}

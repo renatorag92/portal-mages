@@ -1,5 +1,6 @@
 import re
 import secrets
+import uuid
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -186,6 +187,55 @@ class FuncionarioForm(forms.ModelForm):
             self.instance.prefeitura = None
 
         return dados
+
+
+class MinhaContaForm(forms.ModelForm):
+    foto = forms.ImageField(
+        required=False,
+        error_messages={
+            'invalid_image': 'Envie uma imagem JPG, PNG ou WEBP.',
+        },
+        widget=forms.ClearableFileInput(attrs={
+            'accept': 'image/jpeg,image/png,image/webp',
+        }),
+    )
+
+    class Meta:
+        model = Funcionario
+        fields = ['nome', 'email', 'telefone', 'endereco', 'foto']
+        labels = {
+            'nome': 'Nome completo',
+            'email': 'E-mail',
+            'telefone': 'Telefone',
+            'endereco': 'Endereço',
+            'foto': 'Foto de perfil',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        foto_widget = self.fields['foto'].widget
+        foto_widget.initial_text = 'Foto atual:'
+        foto_widget.input_text = 'Escolher outra foto'
+        foto_widget.clear_checkbox_label = 'Remover foto'
+
+    def clean_foto(self):
+        foto = self.cleaned_data.get('foto')
+        upload = self.files.get(self.add_prefix('foto'))
+        if upload is None:
+            return foto
+
+        if upload.size > 5 * 1024 * 1024:
+            raise ValidationError('A foto deve ter no máximo 5 MB.')
+
+        formatos = {'JPEG': 'jpg', 'PNG': 'png', 'WEBP': 'webp'}
+        formato = getattr(getattr(upload, 'image', None), 'format', None)
+        extensao = formatos.get(formato)
+        if extensao is None:
+            raise ValidationError('Envie uma imagem JPG, PNG ou WEBP.')
+
+        upload.name = f'{uuid.uuid4().hex}.{extensao}'
+        return foto
+
 
 ALFABETO_SENHA = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 

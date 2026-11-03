@@ -30,6 +30,7 @@ urlpatterns = [
     path('kanban/etapa/<int:etapa_id>/concluir/', views.alterar_etapa_view, name='alterar_etapa'),  # Rota para marcar/desmarcar etapa como concluída
     path('kanban/etapa/<int:etapa_id>/excluir/', views.excluir_etapa_view, name='excluir_etapa'),  # Rota para excluir uma etapa
     path('escolher-prefeitura/', views.escolher_prefeitura_view, name='escolher_prefeitura'), # Rota para escolher a prefeitura
+    path('minha-conta/', views.minha_conta_view, name='minha_conta'),
     path('notificacoes/<str:tipo>/<int:item_id>/lida/', views.marcar_notificacao_lida_view, name='marcar_notificacao_lida'),
     path('login/', views.CustomLoginView.as_view(), name='login'),  # Rota do login
     path('redefinir-senha/', views.CustomPasswordChangeView.as_view(), name='redefinir-senha'),  # Rota para alterar a senha

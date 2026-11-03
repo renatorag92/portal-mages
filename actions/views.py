@@ -9,6 +9,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.core.exceptions import ValidationError
+from django.core.files.storage import default_storage
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.db.models.deletion import ProtectedError
@@ -19,7 +20,10 @@ from django.utils.dateparse import parse_date
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 
-from .forms import ConsultoriaForm, FuncionarioForm, LoginCPFForm, PrefeituraForm, preparar_senha
+from .forms import (
+    ConsultoriaForm, FuncionarioForm, LoginCPFForm, MinhaContaForm,
+    PrefeituraForm, preparar_senha,
+)
 from .models import (
     Acao, AcaoCatalogo, Consultoria, Eixo, Etapa, Funcionario,
     NotificacaoLida, Prefeitura, Status,
@@ -617,6 +621,26 @@ class CustomPasswordChangeView(PasswordChangeView):
         usuario.primeiro_acesso = False
         usuario.save(update_fields=['primeiro_acesso'])
         return response
+
+
+@login_required
+def minha_conta_view(request):
+    if request.method == 'POST':
+        form = MinhaContaForm(request.POST, request.FILES, instance=request.user)
+        if form.is_valid():
+            foto_anterior = Funcionario.objects.values_list('foto', flat=True).get(
+                pk=request.user.pk,
+            )
+            usuario = form.save()
+            foto_substituida = bool(request.FILES.get('foto')) or 'foto-clear' in request.POST
+            if foto_anterior and foto_substituida:
+                default_storage.delete(foto_anterior)
+            messages.success(request, 'Seus dados foram atualizados com sucesso.')
+            return redirect('minha_conta')
+    else:
+        form = MinhaContaForm(instance=request.user)
+
+    return render(request, 'actions/minha-conta.html', {'form': form})
 
 
 @login_required
