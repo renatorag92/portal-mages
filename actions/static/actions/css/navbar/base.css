@@ -99,6 +99,204 @@ body {
     cursor: pointer;
 }
 
+.notification-wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.notification-toggle {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.notification-toggle:hover {
+    background: #f4f3ef;
+}
+
+.notification-toggle:focus-visible {
+    outline: 2px solid #c0392b;
+    outline-offset: 2px;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -3px;
+    right: -5px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border: 2px solid #fff;
+    border-radius: 10px;
+    background: #c0392b;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 13px;
+    text-align: center;
+}
+
+.notification-panel {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: -8px;
+    z-index: 9000;
+    width: min(380px, calc(100vw - 24px));
+    max-height: min(70vh, 520px);
+    overflow-y: auto;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 12px 30px rgba(43, 43, 43, 0.14), 0 3px 8px rgba(43, 43, 43, 0.06);
+}
+
+.notification-panel[hidden] {
+    display: none;
+}
+
+.notification-panel-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-light);
+    background: #fff;
+}
+
+.notification-panel-header h2 {
+    margin: 0;
+    color: var(--text-dark);
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.notification-panel-header > span {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.notification-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.notification-list li + li {
+    border-top: 1px solid #f0eee9;
+}
+
+.notification-form {
+    margin: 0;
+}
+
+.notification-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 16px;
+    border: 0;
+    background: #fff;
+    color: var(--text-dark);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.notification-item:hover {
+    background: #f8f7f4;
+    color: var(--text-dark);
+}
+
+.notification-item:focus-visible {
+    outline: 2px solid #c0392b;
+    outline-offset: -2px;
+}
+
+.notification-item-read {
+    background: #faf9f7;
+}
+
+.notification-read-icon {
+    flex: 0 0 auto;
+    align-self: center;
+    margin-left: auto;
+    color: #a5301f;
+    font-size: 17px;
+}
+
+.notification-read-icon-read {
+    color: #6b6b6b;
+}
+
+.notification-indicator {
+    display: flex;
+    flex: 0 0 32px;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.notification-indicator-danger {
+    background: #fcebea;
+    color: #b42318;
+}
+
+.notification-indicator-warning {
+    background: #fff4d6;
+    color: #946200;
+}
+
+.notification-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 13px;
+}
+
+.notification-copy strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.notification-copy > span {
+    color: var(--text-muted);
+}
+
+.notification-copy time {
+    color: #898989;
+    font-size: 11px;
+}
+
+.notification-empty,
+.notification-more {
+    margin: 0;
+    padding: 18px 16px;
+    color: var(--text-muted);
+    font-size: 13px;
+    text-align: center;
+}
+
+.notification-more {
+    padding-top: 12px;
+    border-top: 1px solid #f0eee9;
+}
+
 
 /* =========================================================
    AVATAR + DROPDOWN

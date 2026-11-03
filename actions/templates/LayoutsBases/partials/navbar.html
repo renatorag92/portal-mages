@@ -1,9 +1,74 @@
 <div class="topbar-icons">
 
-    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-    </svg>
+    <div class="notification-wrapper">
+      <button
+        type="button"
+        class="notification-toggle"
+        id="notificationToggle"
+        aria-haspopup="true"
+        aria-expanded="false"
+        aria-controls="notificationPanel"
+        aria-label="Notificações: {{ notification_count }}"
+      >
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+        {% if notification_count %}
+          <span class="notification-badge" aria-hidden="true">{{ notification_count }}</span>
+        {% endif %}
+      </button>
+
+      <section
+        class="notification-panel"
+        id="notificationPanel"
+        aria-labelledby="notificationHeading"
+        hidden
+      >
+        <header class="notification-panel-header">
+          <h2 id="notificationHeading">Notificações</h2>
+          <span>{{ notification_count }}</span>
+        </header>
+
+        {% if notifications %}
+          <ul class="notification-list">
+            {% for notification in notifications %}
+              <li>
+                <form class="notification-form" action="{{ notification.url }}" method="post">
+                  {% csrf_token %}
+                  <button
+                    type="submit"
+                    class="notification-item{% if notification.lida %} notification-item-read{% endif %}"
+                    aria-label="{{ notification.titulo }}. {{ notification.mensagem }}{% if notification.lida %} Já lida.{% else %} Marcar como lida e abrir o kanban.{% endif %}"
+                  >
+                  <span class="notification-indicator notification-indicator-{{ notification.tipo }}" aria-hidden="true">
+                    <i class="bi bi-{% if notification.tipo == 'danger' %}exclamation-circle{% else %}clock{% endif %}-fill"></i>
+                  </span>
+                  <span class="notification-copy">
+                    <strong>{{ notification.titulo }}</strong>
+                    <span>{{ notification.mensagem }}</span>
+                    <time datetime="{{ notification.data|date:'Y-m-d' }}">{{ notification.data|date:'d/m/Y' }}</time>
+                  </span>
+                  <span
+                    class="notification-read-icon{% if notification.lida %} notification-read-icon-read{% endif %}"
+                    title="{% if notification.lida %}Lida{% else %}Marcar como lida{% endif %}"
+                    aria-hidden="true"
+                  >
+                    <i class="bi bi-envelope{% if notification.lida %}-open{% else %}-fill{% endif %}"></i>
+                  </span>
+                  </button>
+                </form>
+              </li>
+            {% endfor %}
+          </ul>
+          {% if notification_total_count > notifications|length %}
+            <p class="notification-more">Exibindo {{ notifications|length }} de {{ notification_total_count }} notificações.</p>
+          {% endif %}
+        {% else %}
+          <p class="notification-empty">Você não tem notificações no momento.</p>
+        {% endif %}
+      </section>
+    </div>
 
     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <circle cx="12" cy="12" r="3" />

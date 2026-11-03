@@ -20,7 +20,10 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 
 from .forms import ConsultoriaForm, FuncionarioForm, LoginCPFForm, PrefeituraForm, preparar_senha
-from .models import Acao, AcaoCatalogo, Consultoria, Eixo, Etapa, Funcionario, Prefeitura, Status
+from .models import (
+    Acao, AcaoCatalogo, Consultoria, Eixo, Etapa, Funcionario,
+    NotificacaoLida, Prefeitura, Status,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -627,6 +630,33 @@ def escolher_prefeitura_view(request):
             return redirect('kanban')
         messages.error(request, 'Selecione uma prefeitura da lista.')
     return render(request, 'actions/escolher-prefeitura.html', {'prefeituras': prefeituras})
+
+
+@login_required
+@require_POST
+def marcar_notificacao_lida_view(request, tipo, item_id):
+    prefeitura = _prefeitura_ativa(request)
+    if prefeitura is None:
+        return redirect('escolher_prefeitura')
+
+    if tipo == 'acao':
+        acao = get_object_or_404(Acao, pk=item_id, prefeitura=prefeitura)
+        NotificacaoLida.objects.get_or_create(
+            usuario=request.user,
+            acao=acao,
+            etapa=None,
+        )
+    elif tipo == 'etapa':
+        etapa = get_object_or_404(Etapa, pk=item_id, acao__prefeitura=prefeitura)
+        NotificacaoLida.objects.get_or_create(
+            usuario=request.user,
+            acao=None,
+            etapa=etapa,
+        )
+    else:
+        return redirect('kanban')
+
+    return redirect('kanban')
 
 
 # =========================================================

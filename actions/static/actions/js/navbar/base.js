@@ -57,4 +57,32 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
     });
+
+    const notificationWrapper = document.querySelector(".notification-wrapper");
+    const notificationToggle = document.getElementById("notificationToggle");
+    const notificationPanel = document.getElementById("notificationPanel");
+
+    if (notificationWrapper && notificationToggle && notificationPanel) {
+        function setNotificationsOpen(isOpen) {
+            notificationToggle.setAttribute("aria-expanded", String(isOpen));
+            notificationPanel.hidden = !isOpen;
+        }
+
+        notificationToggle.addEventListener("click", function () {
+            setNotificationsOpen(notificationPanel.hidden);
+        });
+
+        document.addEventListener("click", function (event) {
+            if (!notificationWrapper.contains(event.target)) {
+                setNotificationsOpen(false);
+            }
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape" && !notificationPanel.hidden) {
+                setNotificationsOpen(false);
+                notificationToggle.focus();
+            }
+        });
+    }
 });
