@@ -37,4 +37,5 @@ urlpatterns = [
     path('redefinir-senha/', views.CustomPasswordChangeView.as_view(), name='redefinir-senha'),  # Rota para alterar a senha
     path('actions/<int:acao_id>/atualizar_status/', views.atualizar_status_acao, name='atualizar_status_acao'),  # Rota para atualizar o status da ação
     path('logout/', LogoutView.as_view(next_page='/login/'), name='logout'),  # Rota de logout
+    path('dashboard/', views.dashboard_view, name='dashboard'),  # Dashboard com os indicadores
 ]

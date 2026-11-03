@@ -1,0 +1,158 @@
+{% extends "LayoutsBases/base.html" %}
+{% load static %}
+
+
+{% block title %}
+Dashboard
+{% endblock %}
+
+
+{% block page_title %}
+Dashboard
+{% endblock %}
+
+
+{% block menu_dashboard_active %}
+active
+{% endblock %}
+
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'actions/css/dashboard.css' %}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+{% endblock %}
+
+
+{% block content %}
+<div class="dash">
+
+  <!-- CARDS DO TOPO -->
+  <section class="dash-kpis">
+    <div class="dash-kpi">
+      <span class="dash-kpi-rotulo">Total de ações</span>
+      <strong class="dash-kpi-valor">{{ total_ativas }} <small>ativas</small></strong>
+    </div>
+
+    <div class="dash-kpi">
+      <span class="dash-kpi-rotulo">Em execução</span>
+      <strong class="dash-kpi-valor dash-verde">{{ total_execucao }}</strong>
+    </div>
+
+    <div class="dash-kpi dash-kpi-alerta">
+      <span class="dash-kpi-rotulo"><i class="bi bi-exclamation-triangle-fill"></i> Atrasadas</span>
+      <strong class="dash-kpi-valor">{{ total_atrasadas }}</strong>
+    </div>
+
+    <div class="dash-kpi dash-kpi-escuro">
+      <span class="dash-kpi-rotulo">Impacto estimado</span>
+      <strong class="dash-kpi-valor">{{ impacto }}</strong>
+    </div>
+  </section>
+
+  <!-- DISTRIBUIÇÃO E STATUS -->
+  <section class="dash-meio">
+
+    <div class="dash-card">
+      <div class="dash-card-topo">
+        <h2>Distribuição</h2>
+        <div class="dash-abas" role="tablist">
+          <button type="button" class="dash-aba ativa" data-aba="visao_geral" role="tab">Visão geral</button>
+          <button type="button" class="dash-aba" data-aba="por_eixo" role="tab">Por eixo (R$)</button>
+          <button type="button" class="dash-aba" data-aba="por_prazo" role="tab">Por prazos</button>
+        </div>
+      </div>
+
+      {% for d in distribuicoes %}
+      <div class="dash-painel{% if forloop.first %} ativo{% endif %}" data-painel="{{ d.chave }}">
+        {% if d.dados.vazio %}
+          <p class="dash-vazio">Sem dados para mostrar.</p>
+        {% else %}
+          <div class="dash-rosca" data-gradiente="{{ d.dados.gradiente }}">
+            <div class="dash-rosca-centro"></div>
+          </div>
+          <ul class="dash-legenda">
+            {% for item in d.dados.legenda %}
+            <li>
+              <span class="dash-cor" data-cor="{{ item.cor }}"></span>
+              <span class="dash-legenda-nome">{{ item.nome }}</span>
+              <strong>{{ item.pct }}%</strong>
+              <small>{{ item.texto }}</small>
+            </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="dash-card">
+      <div class="dash-card-topo">
+        <h2>Status das ações</h2>
+      </div>
+      <div class="dash-barras">
+        {% for b in barras %}
+        <div class="dash-barra-linha">
+          <span class="dash-barra-nome">{{ b.nome }}</span>
+          <div class="dash-barra-trilho">
+            <div class="dash-barra-preench" data-largura="{{ b.pct }}" data-cor="{{ b.cor }}"></div>
+          </div>
+          <span class="dash-barra-total">{{ b.total }}</span>
+        </div>
+        {% empty %}
+        <p class="dash-vazio">Nenhum status cadastrado.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+  </section>
+
+  <!-- PRÓXIMAS ETAPAS -->
+    <section class="dash-card dash-card-etapas">
+    <div class="dash-card-topo">
+      <h2>Etapas próximas do vencimento</h2>
+      <span class="dash-subtitulo">Até {{ dias_proximo }} dias ou já vencidas</span>
+    </div>
+
+    {% if proximas_etapas %}
+    <div class="dash-tabela-caixa">
+      <table class="dash-tabela">
+        <thead>
+          <tr>
+            <th>Eixo</th>
+            <th>Nome da ação</th>
+            <th>Etapa</th>
+            <th>Responsável</th>
+            <th>Data prevista</th>
+            <th>Status</th>
+            <th>Prioridade</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in proximas_etapas %}
+          <tr>
+            <td>{{ e.eixo }}</td>
+            <td>{{ e.nome_acao }}</td>
+            <td>{{ e.etapa }}</td>
+            <td>{{ e.responsavel }}</td>
+            <td><span class="dash-data dash-data-{{ e.nivel }}">{{ e.data|date:"d/m/Y" }}</span></td>
+            <td>{{ e.status }}</td>
+            <td>
+              <span class="dash-prio dash-prio-{{ e.prioridade_classe }}">{{ e.prioridade }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="dash-vazio">Nenhuma etapa vencida ou perto do vencimento.</p>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="{% static 'actions/js/dashboard.js' %}"></script>
+{% endblock %}

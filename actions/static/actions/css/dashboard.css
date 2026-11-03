@@ -1,0 +1,453 @@
+/* =========================================================
+   DASHBOARD
+   ========================================================= */
+
+.dash {
+  --dash-azul: #3e4a89;
+  --dash-verde: #2e8b57;
+  --dash-vermelho: #c0392b;
+  --dash-amarelo: #e0b400;
+
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px 24px 28px;
+  min-height: 100%;
+}
+
+.dash-card {
+  background: #fff;
+  border: 1px solid var(--border-light, #e0ddd4);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 18px 20px;
+}
+
+.dash-card h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark, #2b2b2b);
+}
+
+.dash-card-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.dash-subtitulo {
+  font-size: 13px;
+  color: var(--text-muted, #6b6b6b);
+}
+
+.dash-vazio {
+  margin: 0;
+  padding: 24px 0;
+  text-align: center;
+  font-size: 14px;
+  color: #8a867e;
+}
+
+
+/* ------- Cards do topo ------- */
+
+.dash-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dash-kpi {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-height: 96px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid var(--border-light, #e0ddd4);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+.dash-kpi-rotulo {
+  font-size: 13px;
+  font-weight: 700;
+  color: #555;
+}
+
+.dash-kpi-valor {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-dark, #2b2b2b);
+}
+
+.dash-kpi-valor small {
+  font-size: 15px;
+  font-weight: 600;
+  color: #777;
+}
+
+.dash-verde {
+  color: var(--dash-verde);
+}
+
+.dash-kpi-alerta {
+  background: #f6d6d2;
+  border-color: #efb9b2;
+}
+
+.dash-kpi-alerta .dash-kpi-rotulo,
+.dash-kpi-alerta .dash-kpi-valor {
+  color: var(--dash-vermelho);
+}
+
+.dash-kpi-escuro {
+  background: var(--dash-azul);
+  border-color: var(--dash-azul);
+}
+
+.dash-kpi-escuro .dash-kpi-rotulo,
+.dash-kpi-escuro .dash-kpi-valor {
+  color: #fff;
+}
+
+
+/* ------- Linha do meio ------- */
+
+.dash-meio {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+}
+
+
+/* ------- Abas ------- */
+
+.dash-abas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dash-aba {
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #777;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.dash-aba:hover {
+  color: var(--dash-azul);
+}
+
+.dash-aba.ativa {
+  color: var(--dash-azul);
+  border-bottom-color: var(--dash-azul);
+}
+
+.dash-aba:focus-visible {
+  outline: 2px solid var(--dash-azul);
+  outline-offset: 2px;
+}
+
+
+/* ------- Painéis da distribuição ------- */
+
+.dash-painel {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+  min-height: 260px;
+}
+
+.dash-painel.ativo {
+  display: flex;
+  animation: dash-entra 0.25s ease-out;
+}
+
+@keyframes dash-entra {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.dash-rosca {
+  position: relative;
+  flex-shrink: 0;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+}
+
+.dash-rosca-centro {
+  position: absolute;
+  inset: 26%;
+  background: #fff;
+  border-radius: 50%;
+}
+
+.dash-legenda {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dash-legenda li {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  font-size: 14px;
+  color: #444;
+}
+
+.dash-legenda small {
+  grid-column: 2 / 4;
+  font-size: 12px;
+  color: #888;
+}
+
+.dash-cor {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.dash-legenda-nome {
+  overflow-wrap: anywhere;
+}
+
+
+/* ------- Barras de status ------- */
+
+.dash-barras {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 8px;
+}
+
+.dash-barra-linha {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #444;
+}
+
+.dash-barra-trilho {
+  height: 18px;
+  background: #f2f1ec;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dash-barra-preench {
+  height: 100%;
+  min-width: 0;
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dash-barra-total {
+  font-weight: 700;
+  text-align: right;
+  color: var(--text-dark, #2b2b2b);
+}
+
+
+/* ------- Tabela de etapas ------- */
+
+.dash-tabela-caixa {
+  overflow-x: auto;
+}
+
+.dash-tabela {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: #444;
+}
+
+.dash-tabela th {
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  color: #666;
+  border-bottom: 1px solid var(--border-light, #e0ddd4);
+  white-space: nowrap;
+}
+
+.dash-tabela td {
+  padding: 11px 12px;
+  vertical-align: middle;
+  border-bottom: 1px solid #f0eee8;
+}
+
+.dash-tabela tbody tr:hover {
+  background: #faf9f6;
+}
+
+.dash-data {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+.dash-data-vermelho {
+  color: #fff;
+  background: var(--dash-vermelho);
+}
+
+.dash-data-amarelo {
+  color: #2b2b2b;
+  background: #f0d84a;
+}
+
+.dash-data-verde {
+  color: #fff;
+  background: #32c44a;
+}
+
+.dash-prio {
+  display: inline-block;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.dash-prio-alta { color: #b83225; background: rgba(192, 57, 43, 0.12); }
+.dash-prio-media { color: #a05f00; background: rgba(217, 138, 31, 0.16); }
+.dash-prio-baixa { color: #26734a; background: rgba(46, 139, 87, 0.14); }
+
+
+/* ------- Responsividade ------- */
+
+@media (max-width: 1100px) {
+  .dash-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dash-meio {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .dash {
+    padding: 14px 12px 20px;
+  }
+
+  .dash-barra-linha {
+    grid-template-columns: 96px minmax(0, 1fr) 30px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-painel.ativo,
+  .dash-barra-preench {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* ------- Página rola normalmente; o card de etapas tem tamanho fixo e só a tabela rola dentro dele ------- */
+
+/* Volta ao comportamento normal da página: o .dash cresce com o conteúdo */
+.main:has(.dash) {
+  overflow: visible;
+  min-height: 0;
+}
+
+.dash {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+/* Tamanho fixo do card de etapas (ajuste o 380px para ficar mais alto ou mais baixo) */
+.dash-card-etapas {
+  flex: 0 0 auto;
+  height: 380px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Só a tabela rola dentro do card */
+.dash-card-etapas .dash-tabela-caixa {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #c8c6c0 transparent;
+}
+
+.dash-card-etapas .dash-tabela-caixa::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dash-card-etapas .dash-tabela-caixa::-webkit-scrollbar-thumb {
+  background: #c8c6c0;
+  border-radius: 10px;
+}
+
+/* O cabeçalho da tabela continua visível enquanto a lista rola */
+.dash-tabela th {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}
+
+/* No celular, o card deixa de ter altura fixa e a página rola normalmente */
+@media (max-width: 900px) {
+  .dash-card-etapas {
+    height: auto;
+  }
+
+  .dash-card-etapas .dash-tabela-caixa {
+    max-height: 360px;
+  }
+}
+
+/* ------- Libera a rolagem da página no dashboard ------- */
+
+/* Só na página do dashboard: a página inteira passa a rolar */
+body:has(.dash),
+.frame:has(.dash),
+.app:has(.dash),
+.main:has(.dash) {
+  height: auto !important;
+  min-height: 100vh;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+body:has(.dash) {
+  overflow-y: auto !important;
+}

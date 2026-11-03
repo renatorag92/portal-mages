@@ -21,6 +21,8 @@ from django.utils.dateparse import parse_date
 from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST
+from collections import Counter
+from datetime import date, timedelta
 
 from .forms import (
     ConsultoriaForm, FuncionarioForm, LoginCPFForm, MinhaContaForm,
@@ -1212,3 +1214,154 @@ def excluir_acao_view(request, acao_id):
         return _erro('Não foi possível excluir a ação porque ela está vinculada a outros registros.', 409)
 
     return JsonResponse({'success': True, 'message': 'Ação excluída com sucesso!'})
+
+# =========================================================
+# DASHBOARD
+# =========================================================
+
+PALETA_EIXOS = ['#3e4a89', '#2e8b57', '#b5b94a', '#7b3f9e', '#d98a1f', '#c0392b', '#2aa198', '#8a8f99']
+SLUGS_EM_EXECUCAO = ('em-execucao', 'execucao')
+DIAS_PROXIMO = 15   # etapas que vencem nesse prazo entram na tabela e no gráfico de prazos
+DIAS_URGENTE = 7    # etapa que vence em até esse prazo aparece em amarelo na tabela
+
+
+def _moeda(valor):
+    texto = f'{valor:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+    return f'R$ {texto}'
+
+
+
+def _gradiente(fatias):
+    # fatias: lista de (cor, valor). Monta o conic-gradient que desenha a rosca
+    total = sum(valor for _, valor in fatias)
+    if not total:
+        return 'conic-gradient(#e5e2d9 0 100%)'
+    partes, inicio = [], 0.0
+    for cor, valor in fatias:
+        if not valor:
+            continue
+        fim = inicio + valor / total * 100
+        partes.append(f'{cor} {inicio:.2f}% {fim:.2f}%')
+        inicio = fim
+    return 'conic-gradient(' + ', '.join(partes) + ')'
+
+
+def _distribuicao(itens):
+    # itens: lista de (nome, cor, valor, texto). Devolve tudo que a rosca e a legenda precisam
+    total = sum(valor for _, _, valor, _ in itens)
+    legenda = [
+        {
+            'nome': nome,
+            'cor': cor,
+            'pct': round(valor / total * 100) if total else 0,
+            'texto': texto,
+        }
+        for nome, cor, valor, texto in itens
+    ]
+    return {
+        'gradiente': _gradiente([(cor, valor) for _, cor, valor, _ in itens]),
+        'legenda': legenda,
+        'vazio': total == 0,
+    }
+
+
+@login_required
+def dashboard_view(request):
+    prefeitura = _prefeitura_ativa(request)
+    if prefeitura is None:
+        return redirect('escolher_prefeitura')
+
+    hoje = date.today()
+    limite_proximas = hoje + timedelta(days=DIAS_PROXIMO)
+
+    acoes = list(
+        Acao.objects.filter(prefeitura=prefeitura)
+        .select_related('status', 'eixo')
+    )
+    # Ativas: não estão canceladas nem concluídas
+    ativas = [a for a in acoes if not _acao_cancelada(a) and slugify(a.status.nome) != 'concluido']
+
+    # Cards do topo
+    total_ativas = len(ativas)
+    total_execucao = sum(1 for a in ativas if slugify(a.status.nome) in SLUGS_EM_EXECUCAO)
+    total_atrasadas = sum(1 for a in ativas if a.data_fim < hoje)
+    impacto = sum(a.custo for a in ativas)
+
+    # Barras: quantas ações (de todas) há em cada status
+    contagem_status = Counter(a.status_id for a in acoes)
+    maior = max(contagem_status.values(), default=0)
+    barras = []
+    for status in Status.objects.order_by('ordem', 'id'):
+        total = contagem_status.get(status.id, 0)
+        barras.append({
+            'nome': status.nome,
+            'cor': status.cor,
+            'total': total,
+            'pct': round(total / maior * 100) if maior else 0,
+        })
+
+    # Rosca por eixo, com quantidade e custo das ações ativas
+    por_eixo = {}
+    for a in ativas:
+        nome = a.eixo.nome if a.eixo_id else 'Sem eixo'
+        qtd, custo = por_eixo.get(nome, (0, 0.0))
+        por_eixo[nome] = (qtd + 1, custo + a.custo)
+
+    eixos = sorted(por_eixo.items(), key=lambda item: item[1][0], reverse=True)
+    cores = [PALETA_EIXOS[i % len(PALETA_EIXOS)] for i in range(len(eixos))]
+    fatias_qtd = [(nome, cor, qtd, str(qtd)) for (nome, (qtd, _)), cor in zip(eixos, cores)]
+    fatias_custo = [(nome, cor, custo, _moeda(custo)) for (nome, (_, custo)), cor in zip(eixos, cores)]
+
+    # Rosca por prazo, com as ações ativas
+    vence_logo = sum(1 for a in ativas if hoje <= a.data_fim <= limite_proximas)
+    no_prazo = total_ativas - total_atrasadas - vence_logo
+    fatias_prazo = [
+        ('Atrasadas', '#c0392b', total_atrasadas, str(total_atrasadas)),
+        (f'Vence em até {DIAS_PROXIMO} dias', '#e0b400', vence_logo, str(vence_logo)),
+        ('No prazo', '#2e8b57', no_prazo, str(no_prazo)),
+    ]
+
+    # Tabela: etapas não concluídas de ações ativas que vencem no período
+    etapas = (
+        Etapa.objects.filter(
+            acao__in=ativas,
+            concluida=False,
+            data_fim__lte=limite_proximas,
+        )
+        .select_related('acao__eixo', 'acao__status', 'responsavel')
+        .order_by('data_fim', 'id')[:10]
+    )
+
+    proximas = []
+    for e in etapas:
+        acao = e.acao
+        dias = (e.data_fim - hoje).days
+        nivel = 'vermelho' if dias < 0 else ('amarelo' if dias <= DIAS_URGENTE else 'verde')
+        prioridade = e.prioridade or acao.prioridade
+        proximas.append({
+            'eixo': acao.eixo.nome if acao.eixo_id else '—',
+            'nome_acao': acao.nome,
+            'etapa': e.nome,
+            'responsavel': e.responsavel.nome,
+            'data': e.data_fim,
+            'nivel': nivel,
+            'status': acao.status.nome,
+            'prioridade': prioridade or '—',
+            'prioridade_classe': slugify(prioridade),
+        })
+
+    context = {
+        'total_ativas': total_ativas,
+        'total_execucao': total_execucao,
+        'total_atrasadas': total_atrasadas,
+        'impacto': _moeda(impacto),
+        'barras': barras,
+        'distribuicoes': [
+            {'chave': 'visao_geral', 'dados': _distribuicao(fatias_qtd)},
+            {'chave': 'por_eixo', 'dados': _distribuicao(fatias_custo)},
+            {'chave': 'por_prazo', 'dados': _distribuicao(fatias_prazo)},
+        ],
+        'proximas_etapas': proximas,
+        'dias_proximo': DIAS_PROXIMO,
+    }
+    return render(request, 'actions/dashboard.html', context)
