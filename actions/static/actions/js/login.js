@@ -41,3 +41,13 @@ form.addEventListener('submit', function (e) {
 campos.forEach(function (campo) {
   campo.addEventListener('input', function () { limparErro(campo); });
 });
+
+// Máscara de CPF enquanto digita: 123.456.789-09
+contrato.addEventListener('input', function () {
+  contrato.value = contrato.value
+    .replace(/\D/g, '')
+    .slice(0, 11)
+    .replace(/^(\d{3})(\d)/, '$1.$2')
+    .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1-$2');
+});
