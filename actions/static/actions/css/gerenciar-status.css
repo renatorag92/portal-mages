@@ -122,7 +122,8 @@
   font-weight: 600;
 }
 
-.status-form-group input[type="text"] {
+.status-form-group input[type="text"],
+.status-form-group input[type="email"] {
   width: min(100%, 480px);
   padding: 9px 11px;
   border: 1px solid #d8d5cc;

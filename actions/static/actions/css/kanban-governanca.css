@@ -493,41 +493,6 @@
     transform 0.15s ease;
 }
 
-/* =========================================================
-   CORES DOS CARDS POR COLUNA
-   ========================================================= */
-
-/* Planejado */
-.col-planejado .task-card {
-  background: #e8ebf7;
-  border-color: #d3d8ed;
-}
-
-/* Em preparação */
-.col-preparacao .task-card {
-  background: #eceef1;
-  border-color: #d9dce0;
-}
-
-/* Em execução */
-.col-execucao .task-card {
-  background: #fff0d7;
-  border-color: #f1d6a5;
-}
-
-/* Em validação */
-.col-validacao .task-card {
-  background: #f0e5f5;
-  border-color: #dfcce8;
-}
-
-/* Concluído */
-.col-concluido .task-card {
-  background: #e2f1e8;
-  border-color: #c9e2d2;
-}
-
-/* Cancelado */
 .col-cancelado .task-card {
   background: #f9e5e2;
   border-color: #edcbc6;
