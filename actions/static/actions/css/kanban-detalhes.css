@@ -573,6 +573,14 @@ select.det-input {
   color: #96928a;
 }
 
+.det-mover-toggle {
+  display: none;
+}
+
+.det-status-opcoes {
+  display: contents;
+}
+
 .det-status-btn {
   display: inline-flex;
   align-items: center;
@@ -627,14 +635,21 @@ select.det-input {
    aí o corpo inteiro passa a rolar. */
 @media (max-width: 900px) {
   .det-body {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
   }
 
-  .det-col,
+  .det-col {
+    display: block;
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
   .det-card {
     display: block;
+    width: 100%;
+    min-height: 0;
   }
 
   .det-card-acao {
@@ -642,18 +657,49 @@ select.det-input {
   }
 
   .det-etapas-lista {
-    padding: 0;
+    flex: 0 0 auto;
+    min-height: 0;
+  }
+
+  #detEtapas > .det-card {
+    padding: 14px 12px;
     overflow: visible;
+  }
+
+  .det-etapa-topo {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .det-check {
+    flex: 1 1 100%;
+    align-items: flex-start;
+  }
+
+  .det-etapa-nome {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+
+  .det-etapa-botoes {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 }
 
 @media (max-width: 560px) {
   .det-overlay {
-    padding: 8px;
+    align-items: flex-start;
+    padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
   }
 
   .det-dialog {
-    height: calc(100vh - 16px);
+    width: 100%;
+    height: calc(100dvh - max(16px, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
+    max-height: 100%;
+    border-radius: 12px;
   }
 
   .det-header,
@@ -662,8 +708,122 @@ select.det-input {
     padding-right: 16px;
   }
 
+  .det-header {
+    gap: 10px;
+    padding-top: 16px;
+    padding-bottom: 14px;
+  }
+
+  .det-header-side {
+    gap: 6px;
+  }
+
+  .det-badge {
+    max-width: 36vw;
+    padding: 5px 9px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .det-header h2 {
+    font-size: 20px;
+  }
+
+  .det-header p {
+    font-size: 13px;
+  }
+
   .det-body {
     padding: 14px 16px;
+  }
+
+  .det-card {
+    padding: 14px 12px;
+  }
+
+  .det-etapa {
+    padding: 12px 10px;
+  }
+
+  .det-etapa-botoes .det-btn {
+    min-height: 38px;
+    padding: 7px 9px;
+    font-size: 12px;
+  }
+
+  .det-etapa-toggle {
+    width: 38px;
+    height: 38px;
+  }
+
+  .det-footer {
+    gap: 7px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .det-mover-toggle {
+    min-width: 0;
+    min-height: 42px;
+    flex: 1 1 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 11px;
+    color: #444;
+    background: #fff;
+    border: 1px solid #d8d5cc;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .det-mover-toggle strong {
+    min-width: 0;
+    overflow: hidden;
+    color: #555;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .det-mover-toggle > i {
+    flex-shrink: 0;
+    margin-left: auto;
+    transition: transform 0.15s ease;
+  }
+
+  .det-mover-toggle[aria-expanded="true"] > i {
+    transform: rotate(180deg);
+  }
+
+  .det-status-opcoes {
+    width: 100%;
+    display: none;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding-top: 2px;
+  }
+
+  .det-status-opcoes.aberto {
+    display: flex;
+  }
+
+  .det-footer-label {
+    display: none;
+  }
+
+  .det-footer .det-btn-excluir {
+    flex: 0 0 auto;
+    min-height: 42px;
+    margin-left: 0;
+    padding: 8px 11px;
+    font-size: 13px;
+  }
+
+  .det-footer .det-btn-excluir i {
+    font-size: 14px;
   }
 
   .det-grid {
@@ -676,6 +836,18 @@ select.det-input {
 
   .det-acoes .det-btn {
     flex: 1;
+  }
+
+}
+
+@media (max-width: 360px) {
+  .det-footer .det-btn-excluir {
+    width: 42px;
+    flex-basis: 42px;
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+    font-size: 0;
   }
 }
 
@@ -911,5 +1083,27 @@ select.det-input {
   .det-etapa.aberta .det-etapa-detalhes,
   .det-etapa-toggle svg {
     transition: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .det-confirma-overlay {
+    align-items: flex-start;
+    overflow-y: auto;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  }
+
+  .det-confirma {
+    max-height: 100%;
+    overflow-y: auto;
+  }
+
+  .det-confirma-acoes {
+    justify-content: stretch;
+  }
+
+  .det-confirma-acoes .det-btn {
+    flex: 1 1 100%;
+    min-height: 44px;
   }
 }

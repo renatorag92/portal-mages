@@ -14,8 +14,8 @@ Gerenciar Status
 {% endblock %}
 
 {% block content %}
-<div class="status-page">
-  <section class="status-card">
+<div class="status-page w-full min-w-0 px-3 py-4 sm:px-6 sm:py-6">
+  <section class="status-card w-full min-w-0 p-4 sm:p-6">
     <h2 class="status-card-title">{% if status_edicao %}Editar status{% else %}Cadastrar status{% endif %}</h2>
 
     {% if status_edicao or not status_limite_atingido %}
@@ -24,7 +24,7 @@ Gerenciar Status
 
       {{ form.non_field_errors }}
 
-      <div class="status-form-fields">
+      <div class="status-form-fields grid-cols-1 sm:grid-cols-2">
         <div class="status-form-group">
           <label for="{{ form.nome.id_for_label }}">Nome do status:</label>
           {{ form.nome }}
@@ -68,10 +68,10 @@ Gerenciar Status
     {% endif %}
   </section>
 
-  <section class="status-card">
+  <section class="status-card w-full min-w-0 p-4 sm:p-6">
     <h2 class="status-card-title">Status cadastrados</h2>
-    <div class="status-table-wrapper">
-      <table class="status-table">
+    <div class="status-table-wrapper w-full min-w-0 overflow-x-auto">
+      <table class="status-table min-w-[640px]">
         <thead>
           <tr>
             <th>Nome</th>

@@ -24,7 +24,7 @@ active
 
 
 {% block content %}
-<div class="dash">
+<div class="dash w-full min-w-0">
 
   <!-- CARDS DO TOPO -->
   <section class="dash-kpis">
@@ -52,7 +52,7 @@ active
   <!-- DISTRIBUIÇÃO E STATUS -->
   <section class="dash-meio">
 
-    <div class="dash-card">
+    <div class="dash-card min-w-0">
       <div class="dash-card-topo">
         <h2>Distribuição</h2>
         <div class="dash-abas" role="tablist">
@@ -85,7 +85,7 @@ active
       {% endfor %}
     </div>
 
-    <div class="dash-card">
+    <div class="dash-card min-w-0">
       <div class="dash-card-topo">
         <h2>Status das ações</h2>
       </div>
@@ -107,7 +107,7 @@ active
   </section>
 
   <!-- PRÓXIMAS ETAPAS -->
-    <section class="dash-card dash-card-etapas">
+    <section class="dash-card dash-card-etapas min-w-0">
     <div class="dash-card-topo">
       <h2>Etapas próximas do vencimento</h2>
       <span class="dash-subtitulo">Até {{ dias_proximo }} dias ou já vencidas</span>
@@ -115,7 +115,7 @@ active
 
     {% if proximas_etapas %}
     <div class="dash-tabela-caixa">
-      <table class="dash-tabela">
+      <table class="dash-tabela min-w-[760px]">
         <thead>
           <tr>
             <th>Eixo</th>

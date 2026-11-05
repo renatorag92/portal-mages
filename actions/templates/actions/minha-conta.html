@@ -9,8 +9,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="account-page">
-  <section class="account-card">
+<div class="account-page w-full min-w-0 px-3 py-4 sm:p-6">
+  <section class="account-card w-full min-w-0 p-4 sm:p-7">
     <header class="account-heading">
       <div>
         <h2>Dados pessoais</h2>
@@ -52,7 +52,7 @@
         {% for error in form.foto.errors %}<p class="account-field-error">{{ error }}</p>{% endfor %}
       {% endif %}
 
-      <div class="account-fields">
+      <div class="account-fields grid-cols-1 sm:grid-cols-2">
         {% for field in form %}
           {% if field.name != 'foto' %}
             <div class="account-field{% if field.errors %} account-field-invalid{% endif %}">

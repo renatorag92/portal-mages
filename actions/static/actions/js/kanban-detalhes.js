@@ -22,6 +22,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const elAcao = $("detAcao");
   const elEtapas = $("detEtapas");
   const elRodape = $("detStatus");
+  const elStatusAtual = $("detStatusAtual");
+  const elStatusAtualDot = $("detStatusAtualDot");
+  const elStatusOpcoes = $("detStatusOpcoes");
+  const elStatusToggle = elRodape.querySelector(".det-mover-toggle");
 
   const urls = {
     detalhes: overlay.dataset.urlDetalhes,
@@ -373,6 +377,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function renderRodape() {
     elRodape.hidden = estado.acao.somente_leitura;
+    elStatusAtual.textContent = estado.acao.status.nome;
+    elStatusAtualDot.style.setProperty("--c", estado.acao.status.cor || "#3e4a89");
     elRodape.querySelectorAll(".det-status-btn").forEach(function (botao) {
       const atual = String(botao.dataset.status) === String(estado.acao.status.id);
       botao.disabled = atual;
@@ -508,6 +514,8 @@ document.addEventListener("DOMContentLoaded", function () {
     elBadge.style.backgroundColor = "";
     elBadge.style.color = "";
     elRodape.hidden = true;
+    elStatusOpcoes.classList.remove("aberto");
+    elStatusToggle.setAttribute("aria-expanded", "false");
     elAcao.innerHTML = '<div class="det-card"><p class="det-vazio">Carregando...</p></div>';
     elEtapas.innerHTML = "";
 
@@ -796,6 +804,10 @@ document.addEventListener("DOMContentLoaded", function () {
       case "salvar-nova-etapa":   salvarEtapa(null, botao); break;
       case "excluir-etapa":       excluirEtapa(id, botao); break;
       case "alternar-etapa":      alternarEtapa(id, botao); break;
+      case "alternar-status":
+        elStatusOpcoes.classList.toggle("aberto");
+        elStatusToggle.setAttribute("aria-expanded", String(elStatusOpcoes.classList.contains("aberto")));
+        break;
       case "mudar-status":        mudarStatus(botao.dataset.status); break;
       case "excluir-acao":        excluirAcao(botao); break;
     }

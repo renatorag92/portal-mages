@@ -7,6 +7,11 @@ Sistema web de Gestão Estratégica e Kanban.
 
 - Instalar as dependências (pip install -r requirements.txt).
 
+- Instalar o Node.js e gerar os estilos responsivos do Tailwind:
+  - `npm install`
+  - `npm run build:css`
+  - Durante o desenvolvimento, use `npm run watch:css` para atualizar os estilos automaticamente.
+
 - Rodar as migrações do banco (python manage.py migrate).
 
 - Carregar dados iniciais (Eixos e Catálogo de ações) -> (python manage.py carregar_dados_iniciais) 

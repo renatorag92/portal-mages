@@ -16,9 +16,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
   <link rel="stylesheet" href="{% static 'actions/css/navbar/base.css' %}">
-
   <link rel="stylesheet" href="{% static 'actions/css/navbar/user-menu.css' %}">
-
   <title>
     {% block title %}
       Portal MAGES
@@ -28,27 +26,41 @@
   {% block extra_css %}
   {% endblock %}
 
+  <link rel="stylesheet" href="{% static 'actions/css/tailwind.css' %}">
+
 </head>
 
 
-<body>
+<body class="min-h-screen">
 
 
   <!-- ===================================================== -->
   <!-- FRAME PRINCIPAL -->
   <!-- ===================================================== -->
 
-  <div class="frame">
+  <div class="frame min-h-screen">
 
 
     <!-- ===================================================== -->
     <!-- NAVBAR -->
     <!-- ===================================================== -->
 
-    <div class="topbar">
-      <div class="topbar-left">
-        <img src="{% static 'actions/images/portal-mages.png' %}" alt="Logo MAGES" class="navbar-logo">
-        <h1>{% block page_title %}{% endblock %}</h1>
+    <div class="topbar gap-2 px-3 sm:px-6">
+      <div class="topbar-left min-w-0">
+        <button
+          type="button"
+          class="mobile-nav-toggle"
+          id="mobileNavToggle"
+          aria-label="Abrir navegação"
+          aria-expanded="false"
+          aria-controls="sidebar"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <img src="{% static 'actions/images/portal-mages.png' %}" alt="Logo MAGES" class="navbar-logo shrink-0">
+        <h1 class="truncate">{% block page_title %}{% endblock %}</h1>
       </div>
       {% include "LayoutsBases/partials/navbar.html" %}
     </div>
@@ -66,13 +78,20 @@
       <!-- ================================================= -->
 
       {% include "LayoutsBases/partials/sidebar.html" %}
+      <button
+        type="button"
+        class="sidebar-backdrop"
+        id="sidebarBackdrop"
+        aria-label="Fechar navegação"
+        hidden
+      ></button>
 
 
       <!-- ================================================= -->
       <!-- CONTEÚDO PRINCIPAL -->
       <!-- ================================================= -->
 
-      <main class="main">
+      <main class="main min-w-0">
 
         {% block content %}
         {% endblock %}

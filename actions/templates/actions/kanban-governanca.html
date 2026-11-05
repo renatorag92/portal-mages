@@ -36,7 +36,7 @@ active
        FILTROS
        ========================================================= -->
 
-<div class="filters">
+<div class="filters w-full min-w-0 px-3 sm:px-6">
 
   <select id="eixoFilter">
    <option value="">Selecione o eixo específico</option>
@@ -53,7 +53,7 @@ active
    {% endfor %}
   </select>
   
-  <input id="actionSearch" class="search" type="text" placeholder="🔍 Buscar ação..." autocomplete="off">
+  <input id="actionSearch" class="search min-w-0 w-full sm:w-auto" type="text" placeholder="🔍 Buscar ação..." autocomplete="off">
 
 </div>
 
@@ -63,13 +63,13 @@ active
        BOARD
        ========================================================= -->
 
-<div class="board-wrapper">
+<div class="board-wrapper min-w-0 overflow-x-auto">
 
-  <div class="board">
+  <div class="board min-w-0">
 
     {% for status in kanban %}
     <!-- COLUNA DINÂMICA: {{ status.nome }} -->
-    <div class="column col-{{ status.nome|slugify }}">
+    <div class="column min-w-0 col-{{ status.nome|slugify }}">
 
       <!-- Define a cor dinâmica via variável CSS (resolve o aviso de sintaxe do VS Code) -->
       <div class="column-header" style="--col-color: {{ status.cor|default:'#3e4a89' }}; background-color: var(--col-color);">
@@ -390,14 +390,23 @@ active
 
     <footer class="det-footer" id="detStatus" hidden>
       <span class="det-footer-label">Mover para</span>
-      {% for s in kanban %}
-      <button type="button" class="det-status-btn" data-do="mudar-status" data-status="{{ s.id }}"
-              style="--c: {{ s.cor|default:'#3e4a89' }};">
-        <span class="det-status-dot"></span>{{ s.nome }}
+      <button type="button" class="det-mover-toggle" data-do="alternar-status"
+              aria-expanded="false" aria-controls="detStatusOpcoes">
+        <span class="det-status-dot" id="detStatusAtualDot"></span>
+        <span>Mover para</span>
+        <strong id="detStatusAtual"></strong>
+        <i class="bi bi-chevron-down" aria-hidden="true"></i>
       </button>
-      {% endfor %}
-      <button type="button" class="det-btn det-btn-excluir" data-do="excluir-acao">
-        <i class="bi bi-trash3"></i> Excluir ação
+      <div class="det-status-opcoes" id="detStatusOpcoes">
+        {% for s in kanban %}
+        <button type="button" class="det-status-btn" data-do="mudar-status" data-status="{{ s.id }}"
+                style="--c: {{ s.cor|default:'#3e4a89' }};">
+          <span class="det-status-dot"></span>{{ s.nome }}
+        </button>
+        {% endfor %}
+      </div>
+      <button type="button" class="det-btn det-btn-excluir" data-do="excluir-acao" aria-label="Excluir ação">
+        <i class="bi bi-trash3" aria-hidden="true"></i><span>Excluir ação</span>
       </button>
     </footer>
 

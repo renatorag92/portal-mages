@@ -7,12 +7,13 @@
 <title>Portal MAGES – Redefinir senha</title>
 <link rel="stylesheet" href="{% static 'actions/css/login.css' %}">
 <link rel="stylesheet" href="{% static 'actions/css/redefinir-senha.css' %}">
+<link rel="stylesheet" href="{% static 'actions/css/tailwind.css' %}">
 </head>
-<body>
+<body class="min-h-screen flex flex-col lg:flex-row">
 
-  <section class="painel">
+  <section class="painel flex-none px-6 py-10 lg:min-h-screen lg:flex-1 lg:px-12">
     <div class="painel-conteudo">
-      <div class="logo">
+      <div class="logo h-32 w-32 lg:h-56 lg:w-56">
         <img src="{% static 'actions/images/logo-mages.png' %}" alt="Logo Portal MAGES">
       </div>
       <h1>PORTAL MAGES</h1>
@@ -20,8 +21,8 @@
     </div>
   </section>
 
-  <main class="lado-form">
-    <div class="card">
+  <main class="lado-form min-h-0 flex-1 p-4 sm:p-8">
+    <div class="card p-6 sm:p-10">
 
       <div class="titulo">
         <h2>Redefinição de senha</h2>

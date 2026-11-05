@@ -9,15 +9,15 @@
 {% endblock %}
 
 {% block content %}
-<div class="status-page">
-  <section class="status-card">
+<div class="status-page w-full min-w-0 px-3 py-4 sm:px-6 sm:py-6">
+  <section class="status-card w-full min-w-0 p-4 sm:p-6">
     <h2 class="status-card-title">{% if catalogo_edicao %}Editar ação do catálogo{% else %}Cadastrar ação no catálogo{% endif %}</h2>
 
     <form method="post">
       {% csrf_token %}
       {{ form.non_field_errors }}
 
-      <div class="status-form-fields">
+      <div class="status-form-fields grid-cols-1 sm:grid-cols-2">
         <div class="status-form-group">
           <label for="{{ form.nome.id_for_label }}">Nome da ação:</label>
           {{ form.nome }}
@@ -51,10 +51,10 @@
     </form>
   </section>
 
-  <section class="status-card">
+  <section class="status-card w-full min-w-0 p-4 sm:p-6">
     <h2 class="status-card-title">Ações do catálogo</h2>
-    <div class="status-table-wrapper">
-      <table class="status-table">
+    <div class="status-table-wrapper w-full min-w-0 overflow-x-auto">
+      <table class="status-table min-w-[720px]">
         <thead>
           <tr>
             <th>Nome</th>

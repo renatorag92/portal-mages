@@ -1,5 +1,6 @@
 # Ambientes virtuais
 .venv/
+node_modules/
 
 # Banco de dados local
 *.sqlite3
@@ -12,4 +13,3 @@ __pyache__/
 # Configurações de IDE
 .vscode/
 .env
-

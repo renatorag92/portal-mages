@@ -1,5 +1,5 @@
 {# Card de uma ação no Kanban. Os detalhes abrem no pop-up (kanban-detalhes.js). #}
-<div class="task-card {% if status.nome|slugify == 'cancelado' %}highlight{% endif %}"
+<div class="task-card min-w-0 {% if status.nome|slugify == 'cancelado' %}highlight{% endif %}"
   draggable="{% if status.nome|slugify == 'cancelado' %}false{% else %}true{% endif %}"
   data-id="{{ acao.id }}"
   data-eixo="{{ acao.eixo.nome }}" data-search="{{ acao.codigo }} {{ acao.nome }}">

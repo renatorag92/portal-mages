@@ -10,12 +10,12 @@
 {% endblock %}
 
 {% block content %}
-<div class="entity-page" id="entityPage"
+<div class="entity-page w-full min-w-0 px-3 py-4 sm:px-6 sm:py-6" id="entityPage"
   data-kind="{{ tipo_entidade }}"
   data-save-url="{% if tipo_entidade == 'prefeitura' %}{% url 'salvar_prefeitura' %}{% else %}{% url 'salvar_consultoria' %}{% endif %}"
   data-record-id="{% if registro %}{{ registro.pk }}{% endif %}"
   data-existing="{% if registro %}true{% else %}false{% endif %}">
-  <section class="entity-card" aria-labelledby="entityTitle">
+  <section class="entity-card w-full min-w-0 p-4 sm:p-6" aria-labelledby="entityTitle">
 
     <h2 class="entity-card-title" id="entityTitle">
       {% if registro %}Dados da {{ titulo_entidade|lower }}{% else %}Cadastrar {{ titulo_entidade|lower }}{% endif %}
@@ -31,7 +31,7 @@
       {% csrf_token %}
       <div class="entity-errors" id="entityErrors" role="alert" aria-live="assertive" tabindex="-1" hidden></div>
 
-      <div class="entity-fields">
+      <div class="entity-fields grid-cols-1 sm:grid-cols-2">
         <div class="entity-field">
           <label for="entityCnpj">CNPJ</label>
           <span class="entity-value" data-display="cnpj" {% if not registro %}hidden{% endif %}>{% if registro %}{{ cnpj_formatado }}{% endif %}</span>

@@ -232,6 +232,7 @@ img.account-avatar {
     z-index: 9800;
     display: grid;
     place-items: center;
+    overflow-y: auto;
     padding: 20px;
     background: rgba(25, 25, 25, 0.58);
 }
@@ -239,6 +240,8 @@ img.account-avatar {
 .account-photo-dialog {
     position: relative;
     width: min(100%, 400px);
+    max-height: calc(100dvh - 40px);
+    overflow-y: auto;
     padding: 28px;
     border: 1px solid #e0ddd4;
     border-radius: 14px;
@@ -393,10 +396,26 @@ img.account-avatar {
 
     .account-photo-dialog {
         padding: 24px 18px;
+        max-height: calc(100dvh - 24px);
     }
 
     .account-photo-preview {
         width: 156px;
         height: 156px;
+    }
+
+    .account-photo-dialog-backdrop {
+        align-items: start;
+        padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+    }
+
+    .account-photo-dialog-actions,
+    .account-photo-dialog-footer {
+        flex-wrap: wrap;
+    }
+
+    .account-photo-dialog-actions .account-photo-action,
+    .account-photo-dialog-footer > button {
+        flex: 1 1 100%;
     }
 }
