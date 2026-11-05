@@ -883,6 +883,7 @@ def atualizar_status_acao(request, acao_id):
         return redirect('kanban')
 
     novo_status = request.POST.get('status')
+    status_destino_id = None
 
     # Só salva (e avisa) se o status realmente mudou
     if novo_status and novo_status.isdigit() and str(acao.status_id) != novo_status:
@@ -890,9 +891,13 @@ def atualizar_status_acao(request, acao_id):
         acao.status = status_destino
         acao.atualizado_por = request.user
         acao.save()
+        status_destino_id = status_destino.pk
         request.session['kanban_toast'] = {
             'mensagem': f'Ação {acao.codigo} movida para "{status_destino.nome}".'
         }
+
+    if status_destino_id is not None:
+        return redirect(f'{reverse_lazy("kanban")}?status_destino={status_destino_id}')
 
     return redirect('kanban')
 

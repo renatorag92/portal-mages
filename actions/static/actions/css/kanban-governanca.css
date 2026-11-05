@@ -621,6 +621,11 @@
 }
 
 @media (max-width: 767px) {
+  .frame:has(.board-wrapper) {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
   .status-edit-overlay {
     align-items: flex-start;
     padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
@@ -641,34 +646,55 @@
   }
 
   .main:has(.board-wrapper) {
-    overflow-y: auto;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .main .board-wrapper {
-    flex: 0 0 auto;
+    flex: 1 1 0;
     height: auto;
-    min-height: auto;
-    overflow-x: hidden;
-    overflow-y: visible;
-    padding: 6px 12px 20px;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 6px max(12px, calc((100vw - min(86vw, 420px)) / 2)) 20px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .main .board-wrapper::-webkit-scrollbar {
+    display: none;
   }
 
   .board {
     display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: auto;
+    flex-direction: row;
+    width: max-content;
+    min-width: 100%;
+    height: 100%;
+    align-items: center;
     overflow: visible;
     gap: 12px;
   }
 
   .column {
-    flex: 0 0 auto;
-    width: 100%;
-    height: auto;
+    flex: 0 0 min(86vw, 420px);
+    width: min(86vw, 420px);
+    height: 100%;
     min-height: 0;
     overflow: hidden;
     border-radius: 10px;
+    opacity: 0.78;
+    height: calc(100% - 40px);
+    scroll-snap-align: center;
+    transition: height 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .column.is-selected {
+    z-index: 6;
+    opacity: 1;
+    height: 100%;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2);
   }
 
   .column-header {
@@ -688,11 +714,12 @@
   }
 
   .column-body {
-    flex: 0 0 auto;
+    flex: 1 1 auto;
     min-height: 0;
     padding: 10px;
     gap: 8px;
-    overflow: visible;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .task-card {
@@ -918,6 +945,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .task-progress-preenchido {
+    transition: none;
+  }
+}
+
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  .column {
     transition: none;
   }
 }

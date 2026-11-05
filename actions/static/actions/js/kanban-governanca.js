@@ -9,6 +9,69 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const eixoFilter = document.getElementById("eixoFilter");
   const searchInput = document.getElementById("actionSearch");
+  const boardWrapper = document.querySelector(".board-wrapper");
+  const mobileBoard = window.matchMedia("(max-width: 767px)");
+  let colunaSelecionadaFrame = null;
+
+  function atualizarColunaSelecionada() {
+    colunaSelecionadaFrame = null;
+    const colunas = document.querySelectorAll(".board .column");
+
+    if (!mobileBoard.matches || !boardWrapper || colunas.length === 0) {
+      colunas.forEach(function (coluna) {
+        coluna.classList.remove("is-selected");
+      });
+      return;
+    }
+
+    const areaVisivel = boardWrapper.getBoundingClientRect();
+    const centroVisivel = areaVisivel.left + boardWrapper.clientLeft +
+      boardWrapper.clientWidth / 2;
+    let colunaMaisProxima = null;
+    let menorDistancia = Infinity;
+
+    colunas.forEach(function (coluna) {
+      const areaColuna = coluna.getBoundingClientRect();
+      const centroColuna = areaColuna.left + areaColuna.width / 2;
+      const distancia = Math.abs(centroColuna - centroVisivel);
+      if (distancia < menorDistancia) {
+        menorDistancia = distancia;
+        colunaMaisProxima = coluna;
+      }
+    });
+
+    colunas.forEach(function (coluna) {
+      coluna.classList.toggle("is-selected", coluna === colunaMaisProxima);
+    });
+  }
+
+  function agendarAtualizacaoColunaSelecionada() {
+    if (colunaSelecionadaFrame !== null) return;
+    colunaSelecionadaFrame = window.requestAnimationFrame(atualizarColunaSelecionada);
+  }
+
+  if (boardWrapper) {
+    boardWrapper.addEventListener("scroll", agendarAtualizacaoColunaSelecionada, { passive: true });
+    window.addEventListener("resize", agendarAtualizacaoColunaSelecionada);
+    atualizarColunaSelecionada();
+
+    const parametros = new URLSearchParams(window.location.search);
+    const statusDestino = parametros.get("status_destino");
+    if (statusDestino && mobileBoard.matches) {
+      const colunaDestino = Array.from(document.querySelectorAll(".column-body"))
+        .find(function (body) { return body.dataset.status === statusDestino; });
+      if (colunaDestino) {
+        colunaDestino.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
+    }
+
+    if (parametros.has("status_destino")) {
+      parametros.delete("status_destino");
+      const busca = parametros.toString();
+      const url = window.location.pathname + (busca ? "?" + busca : "") + window.location.hash;
+      window.history.replaceState(null, "", url);
+    }
+  }
 
   function luminancia(rgb) {
     const canais = rgb.map(function (valor) {
