@@ -95,8 +95,13 @@ body {
 }
 
 .navbar-logo {
-    height: 60px;
-    width: auto;
+    display: block;
+    height: 48px;
+    width: 44px;
+    flex-shrink: 0;
+    align-self: center;
+    object-fit: cover;
+    object-position: center;
 }
 
 .topbar h1 {

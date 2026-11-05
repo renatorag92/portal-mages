@@ -66,6 +66,7 @@
   flex-direction: column;
   justify-content: center;
   gap: 8px;
+  min-width: 0;
   min-height: 96px;
   padding: 16px 20px;
   background: #fff;
@@ -73,6 +74,7 @@
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   text-align: center;
+  container-type: inline-size;
 }
 
 .dash-kpi-rotulo {
@@ -115,6 +117,11 @@
 .dash-kpi-escuro .dash-kpi-rotulo,
 .dash-kpi-escuro .dash-kpi-valor {
   color: #fff;
+}
+
+.dash-kpi-escuro .dash-kpi-valor {
+  font-size: clamp(14px, 9cqi, 26px);
+  white-space: nowrap;
 }
 
 
