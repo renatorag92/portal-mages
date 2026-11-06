@@ -93,6 +93,13 @@ document.addEventListener("DOMContentLoaded", function () {
     return partes[2] + "/" + partes[1] + "/" + partes[0];
   }
 
+  function limitesDatasEtapa() {
+    return {
+      inicio: estado.acao.data_inicio,
+      fim: estado.acao.data_fim
+    };
+  }
+
   function fmtCusto(numero) {
     return Number(numero).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   }
@@ -267,6 +274,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function formEtapaHtml(e, id) {
     const nova = id == null;
     const p = "detf-e" + (nova ? "nova" : id) + "-";
+    const limites = limitesDatasEtapa();
 
     return '<article class="det-etapa editando' + (nova ? " nova" : "") + '"' + (nova ? "" : ' data-id="' + id + '"') + ">" +
       '<div class="det-etapa-topo"><span class="det-etapa-titulo">' +
@@ -280,9 +288,9 @@ document.addEventListener("DOMContentLoaded", function () {
       campo(p + "prioridade", "Prioridade", true,
         '<select class="det-input" id="' + p + 'prioridade" name="prioridade">' + opcoesPrioridade(e.prioridade) + "</select>") +
       campo(p + "inicio", "Início", true,
-        '<input class="det-input" id="' + p + 'inicio" name="data_inicio" type="date" value="' + esc(e.data_inicio) + '">') +
+        '<input class="det-input" id="' + p + 'inicio" name="data_inicio" type="date" min="' + esc(limites.inicio) + '" max="' + esc(limites.fim) + '" value="' + esc(e.data_inicio) + '">') +
       campo(p + "fim", "Fim", true,
-        '<input class="det-input" id="' + p + 'fim" name="data_fim" type="date" value="' + esc(e.data_fim) + '">') +
+        '<input class="det-input" id="' + p + 'fim" name="data_fim" type="date" min="' + esc(limites.inicio) + '" max="' + esc(limites.fim) + '" value="' + esc(e.data_fim) + '">') +
       campo(p + "obs", "Observações", false,
         '<input class="det-input" id="' + p + 'obs" name="observacoes" type="text" value="' + esc(e.observacoes) + '">', true) +
       "</dl>" +
@@ -650,6 +658,13 @@ document.addEventListener("DOMContentLoaded", function () {
     if (ler("cpf").value.replace(/\D/g, "").length !== 11) {
       ler("cpf").classList.add("invalido");
       return mostrarErro(caixa, "O CPF está incompleto.");
+    }
+
+    const limites = limitesDatasEtapa();
+    if (ler("data_inicio").value < limites.inicio || ler("data_fim").value > limites.fim) {
+      ler("data_inicio").classList.toggle("invalido", ler("data_inicio").value < limites.inicio);
+      ler("data_fim").classList.toggle("invalido", ler("data_fim").value > limites.fim);
+      return mostrarErro(caixa, "As datas da etapa devem estar dentro do período da ação.");
     }
 
     if (ler("data_fim").value < ler("data_inicio").value) {

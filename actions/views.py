@@ -97,6 +97,10 @@ def _converter_data(valor):
         return None
 
 
+def _datas_etapa_dentro_periodo(data_inicio, data_fim, inicio_acao, fim_acao):
+    return data_inicio >= inicio_acao and data_fim <= fim_acao
+
+
 def _iso(data):
     return data.isoformat() if hasattr(data, 'isoformat') else (data or '')
 
@@ -988,7 +992,45 @@ def criar_acao_kanban_view(request):
                     f'O CPF informado na etapa "{nome_etapa}" não foi encontrado '
                     'entre os funcionários da sua prefeitura.'
                 )
-            etapas_validadas.append((item, nome_etapa, resp_etapa))
+            e_inicio = _converter_data(
+                item.get('inicio') or item.get('data_inicio') or item.get('dataInicio')
+                or item.get('etapaInicio')) or data_inicio
+            e_fim = _converter_data(
+                item.get('fim') or item.get('data_fim') or item.get('dataFim')
+                or item.get('etapaFim')) or data_fim
+            if e_fim < e_inicio:
+                return _erro('A data de fim da etapa não pode ser anterior à data de início.')
+            if not _datas_etapa_dentro_periodo(e_inicio, e_fim, data_inicio, data_fim):
+                return _erro('As datas da etapa devem estar dentro do período da ação.')
+            etapas_validadas.append((item, nome_etapa, resp_etapa, e_inicio, e_fim))
+    else:
+        nomes = request.POST.getlist('etapaNome[]')
+        inicios = request.POST.getlist('etapaInicio[]')
+        fims = request.POST.getlist('etapaFim[]')
+        prioridades = request.POST.getlist('etapaPrioridade[]')
+        obs_list = request.POST.getlist('etapaObservacoes[]')
+
+        for i, nome in enumerate(nomes):
+            if not nome.strip():
+                continue
+            e_inicio = _converter_data(inicios[i]) if i < len(inicios) else None
+            e_fim = _converter_data(fims[i]) if i < len(fims) else None
+            e_inicio = e_inicio or data_inicio
+            e_fim = e_fim or data_fim
+            if e_fim < e_inicio:
+                return _erro('A data de fim da etapa não pode ser anterior à data de início.')
+            if not _datas_etapa_dentro_periodo(e_inicio, e_fim, data_inicio, data_fim):
+                return _erro('As datas da etapa devem estar dentro do período da ação.')
+            etapas_validadas.append((
+                {
+                    'prioridade': prioridades[i] if i < len(prioridades) else '',
+                    'observacoes': obs_list[i] if i < len(obs_list) else '',
+                },
+                nome.strip(),
+                responsavel,
+                e_inicio,
+                e_fim,
+            ))
 
     try:
         with transaction.atomic():
@@ -1009,13 +1051,7 @@ def criar_acao_kanban_view(request):
             )
 
             if request.content_type == 'application/json':
-                for item, nome_etapa, resp_etapa in etapas_validadas:
-                    e_inicio = _converter_data(
-                        item.get('inicio') or item.get('data_inicio') or item.get('dataInicio')
-                        or item.get('etapaInicio')) or data_inicio
-                    e_fim = _converter_data(
-                        item.get('fim') or item.get('data_fim') or item.get('dataFim')
-                        or item.get('etapaFim')) or data_fim
+                for item, nome_etapa, resp_etapa, e_inicio, e_fim in etapas_validadas:
                     Etapa.objects.create(
                         acao=nova_acao,
                         nome=nome_etapa,
@@ -1028,27 +1064,18 @@ def criar_acao_kanban_view(request):
                         atualizado_por=request.user,
                     )
             else:
-                nomes = request.POST.getlist('etapaNome[]')
-                inicios = request.POST.getlist('etapaInicio[]')
-                fims = request.POST.getlist('etapaFim[]')
-                prioridades = request.POST.getlist('etapaPrioridade[]')
-                obs_list = request.POST.getlist('etapaObservacoes[]')
-
-                for i, nome in enumerate(nomes):
-                    if nome.strip():
-                        d_inicio = _converter_data(inicios[i]) if i < len(inicios) else None
-                        d_fim = _converter_data(fims[i]) if i < len(fims) else None
-                        Etapa.objects.create(
-                            acao=nova_acao,
-                            nome=nome.strip(),
-                            responsavel=responsavel,
-                            data_inicio=d_inicio or data_inicio,
-                            data_fim=d_fim or data_fim,
-                            prioridade=prioridades[i] if i < len(prioridades) else '',
-                            observacoes=obs_list[i] if i < len(obs_list) else '',
-                            criado_por=request.user,
-                            atualizado_por=request.user,
-                        )
+                for item, nome, resp_etapa, e_inicio, e_fim in etapas_validadas:
+                    Etapa.objects.create(
+                        acao=nova_acao,
+                        nome=nome,
+                        responsavel=resp_etapa,
+                        data_inicio=e_inicio,
+                        data_fim=e_fim,
+                        prioridade=item['prioridade'],
+                        observacoes=item['observacoes'],
+                        criado_por=request.user,
+                        atualizado_por=request.user,
+                    )
     except IntegrityError:
         # Dois cadastros simultâneos podem gerar o mesmo código da ação
         logger.exception('Conflito ao criar ação na prefeitura %s', prefeitura.pk)
@@ -1106,6 +1133,10 @@ def editar_acao_view(request, acao_id):
         return _erro('Informe datas válidas.')
     if data_fim < data_inicio:
         return _erro('A data de fim não pode ser anterior à data de início.')
+    if acao.etapas.filter(
+        Q(data_inicio__lt=data_inicio) | Q(data_fim__gt=data_fim)
+    ).exists():
+        return _erro('O período da ação não pode excluir datas de uma etapa existente.')
 
     acao.prioridade = prioridade
     acao.custo = float(custo)
@@ -1118,7 +1149,7 @@ def editar_acao_view(request, acao_id):
     return JsonResponse({'success': True, 'acao': _serializar_acao(acao)})
 
 
-def _dados_etapa(request):
+def _dados_etapa(request, acao):
     # Lê e valida o JSON de uma etapa. Retorna (dados, None) ou (None, resposta_de_erro).
     try:
         data = json.loads(request.body)
@@ -1141,6 +1172,10 @@ def _dados_etapa(request):
         return None, _erro('Informe datas válidas.')
     if data_fim < data_inicio:
         return None, _erro('A data de fim não pode ser anterior à data de início.')
+    if not _datas_etapa_dentro_periodo(
+        data_inicio, data_fim, acao.data_inicio, acao.data_fim
+    ):
+        return None, _erro('As datas da etapa devem estar dentro do período da ação.')
 
     responsavel = _funcionario_por_cpf(data.get('cpf'), _prefeitura_ativa(request))
     if responsavel is None:
@@ -1165,7 +1200,7 @@ def adicionar_etapa_view(request, acao_id):
     if _acao_cancelada(acao):
         return _erro('Uma ação cancelada não pode ser editada.', 403)
 
-    dados, erro = _dados_etapa(request)
+    dados, erro = _dados_etapa(request, acao)
     if erro:
         return erro
 
@@ -1183,7 +1218,7 @@ def editar_etapa_view(request, etapa_id):
     if _acao_cancelada(etapa.acao):
         return _erro('Uma ação cancelada não pode ser editada.', 403)
 
-    dados, erro = _dados_etapa(request)
+    dados, erro = _dados_etapa(request, etapa.acao)
     if erro:
         return erro
 

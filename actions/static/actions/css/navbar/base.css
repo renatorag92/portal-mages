@@ -359,6 +359,12 @@ body {
     color: var(--text-muted);
 }
 
+.notification-date-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
 .notification-copy time {
     color: #898989;
     font-size: 11px;

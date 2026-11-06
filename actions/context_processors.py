@@ -62,6 +62,7 @@ def notifications(request):
             'titulo': f'Ação: {acao.nome}',
             'mensagem': mensagem,
             'data': acao.data_fim,
+            'criado_em': acao.criado_em,
             'tipo': tipo,
             'alvo_tipo': 'acao',
             'alvo_id': acao.pk,
@@ -97,6 +98,7 @@ def notifications(request):
             'titulo': f'Etapa: {etapa.nome}',
             'mensagem': f'{mensagem} Ação: {etapa.acao.nome}.',
             'data': etapa.data_fim,
+            'criado_em': etapa.criado_em,
             'tipo': tipo,
             'alvo_tipo': 'etapa',
             'alvo_id': etapa.pk,
@@ -124,7 +126,8 @@ def notifications(request):
             or aviso['alvo_tipo'] == 'etapa' and aviso['alvo_id'] in etapas_removidas
         )
     ]
-    avisos.sort(key=lambda aviso: aviso['data'])
+    avisos.sort(key=lambda aviso: aviso['criado_em'], reverse=True)
+    avisos.sort(key=lambda aviso: aviso['lida'])
     notificacoes = [
         {
             **aviso,

@@ -1,3 +1,5 @@
+{% load tz %}
+
 <div class="topbar-icons">
 
     <div class="notification-wrapper">
@@ -52,7 +54,15 @@
                   <span class="notification-copy">
                     <strong>{{ notification.titulo }}</strong>
                     <span>{{ notification.mensagem }}</span>
-                    <time datetime="{{ notification.data|date:'Y-m-d' }}">{{ notification.data|date:'d/m/Y' }}</time>
+                    {% timezone "America/Sao_Paulo" %}
+                    <span class="notification-date-time">
+                      <time datetime="{{ notification.data|date:'Y-m-d' }}">{{ notification.data|date:'d/m/Y' }}</time>
+                      <span aria-hidden="true">&middot;</span>
+                      <time datetime="{{ notification.criado_em|date:'c' }}" aria-label="Horário do cadastro">
+                        {{ notification.criado_em|date:'H:i' }}
+                      </time>
+                    </span>
+                    {% endtimezone %}
                   </span>
                   <span
                     class="notification-read-icon{% if notification.lida %} notification-read-icon-read{% endif %}"

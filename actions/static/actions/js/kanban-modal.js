@@ -81,6 +81,19 @@ document.addEventListener("DOMContentLoaded", function () {
     form.querySelectorAll('select, input[type="date"]').forEach(atualizarCor);
   }
 
+  function atualizarLimitesDatasEtapas() {
+    const dataInicioAcao = $("dataInicio").value;
+    const dataFimAcao = $("dataFim").value;
+    etapasList.querySelectorAll(".etapa-card").forEach(function (cartao) {
+      const inicio = cartao.querySelector('[name="etapaInicio[]"]');
+      const fim = cartao.querySelector('[name="etapaFim[]"]');
+      inicio.min = dataInicioAcao;
+      inicio.max = dataFimAcao;
+      fim.min = dataInicioAcao;
+      fim.max = dataFimAcao;
+    });
+  }
+
 
   /* ---------- Etapas: cartões ---------- */
 
@@ -110,8 +123,9 @@ document.addEventListener("DOMContentLoaded", function () {
       rotulo.htmlFor = controle.id;
     });
 
-    cartao.querySelectorAll('select, input[type="date"]').forEach(atualizarCor);
     etapasList.appendChild(cartao);
+    atualizarLimitesDatasEtapas();
+    cartao.querySelectorAll('select, input[type="date"]').forEach(atualizarCor);
     atualizarEtapas();
 
     if (focar) {
@@ -121,6 +135,8 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   $("adicionarEtapaBtn").addEventListener("click", function () { novaEtapa(true); });
+  $("dataInicio").addEventListener("change", atualizarLimitesDatasEtapas);
+  $("dataFim").addEventListener("change", atualizarLimitesDatasEtapas);
 
   etapasList.addEventListener("click", function (event) {
     const remover = event.target.closest(".etapa-remove");
@@ -387,6 +403,9 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       if (etapa.cpf.replace(/\D/g, "").length !== 11) {
         return mostrarErro("O CPF da etapa \"" + etapa.nome + "\" está incompleto.");
+      }
+      if (etapa.inicio < valor("dataInicio") || etapa.fim > valor("dataFim")) {
+        return mostrarErro("As datas da etapa \"" + etapa.nome + "\" devem estar dentro do período da ação.");
       }
       if (etapa.fim < etapa.inicio) {
         return mostrarErro("Na etapa \"" + etapa.nome + "\", a data de fim não pode ser anterior à de início.");

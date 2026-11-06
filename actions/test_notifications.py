@@ -1,4 +1,5 @@
 from datetime import timedelta
+from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -77,6 +78,9 @@ class NotificationCenterTests(TestCase):
         self.assertContains(response, 'class="notification-delete-button"')
         self.assertContains(response, 'id="notificationHeaderCount">2</span>')
         self.assertContains(response, 'Ação atrasada')
+        self.assertContains(response, 'class="notification-date-time"')
+        self.assertContains(response, 'aria-label="Horário do cadastro"')
+        self.assertTrue(all(item['criado_em'] for item in notificacoes))
 
     def test_clicking_action_notification_marks_it_read_and_redirects(self):
         acao = self.criar_acao('Ação próxima', self.hoje + timedelta(days=2))
@@ -93,6 +97,40 @@ class NotificationCenterTests(TestCase):
         self.assertTrue(page.context['notifications'][0]['lida'])
         self.assertContains(page, 'notification-read-icon-read')
         self.assertContains(page, 'bi-envelope-open')
+
+    def test_notification_time_uses_brasilia_timezone(self):
+        acao = self.criar_acao('Ação próxima', self.hoje + timedelta(days=2))
+
+        response = self.client.get(reverse('kanban'))
+
+        notification = next(
+            item for item in response.context['notifications']
+            if item['alvo_tipo'] == 'acao' and item['alvo_id'] == acao.pk
+        )
+        horario_brasilia = acao.criado_em.astimezone(ZoneInfo('America/Sao_Paulo'))
+
+        self.assertContains(response, f'{horario_brasilia:%H:%M}')
+
+    def test_notifications_show_unread_first_and_newest_first(self):
+        agora = timezone.now()
+        mais_antiga = self.criar_acao('Mais antiga', self.hoje + timedelta(days=3))
+        lida = self.criar_acao('Já lida', self.hoje + timedelta(days=2))
+        mais_recente = self.criar_acao('Mais recente', self.hoje + timedelta(days=1))
+        Acao.objects.filter(pk=mais_antiga.pk).update(criado_em=agora - timedelta(minutes=3))
+        Acao.objects.filter(pk=lida.pk).update(criado_em=agora - timedelta(minutes=2))
+        Acao.objects.filter(pk=mais_recente.pk).update(criado_em=agora - timedelta(minutes=1))
+        NotificacaoLida.objects.create(usuario=self.user, acao=lida)
+
+        response = self.client.get(reverse('kanban'))
+
+        self.assertEqual(
+            [item['titulo'] for item in response.context['notifications']],
+            ['Ação: Mais recente', 'Ação: Mais antiga', 'Ação: Já lida'],
+        )
+        self.assertEqual(
+            [item['lida'] for item in response.context['notifications']],
+            [False, False, True],
+        )
 
     def test_user_cannot_mark_another_municipality_notification_as_read(self):
         outra_prefeitura = Prefeitura.objects.create(
@@ -225,3 +263,135 @@ class NotificationCenterTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['notification_count'], 1)
         self.assertEqual(response.context['notifications'][0]['titulo'], f'Etapa: {etapa.nome}')
+
+
+class EtapaPeriodoAcaoTests(TestCase):
+    def setUp(self):
+        self.prefeitura = Prefeitura.objects.create(
+            cnpj='12345678000195',
+            nome_juridico='Prefeitura Central',
+            nome_fantasia='Prefeitura Central',
+            endereco='Rua Central, 1',
+        )
+        self.user = get_user_model().objects.create_user(
+            username='12345678901',
+            password='test-password',
+            nome='Responsável',
+            prefeitura=self.prefeitura,
+            tem_acesso=True,
+            primeiro_acesso=False,
+        )
+        self.client.force_login(self.user)
+        self.eixo = Eixo.objects.create(nome='Mobilidade')
+        self.status = Status.objects.create(nome='Em execução')
+        self.inicio_acao = timezone.localdate() + timedelta(days=5)
+        self.fim_acao = self.inicio_acao + timedelta(days=10)
+        self.acao = Acao.objects.create(
+            prefeitura=self.prefeitura,
+            nome='Ação de teste',
+            eixo=self.eixo,
+            prioridade='Média',
+            data_inicio=self.inicio_acao,
+            data_fim=self.fim_acao,
+            custo=0,
+            status=self.status,
+            responsavel=self.user,
+        )
+
+    def dados_etapa(self, data_inicio, data_fim):
+        return {
+            'nome': 'Etapa de teste',
+            'cpf': self.user.username,
+            'prioridade': 'Média',
+            'data_inicio': data_inicio.isoformat(),
+            'data_fim': data_fim.isoformat(),
+        }
+
+    def test_accepts_stage_dates_equal_to_action_boundaries(self):
+        response = self.client.post(
+            reverse('adicionar_etapa', args=[self.acao.pk]),
+            data=self.dados_etapa(self.inicio_acao, self.fim_acao),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(self.acao.etapas.count(), 1)
+
+    def test_rejects_stage_start_before_action_start(self):
+        response = self.client.post(
+            reverse('adicionar_etapa', args=[self.acao.pk]),
+            data=self.dados_etapa(
+                self.inicio_acao - timedelta(days=1),
+                self.inicio_acao,
+            ),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('dentro do período da ação', response.json()['error'])
+        self.assertFalse(self.acao.etapas.exists())
+
+    def test_rejects_stage_end_after_action_end(self):
+        response = self.client.post(
+            reverse('adicionar_etapa', args=[self.acao.pk]),
+            data=self.dados_etapa(
+                self.fim_acao,
+                self.fim_acao + timedelta(days=1),
+            ),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('dentro do período da ação', response.json()['error'])
+        self.assertFalse(self.acao.etapas.exists())
+
+    def test_rejects_out_of_range_stage_dates_when_creating_action(self):
+        response = self.client.post(
+            reverse('criar_acao_kanban'),
+            data={
+                'eixo': self.eixo.pk,
+                'novaAcao': 'Nova ação',
+                'status': self.status.pk,
+                'prioridade': 'Média',
+                'custo': '0',
+                'dataInicio': self.inicio_acao.isoformat(),
+                'dataFim': self.fim_acao.isoformat(),
+                'responsavel': self.user.username,
+                'etapas': [{
+                    'nome': 'Etapa de teste',
+                    'cpf': self.user.username,
+                    'prioridade': 'Média',
+                    'inicio': (self.inicio_acao - timedelta(days=1)).isoformat(),
+                    'fim': self.inicio_acao.isoformat(),
+                }],
+            },
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('dentro do período da ação', response.json()['error'])
+        self.assertEqual(Acao.objects.count(), 1)
+
+    def test_rejects_action_edit_that_excludes_existing_stage_dates(self):
+        Etapa.objects.create(
+            acao=self.acao,
+            nome='Etapa de teste',
+            responsavel=self.user,
+            data_inicio=self.inicio_acao,
+            data_fim=self.fim_acao,
+        )
+        response = self.client.post(
+            reverse('editar_acao', args=[self.acao.pk]),
+            data={
+                'prioridade': 'Média',
+                'custo': '0',
+                'data_inicio': (self.inicio_acao + timedelta(days=1)).isoformat(),
+                'data_fim': self.fim_acao.isoformat(),
+            },
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('não pode excluir datas de uma etapa', response.json()['error'])
+        self.acao.refresh_from_db()
+        self.assertEqual(self.acao.data_inicio, self.inicio_acao)
