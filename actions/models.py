@@ -228,7 +228,7 @@ class Acao(models.Model):
         max_length=20, choices=Status_Prioridade.choices, default='')
     data_inicio = models.DateField()
     data_fim = models.DateField()
-    custo = models.FloatField()
+    custo = models.DecimalField(max_digits=14, decimal_places=2)
     observacoes = models.TextField(blank=True, null=True)
 
     status = models.ForeignKey(Status, on_delete=models.PROTECT, related_name='acoes')
