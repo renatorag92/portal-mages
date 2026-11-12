@@ -13,3 +13,4 @@ __pyache__/
 # Configurações de IDE
 .vscode/
 .env
+backup_*.json

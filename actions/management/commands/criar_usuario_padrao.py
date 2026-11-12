@@ -30,7 +30,7 @@ class Command(BaseCommand):
         )
 
         consultor, criado = Funcionario.objects.get_or_create(
-            username='12345678909',
+            username='12345678901',
             defaults={
                 'nome': 'Consultor Teste',
                 'consultoria': consultoria,
@@ -43,7 +43,7 @@ class Command(BaseCommand):
             consultor.save()
 
         secretario, criado = Funcionario.objects.get_or_create(
-            username='98765432100',
+            username='12345678902',
             defaults={
                 'nome': 'Secretário Teste',
                 'prefeitura': prefeitura,
@@ -57,6 +57,6 @@ class Command(BaseCommand):
             secretario.save()
 
         self.stdout.write(self.style.SUCCESS(
-            f'Pronto. Logins: CPF 12345678909 (consultor) e CPF 98765432100 (secretário). '
+            f'Pronto. Logins: CPF 12345678901 (consultor) e CPF 12345678902 (secretário). '
             f'Senha: {SENHA_TESTE}'
         ))

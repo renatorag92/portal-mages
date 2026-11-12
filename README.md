@@ -1,25 +1,133 @@
 # Portal MAGES
 Sistema web de Gestão Estratégica e Kanban.
 
-### Como rodar o projeto localmente
+## Requisitos
 
-- Clonar o repositório e ativar o ambiente virtual (.venv).
+- Python 3.12 ou 3.13
+- PostgreSQL 16
+- Node.js (para os estilos Tailwind)
+- Git
 
-- Instalar as dependências (pip install -r requirements.txt).
+## Como rodar o projeto localmente
 
-- Instalar o Node.js e gerar os estilos responsivos do Tailwind:
-  - `npm install`
-  - `npm run build:css`
-  - Durante o desenvolvimento, use `npm run watch:css` para atualizar os estilos automaticamente.
+### 1. Clonar o repositório
 
-- Rodar as migrações do banco (python manage.py migrate).
+```bash
+git clone <url-do-repositorio>
+cd portal-mages
+```
 
-- Carregar dados iniciais (Eixos e Catálogo de ações) -> (python manage.py carregar_dados_iniciais) 
+### 2. Instalar o PostgreSQL
 
-- Executar o comando do usuário padrão (python manage.py criar_usuario_padrao)
-     - Após criar o usuario padrão os Logins são: CPF 12345678909 (consultor) e CPF 98765432100 (secretário). Senha: senha123 (para ambos)
+**Fedora:**
 
-- Iniciar o servidor (python manage.py runserver)
+```bash
+sudo dnf install postgresql-server postgresql
+sudo postgresql-setup --initdb
+sudo systemctl enable --now postgresql
+```
+
+**Ubuntu:**
+
+
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+sudo systemctl enable --now postgresql
+
+
+### 3. Criar o usuário e o banco
+
+
+sudo -u postgres psql
+
+Dentro do `psql`:
+
+```sql
+CREATE USER mages WITH PASSWORD 'troque-esta-senha' CREATEDB;
+CREATE DATABASE mages OWNER mages;
+\q
+```
+
+### 4. Permitir login por senha (apenas Fedora)
+
+No Fedora, o PostgreSQL vem com autenticação `ident` nas conexões por TCP, o que impede o login com usuário e senha usado pelo Django. Edite:
+
+```bash
+sudo nano /var/lib/pgsql/data/pg_hba.conf
+```
+
+Nas linhas `host` do fim do arquivo, troque `ident` por `scram-sha-256`:
+
+```
+host    all    all    127.0.0.1/32    scram-sha-256
+host    all    all    ::1/128         scram-sha-256
+```
+
+Reinicie o serviço:
+
+```bash
+sudo systemctl restart postgresql
+```
+
+No Ubuntu, normalmente esse passo não é necessário.
+
+### 5. Configurar as variáveis de ambiente
+
+```bash
+cp .env.example .env
+```
+
+Abra o `.env` e defina `POSTGRES_PASSWORD` com a mesma senha do passo 3. O arquivo `.env` não vai para o repositório.
+
+Para testar a conexão antes de seguir:
+
+```bash
+psql -h localhost -U mages -d mages
+```
+
+Se pedir a senha e entrar, siga em frente.
+
+### 6. Ativar o ambiente virtual e instalar as dependências Python
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 7. Instalar o Node.js e gerar os estilos
+
+```bash
+npm install
+npm run build:css
+```
+
+Durante o desenvolvimento, use `npm run watch:css` para atualizar os estilos automaticamente. Deixe esse comando rodando em outro terminal.
+
+### 8. Criar as tabelas e carregar os dados
+
+```bash
+python manage.py migrate
+python manage.py carregar_dados_iniciais
+python manage.py criar_usuario_padrao
+```
+
+- `carregar_dados_iniciais` cria eixos, status e o catálogo de ações. Pode ser executado várias vezes sem duplicar registros.
+- `criar_usuario_padrao` cria uma consultoria, uma prefeitura, um consultor e um secretário para testes. Só funciona com `DEBUG` ligado.
+
+### 9. Iniciar o servidor
+
+```bash
+python manage.py runserver
+```
+
+Acesse http://127.0.0.1:8000 e entre com:
+
+| Perfil | CPF | Senha |
+|---|---|---|
+| Consultor | 12345678901 | senha123 |
+| Secretário |98765432102 | senha123 |
+
 
 ### Solicitação de troca de senha
 
@@ -28,6 +136,4 @@ já preenchido. Os consultores recebem uma notificação com o nome do solicitan
 de funcionários, o consultor gera a senha provisória; no próximo acesso, o funcionário
 deve definir uma nova senha. O consultor também pode marcar a solicitação como lida sem
 gerar a senha imediatamente. As notificações são atualizadas automaticamente a cada
-10 segundos enquanto a página está aberta. Nos alertas de prazo, tarefas que vencem
-amanhã ficam em vermelho e prazos já vencidos recebem um destaque próprio com a indicação
-de atraso.
+10 segundos enquanto a página está aberta.

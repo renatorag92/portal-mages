@@ -1078,8 +1078,8 @@ def criar_acao_kanban_view(request):
     if request.content_type != 'application/json':
         custo_raw = custo_raw.replace('.', '').replace(',', '.')
     try:
-        custo = float(custo_raw)
-    except ValueError:
+        custo = Decimal(custo_raw)
+    except InvalidOperation:
         custo = 0.0
 
     data_inicio = _converter_data(data.get('dataInicio') or data.get('data_inicio'))
@@ -1282,7 +1282,7 @@ def editar_acao_view(request, acao_id):
         return _erro('O período da ação não pode excluir datas de uma etapa existente.')
 
     acao.prioridade = prioridade
-    acao.custo = float(custo)
+    acao.custo = custo
     acao.data_inicio = data_inicio
     acao.data_fim = data_fim
     acao.observacoes = (data.get('observacoes') or '').strip() or None
@@ -1446,7 +1446,7 @@ def _gradiente(fatias):
     for cor, valor in fatias:
         if not valor:
             continue
-        fim = inicio + valor / total * 100
+        fim = inicio + float(valor) / float(total) * 100
         partes.append(f'{cor} {inicio:.2f}% {fim:.2f}%')
         inicio = fim
     return 'conic-gradient(' + ', '.join(partes) + ')'
@@ -1510,7 +1510,7 @@ def dashboard_view(request):
     por_eixo = {}
     for a in ativas:
         nome = a.eixo.nome if a.eixo_id else 'Sem eixo'
-        qtd, custo = por_eixo.get(nome, (0, 0.0))
+        qtd, custo = por_eixo.get(nome, (0, Decimal('0')))
         por_eixo[nome] = (qtd + 1, custo + a.custo)
 
     eixos = sorted(por_eixo.items(), key=lambda item: item[1][0], reverse=True)
