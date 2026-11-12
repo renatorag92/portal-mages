@@ -1,0 +1,80 @@
+{% load tz %}
+
+<!-- Painel do sino: cabeçalho com contagem de não lidas e ação em lote. -->
+<section
+  class="notification-panel"
+  id="notificationPanel"
+  aria-labelledby="notificationHeading"
+  data-refresh-url="{% url 'atualizar_notificacoes' %}"
+  hidden
+>
+  <header class="notification-panel-header">
+    <div class="notification-heading">
+      <h2 id="notificationHeading">Notificações</h2>
+      <span class="notification-unread-count" id="notificationUnreadCount" aria-live="polite">
+        {{ notification_display_unread_count }}
+      </span>
+    </div>
+    <button class="notification-mark-all-button" id="notificationMarkAll" type="button">
+      Marcar todas como lidas
+    </button>
+  </header>
+
+  <!-- Filtros para alternar entre a lista completa, pendentes e categorias. -->
+  <nav class="notification-filters" aria-label="Filtrar notificações">
+    <button type="button" class="notification-filter is-active" data-filter="todas" aria-pressed="true">Todas</button>
+    <button type="button" class="notification-filter" data-filter="nao-lidas" aria-pressed="false">Não lidas</button>
+    <button type="button" class="notification-filter" data-filter="acoes" aria-pressed="false">Ações</button>
+    <button type="button" class="notification-filter" data-filter="sistema" aria-pressed="false">Sistema</button>
+  </nav>
+
+  <!-- Mensagens acessíveis de resultado ou falha nas ações da central. -->
+  <p class="notification-action-status" id="notificationActionStatus" role="status" aria-live="polite" hidden></p>
+
+  <!-- Lista organizada pelo JavaScript em Hoje, Ontem e Mais antigas. -->
+  <div class="notification-scroll-area">
+    <div class="notification-list" id="notificationList">
+      <section class="notification-group" data-group="hoje" aria-labelledby="notificationTodayHeading">
+        <h3 id="notificationTodayHeading">Hoje</h3>
+        <ul class="notification-group-list" data-group-list="hoje" role="list">
+          {% for notification in notification_feed %}
+            {% if notification.alvo_tipo == 'solicitacao_senha' and notification.data_iso %}
+              {% with notification_type='senha' %}
+                {% include "LayoutsBases/partials/notificacao_item.html" %}
+              {% endwith %}
+            {% elif notification.alvo_tipo == 'acao' or notification.alvo_tipo == 'etapa' %}
+              {% if notification.data_iso %}
+                {% with notification_type=notification.alvo_tipo %}
+                  {% include "LayoutsBases/partials/notificacao_item.html" %}
+                {% endwith %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+        </ul>
+      </section>
+      <section class="notification-group" data-group="ontem" aria-labelledby="notificationYesterdayHeading">
+        <h3 id="notificationYesterdayHeading">Ontem</h3>
+        <ul class="notification-group-list" data-group-list="ontem" role="list"></ul>
+      </section>
+      <section class="notification-group" data-group="antigas" aria-labelledby="notificationOlderHeading">
+        <h3 id="notificationOlderHeading">Mais antigas</h3>
+        <ul class="notification-group-list" data-group-list="antigas" role="list"></ul>
+      </section>
+    </div>
+
+    <!-- Estado vazio compartilhado pelos filtros. -->
+    <div class="notification-empty" id="notificationEmpty" role="status" hidden>
+      <i class="bi bi-check2-circle" aria-hidden="true"></i>
+      <strong>Você está em dia</strong>
+      <span>Não há notificações neste filtro.</span>
+    </div>
+  </div>
+
+  <!-- Rodapé fixo com acesso à lista completa. -->
+  <footer class="notification-panel-footer">
+    <button type="button" id="notificationShowAll">Ver todas as notificações</button>
+  </footer>
+</section>
+
+<!-- Avisos temporários de novas notificações recebidas em tempo real. -->
+<div class="notification-toasts" id="notificationToasts" aria-live="polite" aria-atomic="false"></div>

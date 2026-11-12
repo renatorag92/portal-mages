@@ -33,6 +33,7 @@ urlpatterns = [
     path('escolher-prefeitura/', views.escolher_prefeitura_view, name='escolher_prefeitura'), # Rota para escolher a prefeitura
     path('minha-conta/', views.minha_conta_view, name='minha_conta'),
     path('notificacoes/<str:tipo>/<int:item_id>/lida/', views.marcar_notificacao_lida_view, name='marcar_notificacao_lida'),
+    path('notificacoes/<str:tipo>/<int:item_id>/nao-lida/', views.marcar_notificacao_nao_lida_view, name='marcar_notificacao_nao_lida'),
     path('notificacoes/solicitacao-senha/<int:solicitacao_id>/marcar-como-lida/', views.marcar_solicitacao_senha_lida_view, name='marcar_solicitacao_senha_lida'),
     path('notificacoes/atualizar/', views.atualizar_notificacoes_view, name='atualizar_notificacoes'),
     path('notificacoes/<str:tipo>/<int:item_id>/remover/', views.remover_notificacao_view, name='remover_notificacao'),

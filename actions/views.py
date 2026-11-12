@@ -782,34 +782,73 @@ def marcar_solicitacao_senha_lida_view(request, solicitacao_id):
 
 
 @login_required
+@require_POST
+def marcar_notificacao_nao_lida_view(request, tipo, item_id):
+    if tipo == 'solicitacao_senha':
+        if not request.user.e_consultor:
+            return JsonResponse({'success': False}, status=403)
+        solicitacao = get_object_or_404(
+            SolicitacaoRedefinicaoSenha,
+            pk=item_id,
+            pendente=True,
+        )
+        SolicitacaoRedefinicaoSenhaLida.objects.filter(
+            usuario=request.user,
+            solicitacao=solicitacao,
+        ).delete()
+    else:
+        prefeitura = _prefeitura_ativa(request)
+        if prefeitura is None:
+            return JsonResponse({'success': False}, status=400)
+
+        if tipo == 'acao':
+            acao = get_object_or_404(Acao, pk=item_id, prefeitura=prefeitura)
+            NotificacaoLida.objects.filter(
+                usuario=request.user,
+                acao=acao,
+                removida=False,
+            ).delete()
+        elif tipo == 'etapa':
+            etapa = get_object_or_404(Etapa, pk=item_id, acao__prefeitura=prefeitura)
+            NotificacaoLida.objects.filter(
+                usuario=request.user,
+                etapa=etapa,
+                removida=False,
+            ).delete()
+        else:
+            return JsonResponse({'success': False}, status=404)
+
+    return JsonResponse({'success': True})
+
+
+@login_required
 def atualizar_notificacoes_view(request):
     contexto = carregar_notificacoes(request)
     notificacoes = []
-    for item in contexto['notifications']:
+    for item in contexto['notification_feed']:
+        solicitacao_senha = item['alvo_tipo'] == 'solicitacao_senha'
         notificacoes.append({
-            'id': f"{item['alvo_tipo']}-{item['alvo_id']}",
+            'id': item.get('id', f"{item['alvo_tipo']}-{item['alvo_id']}"),
             'alvo_tipo': item['alvo_tipo'],
             'titulo': item['titulo'],
             'mensagem': item['mensagem'],
             'tipo': item['tipo'],
+            'urgencia': item['urgencia'],
             'lida': item['lida'],
             'data': item['data'].isoformat(),
-            'criado_em': item['criado_em'].isoformat(),
+            'prazo': (
+                item['data'].isoformat()
+                if item['alvo_tipo'] in {'acao', 'etapa'}
+                else None
+            ),
+            'criado_em': (
+                item['solicitada_em']
+                if solicitacao_senha else item['criado_em']
+            ).isoformat(),
             'url': item['url'],
-            'remover_url': item['remover_url'],
-        })
-    for item in contexto['password_reset_notifications']:
-        notificacoes.append({
-            'id': item['id'],
-            'alvo_tipo': item['alvo_tipo'],
-            'titulo': item['titulo'],
-            'mensagem': item['mensagem'],
-            'tipo': item['tipo'],
-            'lida': item['lida'],
-            'data': item['data'].isoformat(),
-            'criado_em': item['solicitada_em'].isoformat(),
-            'url': item['url'],
-            'destino_url': item['destino_url'],
+            'url_nao_lida': item['url_nao_lida'],
+            'destino_url': item.get('destino_url'),
+            'remover_url': item.get('remover_url'),
         })
     return JsonResponse({
         'notifications': notificacoes,

@@ -9,6 +9,16 @@ from .models import (
 )
 
 
+def _mensagem_prazo(dias):
+    if dias < 0:
+        return f'Prazo atrasado há {abs(dias)} dia(s).', 'overdue'
+    if dias == 0:
+        return 'O prazo termina hoje.', 'warning'
+    if dias == 1:
+        return 'O prazo termina amanhã.', 'danger'
+    return f'O prazo termina em {dias} dia(s).', 'warning'
+
+
 def notifications(request):
     solicitacoes_senha = []
     if request.user.is_authenticated and request.user.e_consultor:
@@ -29,6 +39,7 @@ def notifications(request):
             'mensagem': f'{solicitacao.funcionario.nome} deseja alterar a senha.',
             'nome': solicitacao.funcionario.nome,
             'tipo': 'warning',
+            'urgencia': 'seguranca',
             'alvo_tipo': 'solicitacao_senha',
             'alvo_id': solicitacao.pk,
             'lida': solicitacao.pk in solicitacoes_senha_lidas,
@@ -36,9 +47,15 @@ def notifications(request):
                 'marcar_solicitacao_senha_lida',
                 args=[solicitacao.pk],
             ),
+            'url_nao_lida': reverse(
+                'marcar_notificacao_nao_lida',
+                args=['solicitacao_senha', solicitacao.pk],
+            ),
             'destino_url': reverse('gerenciar_funcionario'),
             'solicitada_em': solicitacao.solicitada_em,
             'data': solicitacao.solicitada_em,
+            'data_iso': solicitacao.solicitada_em,
+            'prazo': None,
         }
         for solicitacao in solicitacoes_senha
     ]
@@ -51,6 +68,7 @@ def notifications(request):
             'password_reset_notifications': [],
             'password_reset_notification_count': 0,
             'password_reset_unread_count': 0,
+            'notification_feed': [],
             'notification_display_total_count': 0,
             'notification_display_visible_count': 0,
             'notification_display_unread_count': 0,
@@ -79,6 +97,7 @@ def notifications(request):
             'notification_display_unread_count': sum(
                 not item['lida'] for item in notificacoes_senha
             ),
+            'notification_feed': notificacoes_senha,
         }
 
     hoje = timezone.localdate()
@@ -101,21 +120,18 @@ def notifications(request):
     )
     for acao in acoes:
         dias = (acao.data_fim - hoje).days
-        if dias < 0:
-            mensagem = f'O prazo venceu há {abs(dias)} dia(s).'
-            tipo = 'danger'
-        elif dias == 0:
-            mensagem = 'O prazo termina hoje.'
-            tipo = 'warning'
-        else:
-            mensagem = f'O prazo termina em {dias} dia(s).'
-            tipo = 'warning'
+        mensagem, tipo = _mensagem_prazo(dias)
         avisos.append({
             'titulo': f'Ação: {acao.nome}',
             'mensagem': mensagem,
             'data': acao.data_fim,
             'criado_em': acao.criado_em,
             'tipo': tipo,
+            'urgencia': {
+                'overdue': 'atrasado',
+                'danger': 'breve',
+                'warning': 'info',
+            }[tipo],
             'alvo_tipo': 'acao',
             'alvo_id': acao.pk,
             'lida': acao.pk in acoes_lidas,
@@ -137,21 +153,18 @@ def notifications(request):
     )
     for etapa in etapas:
         dias = (etapa.data_fim - hoje).days
-        if dias < 0:
-            mensagem = f'O prazo venceu há {abs(dias)} dia(s).'
-            tipo = 'danger'
-        elif dias == 0:
-            mensagem = 'O prazo termina hoje.'
-            tipo = 'warning'
-        else:
-            mensagem = f'O prazo termina em {dias} dia(s).'
-            tipo = 'warning'
+        mensagem, tipo = _mensagem_prazo(dias)
         avisos.append({
             'titulo': f'Etapa: {etapa.nome}',
             'mensagem': f'{mensagem} Ação: {etapa.acao.nome}.',
             'data': etapa.data_fim,
             'criado_em': etapa.criado_em,
             'tipo': tipo,
+            'urgencia': {
+                'overdue': 'atrasado',
+                'danger': 'breve',
+                'warning': 'info',
+            }[tipo],
             'alvo_tipo': 'etapa',
             'alvo_id': etapa.pk,
             'lida': etapa.pk in etapas_lidas,
@@ -179,12 +192,17 @@ def notifications(request):
         )
     ]
     avisos.sort(key=lambda aviso: aviso['criado_em'], reverse=True)
-    avisos.sort(key=lambda aviso: aviso['lida'])
     notificacoes = [
         {
             **aviso,
+            'id': f"{aviso['alvo_tipo']}-{aviso['alvo_id']}",
+            'data_iso': aviso['criado_em'],
             'url': reverse(
                 'marcar_notificacao_lida',
+                args=[aviso['alvo_tipo'], aviso['alvo_id']],
+            ),
+            'url_nao_lida': reverse(
+                'marcar_notificacao_nao_lida',
                 args=[aviso['alvo_tipo'], aviso['alvo_id']],
             ),
             'remover_url': reverse(
@@ -192,8 +210,17 @@ def notifications(request):
                 args=[aviso['alvo_tipo'], aviso['alvo_id']],
             ),
         }
-        for aviso in avisos[:8]
+        for aviso in avisos
     ]
+    notification_feed = sorted(
+        [*notificacoes, *notificacoes_senha],
+        key=lambda aviso: (
+            aviso['solicitada_em']
+            if aviso['alvo_tipo'] == 'solicitacao_senha'
+            else aviso['criado_em']
+        ),
+        reverse=True,
+    )
     return {
         'notifications': notificacoes,
         'notification_count': sum(not notification['lida'] for notification in avisos),
@@ -203,8 +230,9 @@ def notifications(request):
         'password_reset_unread_count': sum(
             not item['lida'] for item in notificacoes_senha
         ),
+        'notification_feed': notification_feed,
         'notification_display_total_count': len(avisos) + len(notificacoes_senha),
-        'notification_display_visible_count': len(notificacoes) + len(notificacoes_senha),
+        'notification_display_visible_count': len(notification_feed),
         'notification_display_unread_count': (
             sum(not notification['lida'] for notification in avisos)
             + sum(not item['lida'] for item in notificacoes_senha)

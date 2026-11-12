@@ -28,4 +28,6 @@ já preenchido. Os consultores recebem uma notificação com o nome do solicitan
 de funcionários, o consultor gera a senha provisória; no próximo acesso, o funcionário
 deve definir uma nova senha. O consultor também pode marcar a solicitação como lida sem
 gerar a senha imediatamente. As notificações são atualizadas automaticamente a cada
-10 segundos enquanto a página está aberta.
+10 segundos enquanto a página está aberta. Nos alertas de prazo, tarefas que vencem
+amanhã ficam em vermelho e prazos já vencidos recebem um destaque próprio com a indicação
+de atraso.

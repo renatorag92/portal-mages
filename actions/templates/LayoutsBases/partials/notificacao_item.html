@@ -1,0 +1,86 @@
+{% load tz %}
+
+<!-- Item acessível: metadados para filtro, urgência, data e sincronização. -->
+<li
+  class="notification-card{% if notification.lida %} is-read{% endif %}"
+  role="listitem"
+  data-id="{{ notification.id }}"
+  data-notification-id="{{ notification.id }}"
+  data-lida="{% if notification.lida %}true{% else %}false{% endif %}"
+  data-tipo="{{ notification_type }}"
+  data-urgencia="{{ notification.urgencia }}"
+  data-data="{{ notification.data_iso|date:'c' }}"
+  data-prazo="{% if notification_type != 'senha' %}{{ notification.data|date:'Y-m-d' }}{% endif %}"
+  data-url-lida="{{ notification.url }}"
+  data-url-nao-lida="{{ notification.url_nao_lida }}"
+  data-url-excluir="{{ notification.remover_url }}"
+  data-url-destino="{% if notification_type == 'senha' %}{{ notification.destino_url }}{% else %}{% url 'kanban' %}{% endif %}"
+>
+  <!-- Área principal clicável para abrir o destino da notificação. -->
+  <a class="notification-main-link" href="{% if notification_type == 'senha' %}{{ notification.destino_url }}{% else %}{% url 'kanban' %}{% endif %}" data-item-link>
+    <span class="notification-icon notification-icon-{{ notification.urgencia }}" aria-hidden="true">
+      {% if notification_type == 'senha' %}
+        <i class="bi bi-key-fill"></i>
+      {% elif notification_type == 'acao' %}
+        <i class="bi bi-flag-fill"></i>
+      {% elif notification.urgencia == 'atrasado' %}
+        <i class="bi bi-calendar-x-fill"></i>
+      {% else %}
+        <i class="bi bi-list-check"></i>
+      {% endif %}
+    </span>
+
+    <span class="notification-content">
+      <strong class="notification-title">{{ notification.titulo }}</strong>
+      <span class="notification-description">{{ notification.mensagem }}</span>
+      <span class="notification-meta">
+        {% timezone "America/Sao_Paulo" %}
+          <time
+            class="notification-relative-date"
+            datetime="{{ notification.data_iso|date:'c' }}"
+            title="{{ notification.data_iso|date:'d/m/Y H:i' }}"
+            data-relative-time
+          >{{ notification.data_iso|date:'d/m/Y H:i' }}</time>
+        {% endtimezone %}
+        {% if notification_type != 'senha' %}
+          <span class="notification-deadline-badge" data-deadline-badge></span>
+        {% endif %}
+      </span>
+    </span>
+  </a>
+
+  <!-- Indicador de não lida e ações para desktop e dispositivos móveis. -->
+  <span class="notification-unread-dot" aria-label="Não lida" title="Não lida"></span>
+  <div class="notification-item-actions" aria-label="Ações da notificação">
+    <button
+      type="button"
+      class="notification-action-button"
+      data-notification-action="toggle-read"
+      aria-label="{% if notification.lida %}Marcar como não lida{% else %}Marcar como lida{% endif %}"
+      title="{% if notification.lida %}Marcar como não lida{% else %}Marcar como lida{% endif %}"
+    ><i class="bi bi-{% if notification.lida %}circle{% else %}check2{% endif %}" aria-hidden="true"></i></button>
+
+    {% if notification_type != 'senha' %}
+      <button
+        type="button"
+        class="notification-action-button notification-delete-action"
+        data-notification-action="excluir"
+        aria-label="Excluir {{ notification.titulo }}"
+        title="Excluir"
+      ><i class="bi bi-trash3" aria-hidden="true"></i></button>
+    {% endif %}
+  </div>
+
+  <!-- Menu de ações por toque, exibido somente em telas pequenas. -->
+  <details class="notification-mobile-menu">
+    <summary aria-label="Abrir ações da notificação"><i class="bi bi-three-dots" aria-hidden="true"></i></summary>
+    <div class="notification-mobile-menu-actions">
+      <button type="button" data-notification-action="toggle-read">
+        {% if notification.lida %}Marcar como não lida{% else %}Marcar como lida{% endif %}
+      </button>
+      {% if notification_type != 'senha' %}
+        <button type="button" data-notification-action="excluir">Excluir</button>
+      {% endif %}
+    </div>
+  </details>
+</li>

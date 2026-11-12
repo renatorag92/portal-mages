@@ -75,11 +75,12 @@ class NotificationCenterTests(TestCase):
         self.assertContains(response, 'id="notificationToggle"')
         self.assertNotContains(response, 'id="notificationTrash"')
         self.assertNotContains(response, 'data-notification-drag')
-        self.assertContains(response, 'class="notification-delete-button"')
-        self.assertContains(response, 'id="notificationHeaderCount">2</span>')
+        self.assertContains(response, 'class="notification-action-button notification-delete-action"')
+        self.assertContains(response, 'id="notificationUnreadCount"')
         self.assertContains(response, 'Ação atrasada')
-        self.assertContains(response, 'class="notification-date-time"')
-        self.assertContains(response, 'aria-label="Horário do cadastro"')
+        self.assertContains(response, 'class="notification-relative-date"')
+        self.assertContains(response, 'data-tipo="acao"')
+        self.assertNotContains(response, 'bi-envelope')
         self.assertTrue(all(item['criado_em'] for item in notificacoes))
 
     def test_clicking_action_notification_marks_it_read_and_redirects(self):
@@ -95,8 +96,29 @@ class NotificationCenterTests(TestCase):
         page = self.client.get(reverse('kanban'))
         self.assertEqual(page.context['notification_count'], 0)
         self.assertTrue(page.context['notifications'][0]['lida'])
-        self.assertContains(page, 'notification-read-icon-read')
-        self.assertContains(page, 'bi-envelope-open')
+        self.assertContains(page, 'Marcar como não lida')
+        self.assertContains(page, 'bi-circle')
+        self.assertNotContains(page, 'bi-envelope')
+
+    def test_action_notification_can_be_marked_unread_again(self):
+        acao = self.criar_acao('Ação próxima', self.hoje + timedelta(days=2))
+        NotificacaoLida.objects.create(usuario=self.user, acao=acao)
+
+        response = self.client.post(
+            reverse('marcar_notificacao_nao_lida', args=['acao', acao.pk]),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'success': True})
+        self.assertFalse(
+            NotificacaoLida.objects.filter(usuario=self.user, acao=acao).exists()
+        )
+        notification = self.client.get(reverse('atualizar_notificacoes')).json()
+        self.assertFalse(notification['notifications'][0]['lida'])
+        self.assertEqual(
+            notification['notifications'][0]['url_nao_lida'],
+            reverse('marcar_notificacao_nao_lida', args=['acao', acao.pk]),
+        )
 
     def test_notification_time_uses_brasilia_timezone(self):
         acao = self.criar_acao('Ação próxima', self.hoje + timedelta(days=2))
@@ -110,6 +132,41 @@ class NotificationCenterTests(TestCase):
         horario_brasilia = acao.criado_em.astimezone(ZoneInfo('America/Sao_Paulo'))
 
         self.assertContains(response, f'{horario_brasilia:%H:%M}')
+
+    def test_deadline_colors_distinguish_tomorrow_from_overdue_for_actions_and_stages(self):
+        acao_amanha = self.criar_acao('Ação vence amanhã', self.hoje + timedelta(days=1))
+        acao_atrasada = self.criar_acao('Ação atrasada', self.hoje - timedelta(days=2))
+        acao_etapas = self.criar_acao('Ação das etapas', self.hoje + timedelta(days=5))
+        etapa_amanha = Etapa.objects.create(
+            nome='Etapa vence amanhã',
+            data_inicio=self.hoje,
+            data_fim=self.hoje + timedelta(days=1),
+            acao=acao_etapas,
+            responsavel=self.user,
+        )
+        etapa_atrasada = Etapa.objects.create(
+            nome='Etapa atrasada',
+            data_inicio=self.hoje - timedelta(days=3),
+            data_fim=self.hoje - timedelta(days=1),
+            acao=acao_etapas,
+            responsavel=self.user,
+        )
+
+        response = self.client.get(reverse('kanban'))
+
+        notificacoes = {
+            notification['titulo']: notification
+            for notification in response.context['notifications']
+        }
+        self.assertEqual(notificacoes[f'Ação: {acao_amanha.nome}']['tipo'], 'danger')
+        self.assertEqual(
+            notificacoes[f'Ação: {acao_amanha.nome}']['mensagem'],
+            'O prazo termina amanhã.',
+        )
+        self.assertEqual(notificacoes[f'Ação: {acao_atrasada.nome}']['tipo'], 'overdue')
+        self.assertIn('Prazo atrasado', notificacoes[f'Ação: {acao_atrasada.nome}']['mensagem'])
+        self.assertEqual(notificacoes[f'Etapa: {etapa_amanha.nome}']['tipo'], 'danger')
+        self.assertEqual(notificacoes[f'Etapa: {etapa_atrasada.nome}']['tipo'], 'overdue')
 
     def test_refresh_endpoint_returns_action_and_stage_notifications(self):
         acao = self.criar_acao('Ação próxima', self.hoje + timedelta(days=5))
@@ -135,7 +192,7 @@ class NotificationCenterTests(TestCase):
             {f'Ação: {acao.nome}', f'Etapa: {etapa.nome}'},
         )
 
-    def test_notifications_show_unread_first_and_newest_first(self):
+    def test_notifications_are_ordered_by_arrival_with_newest_first(self):
         agora = timezone.now()
         mais_antiga = self.criar_acao('Mais antiga', self.hoje + timedelta(days=3))
         lida = self.criar_acao('Já lida', self.hoje + timedelta(days=2))
@@ -149,11 +206,29 @@ class NotificationCenterTests(TestCase):
 
         self.assertEqual(
             [item['titulo'] for item in response.context['notifications']],
-            ['Ação: Mais recente', 'Ação: Mais antiga', 'Ação: Já lida'],
+            ['Ação: Mais recente', 'Ação: Já lida', 'Ação: Mais antiga'],
         )
         self.assertEqual(
             [item['lida'] for item in response.context['notifications']],
-            [False, False, True],
+            [False, True, False],
+        )
+
+    def test_notification_feed_includes_more_than_eight_alerts(self):
+        acoes = [
+            self.criar_acao(
+                f'Ação {indice}',
+                self.hoje + timedelta(days=indice % 7),
+            )
+            for indice in range(10)
+        ]
+
+        response = self.client.get(reverse('kanban'))
+
+        notificacoes = response.context['notification_feed']
+        self.assertEqual(len(notificacoes), 10)
+        self.assertEqual(
+            {item['alvo_id'] for item in notificacoes},
+            {acao.pk for acao in acoes},
         )
 
     def test_user_cannot_mark_another_municipality_notification_as_read(self):

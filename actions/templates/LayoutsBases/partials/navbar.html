@@ -1,5 +1,3 @@
-{% load tz %}
-
 <div class="topbar-icons">
 
     <div class="notification-wrapper">
@@ -12,7 +10,6 @@
         aria-controls="notificationPanel"
         aria-label="Notificações: {{ notification_display_unread_count }}"
         data-unread-count="{{ notification_display_unread_count }}"
-        data-refresh-url="{% url 'atualizar_notificacoes' %}"
       >
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -22,115 +19,7 @@
           <span class="notification-badge" aria-hidden="true">{{ notification_display_unread_count }}</span>
         {% endif %}
       </button>
-
-      <section
-        class="notification-panel"
-        id="notificationPanel"
-        aria-labelledby="notificationHeading"
-        hidden
-      >
-        <header class="notification-panel-header">
-          <h2 id="notificationHeading">Notificações</h2>
-          <div class="notification-header-actions">
-            <span class="notification-total-count" id="notificationHeaderCount">{{ notification_display_total_count }}</span>
-          </div>
-        </header>
-
-        <p class="notification-action-status" id="notificationActionStatus" role="status" aria-live="polite" hidden></p>
-
-        <ul class="notification-list" id="notificationList">
-            {% for notification in notifications %}
-              <li class="notification-row" data-notification-id="{{ notification.alvo_tipo }}-{{ notification.alvo_id }}">
-                <form class="notification-form" action="{{ notification.url }}" method="post">
-                  {% csrf_token %}
-                  <button
-                    type="submit"
-                    class="notification-item{% if notification.lida %} notification-item-read{% endif %}"
-                    aria-label="{{ notification.titulo }}. {{ notification.mensagem }}{% if notification.lida %} Já lida.{% else %} Marcar como lida e abrir o kanban.{% endif %}"
-                  >
-                  <span class="notification-indicator notification-indicator-{{ notification.tipo }}" aria-hidden="true">
-                    <i class="bi bi-{% if notification.tipo == 'danger' %}exclamation-circle{% else %}clock{% endif %}-fill"></i>
-                  </span>
-                  <span class="notification-copy">
-                    <strong>{{ notification.titulo }}</strong>
-                    <span>{{ notification.mensagem }}</span>
-                    {% timezone "America/Sao_Paulo" %}
-                    <span class="notification-date-time">
-                      <time datetime="{{ notification.data|date:'Y-m-d' }}">{{ notification.data|date:'d/m/Y' }}</time>
-                      <span aria-hidden="true">&middot;</span>
-                      <time datetime="{{ notification.criado_em|date:'c' }}" aria-label="Horário do cadastro">
-                        {{ notification.criado_em|date:'H:i' }}
-                      </time>
-                    </span>
-                    {% endtimezone %}
-                  </span>
-                  <span
-                    class="notification-read-icon{% if notification.lida %} notification-read-icon-read{% endif %}"
-                    title="{% if notification.lida %}Lida{% else %}Marcar como lida{% endif %}"
-                    aria-hidden="true"
-                  >
-                    <i class="bi bi-envelope{% if notification.lida %}-open{% else %}-fill{% endif %}"></i>
-                  </span>
-                  </button>
-                </form>
-                <form class="notification-delete-form" action="{{ notification.remover_url }}" method="post">
-                  {% csrf_token %}
-                  <button
-                    type="submit"
-                    class="notification-delete-button"
-                    aria-label="Remover {{ notification.titulo }}"
-                    title="Remover notificação"
-                  >
-                    <i class="bi bi-trash3" aria-hidden="true"></i>
-                  </button>
-                </form>
-              </li>
-            {% endfor %}
-            {% for reset_request in password_reset_notifications %}
-              <li class="notification-row{% if reset_request.lida %} notification-row-read{% endif %}"
-                data-notification-id="{{ reset_request.id }}">
-                <a class="notification-item{% if reset_request.lida %} notification-item-read{% endif %}"
-                  href="{{ reset_request.destino_url }}">
-                  <span class="notification-indicator notification-indicator-warning" aria-hidden="true">
-                    <i class="bi bi-key-fill"></i>
-                  </span>
-                  <span class="notification-copy">
-                    <strong>Solicitação de troca de senha</strong>
-                    <span>{{ reset_request.nome }} deseja alterar a senha.</span>
-                    {% timezone "America/Sao_Paulo" %}
-                    <span class="notification-date-time">
-                      <time datetime="{{ reset_request.solicitada_em|date:'c' }}" aria-label="Horário da solicitação">
-                        {{ reset_request.solicitada_em|date:'d/m/Y H:i' }}
-                      </time>
-                    </span>
-                    {% endtimezone %}
-                  </span>
-                  <span class="notification-read-icon{% if reset_request.lida %} notification-read-icon-read{% endif %}"
-                    title="{% if reset_request.lida %}Lida{% else %}Não lida{% endif %}" aria-hidden="true">
-                    <i class="bi bi-envelope{% if reset_request.lida %}-open{% else %}-fill{% endif %}"></i>
-                  </span>
-                </a>
-                {% if not reset_request.lida %}
-                <form class="notification-reset-read-form" action="{{ reset_request.url }}" method="post">
-                  {% csrf_token %}
-                  <button type="submit" class="notification-delete-button notification-mark-read-button"
-                    aria-label="Marcar solicitação de {{ reset_request.nome }} como lida" title="Marcar como lida">
-                    <i class="bi bi-check2" aria-hidden="true"></i>
-                  </button>
-                </form>
-                {% endif %}
-              </li>
-            {% endfor %}
-        </ul>
-        <p class="notification-more" id="notificationMore" {% if notification_display_total_count <= notification_display_visible_count %}hidden{% endif %}>
-          Exibindo <span id="notificationVisibleCount">{{ notification_display_visible_count }}</span> de
-          <span id="notificationTotalCount">{{ notification_display_total_count }}</span> notificações.
-        </p>
-        <p class="notification-empty" id="notificationEmpty" {% if notifications or password_reset_notifications %}hidden{% endif %}>
-          Você não tem notificações no momento.
-        </p>
-      </section>
-      <div class="notification-toasts" id="notificationToasts" aria-live="polite" aria-atomic="false"></div>
+      {% include "LayoutsBases/partials/notificacoes.html" %}
     </div>
 
     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
