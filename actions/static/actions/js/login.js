@@ -3,6 +3,10 @@ const form = document.querySelector('form');
 const contrato = form.querySelector('input[name="contrato"]');
 const senha = form.querySelector('input[name="senha"]');
 const campos = [contrato, senha];
+const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+const forgotPasswordCpf = document.getElementById('forgotPasswordCpf');
+const forgotPasswordError = document.getElementById('erro-solicitacao-cpf');
+const forgotPasswordLink = document.getElementById('forgotPasswordLink');
 
 function mensagemDe(campo) {
   return document.getElementById('erro-' + campo.name);
@@ -50,4 +54,21 @@ contrato.addEventListener('input', function () {
     .replace(/^(\d{3})(\d)/, '$1.$2')
     .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
     .replace(/\.(\d{3})(\d)/, '.$1-$2');
+  if (contrato.value.replace(/\D/g, '').length === 11) {
+    forgotPasswordError.hidden = true;
+  }
+});
+
+forgotPasswordLink.addEventListener('click', function (event) {
+  event.preventDefault();
+  const cpf = contrato.value.replace(/\D/g, '');
+  if (cpf.length !== 11) {
+    forgotPasswordError.hidden = false;
+    contrato.classList.add('invalido');
+    contrato.setAttribute('aria-invalid', 'true');
+    contrato.focus();
+    return;
+  }
+  forgotPasswordCpf.value = cpf;
+  forgotPasswordForm.submit();
 });

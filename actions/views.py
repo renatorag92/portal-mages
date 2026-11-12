@@ -12,7 +12,7 @@ from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
 from django.db import IntegrityError, transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Exists, OuterRef, Q
 from django.db.models.deletion import ProtectedError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -24,13 +24,15 @@ from django.views.decorators.http import require_POST
 from collections import Counter
 from datetime import date, timedelta
 
+from .context_processors import notifications as carregar_notificacoes
 from .forms import (
     ConsultoriaForm, FuncionarioForm, LoginCPFForm, MinhaContaForm,
     PrefeituraForm, gerar_senha_provisoria, preparar_senha,
 )
 from .models import (
     Acao, AcaoCatalogo, Consultoria, Eixo, Etapa, Funcionario,
-    NotificacaoLida, Prefeitura, Status,
+    NotificacaoLida, Prefeitura, SolicitacaoRedefinicaoSenha,
+    SolicitacaoRedefinicaoSenhaLida, Status,
 )
 
 logger = logging.getLogger(__name__)
@@ -440,7 +442,15 @@ def gerenciar_funcionario_view(request, funcionario_id=None):
     else:
         form = FuncionarioForm(instance=funcionario)
 
-    funcionario_lista = Funcionario.objects.select_related('prefeitura', 'consultoria').order_by('nome')
+    solicitacoes_pendentes = SolicitacaoRedefinicaoSenha.objects.filter(
+        funcionario_id=OuterRef('pk'),
+        pendente=True,
+    )
+    funcionario_lista = (
+        Funcionario.objects.select_related('prefeitura', 'consultoria')
+        .annotate(senha_solicitada=Exists(solicitacoes_pendentes))
+        .order_by('nome')
+    )
     return render(request, 'actions/gerenciar-funcionario.html', {
         'form': form,
         'funcionario_lista': funcionario_lista,
@@ -584,16 +594,30 @@ def excluir_status_view(request, status_id):
 @require_POST
 def gerar_senha_funcionario_view(request, funcionario_id):
     funcionario = get_object_or_404(Funcionario, pk=funcionario_id)
+    solicitacao = SolicitacaoRedefinicaoSenha.objects.filter(
+        funcionario=funcionario,
+        pendente=True,
+    ).first()
 
     if not funcionario.tem_acesso:
         messages.error(request, 'Este funcionário não tem acesso ao sistema.',
                        extra_tags='funcionario-senha-erro')
+        return redirect('gerenciar_funcionario')
+    if not funcionario.primeiro_acesso and solicitacao is None:
+        messages.error(
+            request,
+            'Não há solicitação de troca de senha pendente para este funcionário.',
+            extra_tags='funcionario-senha-erro',
+        )
         return redirect('gerenciar_funcionario')
 
     senha = gerar_senha_provisoria()
     funcionario.set_password(senha)
     funcionario.primeiro_acesso = True
     funcionario.save()
+    if solicitacao is not None:
+        solicitacao.pendente = False
+        solicitacao.save(update_fields=['pendente'])
 
     messages.warning(
         request,
@@ -602,6 +626,26 @@ def gerar_senha_funcionario_view(request, funcionario_id):
         extra_tags='funcionario-senha',
     )
     return redirect('gerenciar_funcionario')
+
+
+@require_POST
+def solicitar_redefinicao_senha_view(request):
+    cpf = re.sub(r'\D', '', request.POST.get('cpf', ''))
+    if len(cpf) == 11:
+        funcionario = Funcionario.objects.filter(
+            username=cpf,
+            tem_acesso=True,
+            is_active=True,
+        ).first()
+        if funcionario is not None:
+            SolicitacaoRedefinicaoSenha.objects.get_or_create(
+                funcionario=funcionario,
+                pendente=True,
+            )
+
+    request.session['solicitacao_senha_enviada'] = True
+    return redirect('login')
+
 
 # =========================================================
 # LOGIN, PRIMEIRO ACESSO E PREFEITURA ATIVA
@@ -634,6 +678,10 @@ class CustomLoginView(LoginView):
         # pop() lê e apaga, então o erro aparece uma vez só
         context['erro_login'] = self.request.session.pop('login_erro', False)
         context['contrato_digitado'] = self.request.session.pop('login_contrato', '')
+        context['solicitacao_senha_enviada'] = self.request.session.pop(
+            'solicitacao_senha_enviada',
+            False,
+        )
         return context
 
     def get_success_url(self):
@@ -712,6 +760,62 @@ def marcar_notificacao_lida_view(request, tipo, item_id):
         return redirect('kanban')
 
     return redirect('kanban')
+
+
+@login_required
+@require_POST
+def marcar_solicitacao_senha_lida_view(request, solicitacao_id):
+    if not request.user.e_consultor:
+        return JsonResponse({'success': False}, status=403)
+    solicitacao = get_object_or_404(
+        SolicitacaoRedefinicaoSenha,
+        pk=solicitacao_id,
+        pendente=True,
+    )
+    SolicitacaoRedefinicaoSenhaLida.objects.get_or_create(
+        usuario=request.user,
+        solicitacao=solicitacao,
+    )
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'success': True})
+    return redirect('gerenciar_funcionario')
+
+
+@login_required
+def atualizar_notificacoes_view(request):
+    contexto = carregar_notificacoes(request)
+    notificacoes = []
+    for item in contexto['notifications']:
+        notificacoes.append({
+            'id': f"{item['alvo_tipo']}-{item['alvo_id']}",
+            'alvo_tipo': item['alvo_tipo'],
+            'titulo': item['titulo'],
+            'mensagem': item['mensagem'],
+            'tipo': item['tipo'],
+            'lida': item['lida'],
+            'data': item['data'].isoformat(),
+            'criado_em': item['criado_em'].isoformat(),
+            'url': item['url'],
+            'remover_url': item['remover_url'],
+        })
+    for item in contexto['password_reset_notifications']:
+        notificacoes.append({
+            'id': item['id'],
+            'alvo_tipo': item['alvo_tipo'],
+            'titulo': item['titulo'],
+            'mensagem': item['mensagem'],
+            'tipo': item['tipo'],
+            'lida': item['lida'],
+            'data': item['data'].isoformat(),
+            'criado_em': item['solicitada_em'].isoformat(),
+            'url': item['url'],
+            'destino_url': item['destino_url'],
+        })
+    return JsonResponse({
+        'notifications': notificacoes,
+        'unread_count': contexto['notification_display_unread_count'],
+        'total_count': contexto['notification_display_total_count'],
+    })
 
 
 @login_required
