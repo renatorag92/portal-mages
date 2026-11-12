@@ -128,3 +128,13 @@ Acesse http://127.0.0.1:8000 e entre com:
 |---|---|---|
 | Consultor | 12345678901 | senha123 |
 | Secretário |98765432102 | senha123 |
+
+
+### Solicitação de troca de senha
+
+Na tela de login, o funcionário pode selecionar **Esqueci minha senha** e informar o CPF
+já preenchido. Os consultores recebem uma notificação com o nome do solicitante. Na tela
+de funcionários, o consultor gera a senha provisória; no próximo acesso, o funcionário
+deve definir uma nova senha. O consultor também pode marcar a solicitação como lida sem
+gerar a senha imediatamente. As notificações são atualizadas automaticamente a cada
+10 segundos enquanto a página está aberta.

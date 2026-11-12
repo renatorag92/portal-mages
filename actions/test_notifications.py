@@ -111,6 +111,30 @@ class NotificationCenterTests(TestCase):
 
         self.assertContains(response, f'{horario_brasilia:%H:%M}')
 
+    def test_refresh_endpoint_returns_action_and_stage_notifications(self):
+        acao = self.criar_acao('Ação próxima', self.hoje + timedelta(days=5))
+        etapa = Etapa.objects.create(
+            nome='Etapa urgente',
+            data_inicio=self.hoje,
+            data_fim=self.hoje + timedelta(days=2),
+            acao=acao,
+            responsavel=self.user,
+        )
+
+        response = self.client.get(reverse('atualizar_notificacoes'))
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload['unread_count'], 2)
+        self.assertEqual(
+            {item['alvo_tipo'] for item in payload['notifications']},
+            {'acao', 'etapa'},
+        )
+        self.assertEqual(
+            {item['titulo'] for item in payload['notifications']},
+            {f'Ação: {acao.nome}', f'Etapa: {etapa.nome}'},
+        )
+
     def test_notifications_show_unread_first_and_newest_first(self):
         agora = timezone.now()
         mais_antiga = self.criar_acao('Mais antiga', self.hoje + timedelta(days=3))

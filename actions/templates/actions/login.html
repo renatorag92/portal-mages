@@ -42,6 +42,7 @@
                    value="{{ contrato_digitado }}"
                    {% if erro_login %}class="invalido" aria-invalid="true"{% endif %}>
             <p class="erro-campo" id="erro-contrato" hidden></p>
+            <p class="erro-campo" id="erro-solicitacao-cpf" hidden>Digite seu CPF para solicitar a troca da senha.</p>
           </div>
 
           <div class="campo">
@@ -50,11 +51,18 @@
                    autocomplete="current-password" required
                    {% if erro_login %}class="invalido" aria-invalid="true"{% endif %}>
             <p class="erro-campo" id="erro-senha" {% if not erro_login %}hidden{% endif %}>CPF ou senha inválidos.</p>
-            <a class="esqueci" href="#">Esqueci minha senha</a>
           </div>
         </div>
         <button type="submit">Entrar</button>
       </form>
+      <form action="{% url 'solicitar_redefinicao_senha' %}" method="post" id="forgotPasswordForm" hidden>
+        {% csrf_token %}
+        <input type="hidden" name="cpf" id="forgotPasswordCpf">
+      </form>
+      <a class="esqueci" href="#" id="forgotPasswordLink">Esqueci minha senha</a>
+      {% if solicitacao_senha_enviada %}
+      <p role="status">Se o CPF informado estiver cadastrado com acesso, os consultores serão notificados.</p>
+      {% endif %}
     </div>
   </main>
   <script src="{% static 'actions/js/login.js' %}"></script>

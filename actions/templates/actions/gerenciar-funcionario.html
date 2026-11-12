@@ -118,6 +118,14 @@
             <td>
             {% if f.tem_acesso and f.primeiro_acesso %}
               <span class="status-limit-count">Provisória</span>
+            {% elif f.tem_acesso and f.senha_solicitada %}
+              <span class="status-limit-count">Solicitada</span>
+            {% elif f.tem_acesso %}
+              Trocada
+            {% else %}
+              -
+            {% endif %}
+            {% if f.tem_acesso and f.primeiro_acesso or f.tem_acesso and f.senha_solicitada %}
               <form method="post" action="{% url 'gerar_senha_funcionario' f.id %}" style="display:inline">
                 {% csrf_token %}
                   <button type="submit" class="status-edit-button"
@@ -128,10 +136,6 @@
                     </svg>
                   </button>
               </form>
-            {% elif f.tem_acesso %}
-              Trocada
-            {% else %}
-              -
             {% endif %}
           </td>
             <td>

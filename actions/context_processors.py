@@ -3,15 +3,57 @@ from datetime import timedelta
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Acao, Etapa, NotificacaoLida
+from .models import (
+    Acao, Etapa, NotificacaoLida, SolicitacaoRedefinicaoSenha,
+    SolicitacaoRedefinicaoSenhaLida,
+)
 
 
 def notifications(request):
+    solicitacoes_senha = []
+    if request.user.is_authenticated and request.user.e_consultor:
+        solicitacoes_senha = list(
+            SolicitacaoRedefinicaoSenha.objects.filter(pendente=True)
+            .select_related('funcionario')
+        )
+    solicitacoes_senha_lidas = set(
+        SolicitacaoRedefinicaoSenhaLida.objects.filter(
+            usuario=request.user,
+            solicitacao__in=solicitacoes_senha,
+        ).values_list('solicitacao_id', flat=True)
+    ) if solicitacoes_senha else set()
+    notificacoes_senha = [
+        {
+            'id': f'solicitacao_senha-{solicitacao.pk}',
+            'titulo': 'Solicitação de troca de senha',
+            'mensagem': f'{solicitacao.funcionario.nome} deseja alterar a senha.',
+            'nome': solicitacao.funcionario.nome,
+            'tipo': 'warning',
+            'alvo_tipo': 'solicitacao_senha',
+            'alvo_id': solicitacao.pk,
+            'lida': solicitacao.pk in solicitacoes_senha_lidas,
+            'url': reverse(
+                'marcar_solicitacao_senha_lida',
+                args=[solicitacao.pk],
+            ),
+            'destino_url': reverse('gerenciar_funcionario'),
+            'solicitada_em': solicitacao.solicitada_em,
+            'data': solicitacao.solicitada_em,
+        }
+        for solicitacao in solicitacoes_senha
+    ]
+
     if not request.user.is_authenticated:
         return {
             'notifications': [],
             'notification_count': 0,
             'notification_total_count': 0,
+            'password_reset_notifications': [],
+            'password_reset_notification_count': 0,
+            'password_reset_unread_count': 0,
+            'notification_display_total_count': 0,
+            'notification_display_visible_count': 0,
+            'notification_display_unread_count': 0,
         }
 
     prefeituras = list(request.user.prefeituras_permitidas()[:2])
@@ -27,6 +69,16 @@ def notifications(request):
             'notifications': [],
             'notification_count': 0,
             'notification_total_count': 0,
+            'password_reset_notifications': notificacoes_senha,
+            'password_reset_notification_count': len(notificacoes_senha),
+            'password_reset_unread_count': sum(
+                not item['lida'] for item in notificacoes_senha
+            ),
+            'notification_display_total_count': len(notificacoes_senha),
+            'notification_display_visible_count': len(notificacoes_senha),
+            'notification_display_unread_count': sum(
+                not item['lida'] for item in notificacoes_senha
+            ),
         }
 
     hoje = timezone.localdate()
@@ -146,4 +198,15 @@ def notifications(request):
         'notifications': notificacoes,
         'notification_count': sum(not notification['lida'] for notification in avisos),
         'notification_total_count': len(avisos),
+        'password_reset_notifications': notificacoes_senha,
+        'password_reset_notification_count': len(notificacoes_senha),
+        'password_reset_unread_count': sum(
+            not item['lida'] for item in notificacoes_senha
+        ),
+        'notification_display_total_count': len(avisos) + len(notificacoes_senha),
+        'notification_display_visible_count': len(notificacoes) + len(notificacoes_senha),
+        'notification_display_unread_count': (
+            sum(not notification['lida'] for notification in avisos)
+            + sum(not item['lida'] for item in notificacoes_senha)
+        ),
     }

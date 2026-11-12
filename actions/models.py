@@ -371,3 +371,39 @@ class NotificacaoLida(models.Model):
                 name='notificacao_lida_usuario_etapa_unica',
             ),
         ]
+
+
+class SolicitacaoRedefinicaoSenha(models.Model):
+    funcionario = models.ForeignKey(
+        Funcionario, on_delete=models.CASCADE, related_name='solicitacoes_redefinicao_senha',
+    )
+    solicitada_em = models.DateTimeField(auto_now_add=True)
+    pendente = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-solicitada_em']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['funcionario'],
+                condition=Q(pendente=True),
+                name='solicitacao_senha_pendente_unica',
+            ),
+        ]
+
+
+class SolicitacaoRedefinicaoSenhaLida(models.Model):
+    usuario = models.ForeignKey(
+        Funcionario, on_delete=models.CASCADE, related_name='leituras_solicitacao_senha',
+    )
+    solicitacao = models.ForeignKey(
+        SolicitacaoRedefinicaoSenha, on_delete=models.CASCADE, related_name='leituras',
+    )
+    lida_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['usuario', 'solicitacao'],
+                name='solicitacao_senha_lida_usuario_unica',
+            ),
+        ]
