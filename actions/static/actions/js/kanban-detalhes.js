@@ -36,6 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
     excluirAcao: overlay.dataset.urlExcluirAcao,
     excluirEtapa: overlay.dataset.urlExcluirEtapa
   };
+  const somenteLeituraDashboard = overlay.dataset.somenteLeitura === "true";
 
   // Tempo da animação de fechar (igual ao do CSS). Sem animação para quem prefere menos movimento.
   const DURACAO_SAIDA = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 150;
@@ -141,6 +142,10 @@ document.addEventListener("DOMContentLoaded", function () {
   // Tem alguma ação, etapa ou etapa nova sendo editada?
   function emEdicao() {
     return !!estado && (estado.editandoAcao || estado.editandoEtapa !== null || estado.novaEtapa);
+  }
+
+  function somenteLeitura() {
+    return !!estado && (somenteLeituraDashboard || estado.acao.somente_leitura);
   }
 
 
@@ -253,12 +258,16 @@ document.addEventListener("DOMContentLoaded", function () {
           '<textarea class="det-input" id="detf-observacoes" name="observacoes" rows="4">' + esc(a.observacoes) + "</textarea>", true);
     }
 
-    const botaoEditar = (!a.somente_leitura && !editando)
+    const botaoEditar = (!somenteLeitura() && !editando)
       ? botaoSecundario("editar-acao", null, "Editar ação", bloqueado)
       : "";
 
-    const aviso = a.somente_leitura
-      ? '<p class="det-aviso"><i class="bi bi-slash-circle"></i> Ação cancelada: não pode mais ser editada.</p>'
+    const aviso = somenteLeitura()
+      ? '<p class="det-aviso"><i class="bi bi-slash-circle"></i> ' +
+        (somenteLeituraDashboard
+          ? "Visualização somente leitura no dashboard."
+          : "Ação cancelada: não pode mais ser editada.") +
+        "</p>"
       : "";
 
     elAcao.innerHTML =
@@ -302,14 +311,14 @@ document.addEventListener("DOMContentLoaded", function () {
   // e aparecem quando o <article> ganha a classe "aberta".
   function etapaHtml(e) {
     const algumaEdicao = emEdicao();
-    const somenteLeitura = estado.acao.somente_leitura;
+    const somenteLeituraDaAcao = somenteLeitura();
 
     if (estado.editandoEtapa === e.id) return formEtapaHtml(e, e.id);
 
     const aberta = estado.expandidas.has(e.id);
 
     // Em ação cancelada não há editar/excluir, mas a seta continua disponível
-    const acoes = somenteLeitura ? "" :
+    const acoes = somenteLeituraDaAcao ? "" :
       botaoSecundario("editar-etapa", e.id, "Editar etapa", algumaEdicao) +
       botaoExcluirEtapa(e.id, algumaEdicao);
 
@@ -317,7 +326,7 @@ document.addEventListener("DOMContentLoaded", function () {
       '<div class="det-etapa-topo">' +
       '<label class="det-check">' +
       '<input type="checkbox" class="det-check-input" data-id="' + e.id + '"' +
-      (e.concluida ? " checked" : "") + (somenteLeitura || algumaEdicao ? " disabled" : "") + ">" +
+      (e.concluida ? " checked" : "") + (somenteLeituraDaAcao || algumaEdicao ? " disabled" : "") + ">" +
       '<span class="det-etapa-nome">' + esc(e.nome) + "</span>" +
       "</label>" +
       '<div class="det-etapa-botoes">' + acoes + botaoToggleEtapa(e.id, aberta) + "</div>" +
@@ -361,7 +370,7 @@ document.addEventListener("DOMContentLoaded", function () {
       ? '<div class="det-etapas-lista">' + lista.map(etapaHtml).join("") + formNova + "</div>"
       : '<p class="det-vazio">Nenhuma etapa cadastrada para esta ação.</p>';
 
-    const botaoAdicionar = estado.acao.somente_leitura
+    const botaoAdicionar = somenteLeitura()
       ? ""
       : botaoSecundario("adicionar-etapa", null, "Adicionar etapa", emEdicao(), "plus-lg");
 
@@ -384,7 +393,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function renderRodape() {
-    elRodape.hidden = estado.acao.somente_leitura;
+    elRodape.hidden = somenteLeitura();
     elStatusAtual.textContent = estado.acao.status.nome;
     elStatusAtualDot.style.setProperty("--c", estado.acao.status.cor || "#3e4a89");
     elRodape.querySelectorAll(".det-status-btn").forEach(function (botao) {
@@ -571,6 +580,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Botão de seta no card
   document.addEventListener("click", function (event) {
+    const acaoDashboard = event.target.closest("[data-acao-detalhes]");
+    if (acaoDashboard) {
+      abrir(acaoDashboard.dataset.acaoDetalhes);
+      return;
+    }
+
     const botao = event.target.closest(".status-menu-toggle");
     if (!botao) return;
     const card = botao.closest(".task-card");
@@ -578,6 +593,12 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   $("detFechar").addEventListener("click", tentarFechar);
+
+  document.addEventListener("keydown", function (event) {
+    if ((event.key !== "Enter" && event.key !== " ") || !event.target.closest("[data-acao-detalhes]")) return;
+    event.preventDefault();
+    abrir(event.target.closest("[data-acao-detalhes]").dataset.acaoDetalhes);
+  });
 
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && overlay.classList.contains("open") && !overlay.classList.contains("closing")) {
@@ -804,6 +825,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const botao = event.target.closest("[data-do]");
     if (!botao || !estado) return;
+    if (somenteLeitura() && botao.dataset.do !== "alternar-etapa") return;
 
     const id = botao.dataset.id ? Number(botao.dataset.id) : null;
 
@@ -832,6 +854,7 @@ document.addEventListener("DOMContentLoaded", function () {
   overlay.addEventListener("change", async function (event) {
     const caixa = event.target.closest(".det-check-input");
     if (!caixa || !estado) return;
+    if (somenteLeitura()) return;
 
     const id = Number(caixa.dataset.id);
     caixa.disabled = true;

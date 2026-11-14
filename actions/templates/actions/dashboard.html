@@ -19,6 +19,7 @@ active
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'actions/css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'actions/css/kanban-detalhes.css' %}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 {% endblock %}
 
@@ -128,7 +129,8 @@ active
         </thead>
         <tbody>
           {% for a in proximas_acoes %}
-          <tr>
+          <tr class="dash-acao-detalhes" data-acao-detalhes="{{ a.id }}" tabindex="0" role="button"
+              aria-label="Ver detalhes da ação {{ a.nome_acao }}">
             <td>{{ a.eixo }}</td>
             <td>{{ a.nome_acao }}</td>
             <td>{{ a.responsavel }}</td>
@@ -148,9 +150,11 @@ active
   </section>
 
 </div>
+{% include "actions/_kanban_detalhes_modal.html" with detalhes_somente_leitura=True %}
 {% endblock %}
 
 
 {% block extra_js %}
 <script src="{% static 'actions/js/dashboard.js' %}"></script>
+<script src="{% static 'actions/js/kanban-detalhes.js' %}"></script>
 {% endblock %}

@@ -314,6 +314,15 @@
   background: #faf9f6;
 }
 
+.dash-tabela tbody tr.dash-acao-detalhes {
+  cursor: pointer;
+}
+
+.dash-tabela tbody tr.dash-acao-detalhes:focus-visible {
+  outline: 2px solid var(--dash-azul);
+  outline-offset: -2px;
+}
+
 .dash-data {
   display: inline-block;
   padding: 4px 10px;

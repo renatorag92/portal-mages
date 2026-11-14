@@ -1545,6 +1545,7 @@ def dashboard_view(request):
     for a in proximas_acoes:
         dias = (a.data_fim - hoje).days
         proximas.append({
+            'id': a.id,
             'eixo': a.eixo.nome if a.eixo_id else '—',
             'nome_acao': a.nome,
             'responsavel': a.responsavel.nome,
