@@ -42,7 +42,7 @@
               {% with notification_type='senha' %}
                 {% include "LayoutsBases/partials/notificacao_item.html" %}
               {% endwith %}
-            {% elif notification.alvo_tipo == 'acao' or notification.alvo_tipo == 'etapa' %}
+            {% elif notification.alvo_tipo == 'acao' %}
               {% if notification.data_iso %}
                 {% with notification_type=notification.alvo_tipo %}
                   {% include "LayoutsBases/partials/notificacao_item.html" %}

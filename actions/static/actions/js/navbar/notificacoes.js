@@ -227,7 +227,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const tipo = item.dataset.tipo;
             const corresponde = filtro === "todas"
                 || (filtro === "nao-lidas" && item.dataset.lida === "false")
-                || (filtro === "acoes" && ["acao", "etapa"].includes(tipo))
+                || (filtro === "acoes" && tipo === "acao")
                 || (filtro === "sistema" && tipo === "senha");
             item.hidden = !corresponde;
         });
@@ -284,7 +284,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    /* Calcula e colore o pill conforme a data-limite da ação ou etapa. */
+    /* Calcula e colore o pill conforme a data-limite da ação. */
     function atualizarBadgePrazo(item) {
         const badge = item.querySelector("[data-deadline-badge]");
         if (!badge || !item.dataset.prazo) {

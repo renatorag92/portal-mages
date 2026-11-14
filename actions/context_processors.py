@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .models import (
-    Acao, Etapa, NotificacaoLida, SolicitacaoRedefinicaoSenha,
+    Acao, NotificacaoLida, SolicitacaoRedefinicaoSenha,
     SolicitacaoRedefinicaoSenhaLida,
 )
 
@@ -137,39 +137,6 @@ def notifications(request):
             'lida': acao.pk in acoes_lidas,
         })
 
-    etapas = Etapa.objects.filter(
-        acao__prefeitura=prefeitura,
-        concluida=False,
-        data_fim__lte=limite,
-    ).exclude(
-        acao__status__nome__in=status_encerrados,
-    ).select_related('acao')
-    etapas_lidas = set(
-        NotificacaoLida.objects.filter(
-            usuario=request.user,
-            etapa__acao__prefeitura=prefeitura,
-            removida=False,
-        ).values_list('etapa_id', flat=True)
-    )
-    for etapa in etapas:
-        dias = (etapa.data_fim - hoje).days
-        mensagem, tipo = _mensagem_prazo(dias)
-        avisos.append({
-            'titulo': f'Etapa: {etapa.nome}',
-            'mensagem': f'{mensagem} Ação: {etapa.acao.nome}.',
-            'data': etapa.data_fim,
-            'criado_em': etapa.criado_em,
-            'tipo': tipo,
-            'urgencia': {
-                'overdue': 'atrasado',
-                'danger': 'breve',
-                'warning': 'info',
-            }[tipo],
-            'alvo_tipo': 'etapa',
-            'alvo_id': etapa.pk,
-            'lida': etapa.pk in etapas_lidas,
-        })
-
     acoes_removidas = set(
         NotificacaoLida.objects.filter(
             usuario=request.user,
@@ -177,19 +144,9 @@ def notifications(request):
             removida=True,
         ).values_list('acao_id', flat=True)
     )
-    etapas_removidas = set(
-        NotificacaoLida.objects.filter(
-            usuario=request.user,
-            etapa__acao__prefeitura=prefeitura,
-            removida=True,
-        ).values_list('etapa_id', flat=True)
-    )
     avisos = [
         aviso for aviso in avisos
-        if not (
-            aviso['alvo_tipo'] == 'acao' and aviso['alvo_id'] in acoes_removidas
-            or aviso['alvo_tipo'] == 'etapa' and aviso['alvo_id'] in etapas_removidas
-        )
+        if aviso['alvo_id'] not in acoes_removidas
     ]
     avisos.sort(key=lambda aviso: aviso['criado_em'], reverse=True)
     notificacoes = [

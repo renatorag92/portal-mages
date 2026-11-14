@@ -133,7 +133,7 @@ class NotificationCenterTests(TestCase):
 
         self.assertContains(response, f'{horario_brasilia:%H:%M}')
 
-    def test_deadline_colors_distinguish_tomorrow_from_overdue_for_actions_and_stages(self):
+    def test_deadline_colors_distinguish_tomorrow_from_overdue_for_actions_only(self):
         acao_amanha = self.criar_acao('Ação vence amanhã', self.hoje + timedelta(days=1))
         acao_atrasada = self.criar_acao('Ação atrasada', self.hoje - timedelta(days=2))
         acao_etapas = self.criar_acao('Ação das etapas', self.hoje + timedelta(days=5))
@@ -165,12 +165,12 @@ class NotificationCenterTests(TestCase):
         )
         self.assertEqual(notificacoes[f'Ação: {acao_atrasada.nome}']['tipo'], 'overdue')
         self.assertIn('Prazo atrasado', notificacoes[f'Ação: {acao_atrasada.nome}']['mensagem'])
-        self.assertEqual(notificacoes[f'Etapa: {etapa_amanha.nome}']['tipo'], 'danger')
-        self.assertEqual(notificacoes[f'Etapa: {etapa_atrasada.nome}']['tipo'], 'overdue')
+        self.assertNotIn(f'Etapa: {etapa_amanha.nome}', notificacoes)
+        self.assertNotIn(f'Etapa: {etapa_atrasada.nome}', notificacoes)
 
-    def test_refresh_endpoint_returns_action_and_stage_notifications(self):
+    def test_refresh_endpoint_returns_action_notifications_only(self):
         acao = self.criar_acao('Ação próxima', self.hoje + timedelta(days=5))
-        etapa = Etapa.objects.create(
+        Etapa.objects.create(
             nome='Etapa urgente',
             data_inicio=self.hoje,
             data_fim=self.hoje + timedelta(days=2),
@@ -182,14 +182,11 @@ class NotificationCenterTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
-        self.assertEqual(payload['unread_count'], 2)
-        self.assertEqual(
-            {item['alvo_tipo'] for item in payload['notifications']},
-            {'acao', 'etapa'},
-        )
+        self.assertEqual(payload['unread_count'], 1)
+        self.assertEqual({item['alvo_tipo'] for item in payload['notifications']}, {'acao'})
         self.assertEqual(
             {item['titulo'] for item in payload['notifications']},
-            {f'Ação: {acao.nome}', f'Etapa: {etapa.nome}'},
+            {f'Ação: {acao.nome}'},
         )
 
     def test_notifications_are_ordered_by_arrival_with_newest_first(self):
@@ -296,55 +293,12 @@ class NotificationCenterTests(TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertFalse(NotificacaoLida.objects.filter(acao=acao).exists())
 
-    def test_removing_stage_notification_hides_it(self):
+    def test_due_stages_do_not_create_notifications(self):
         acao = self.criar_acao('Ação em andamento', self.hoje + timedelta(days=14))
-        etapa = Etapa.objects.create(
-            nome='Etapa removida',
-            data_inicio=self.hoje,
-            data_fim=self.hoje + timedelta(days=2),
-            acao=acao,
-            responsavel=self.user,
-        )
-        url = reverse('remover_notificacao', args=['etapa', etapa.pk])
-
-        response = self.client.post(
-            url,
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {'success': True})
-        self.assertTrue(
-            NotificacaoLida.objects.get(usuario=self.user, etapa=etapa).removida
-        )
-        page = self.client.get(reverse('kanban'))
-        self.assertEqual(page.context['notification_total_count'], 0)
-
-    def test_clicking_stage_notification_marks_it_read_and_redirects(self):
-        acao = self.criar_acao('Ação em andamento', self.hoje + timedelta(days=14))
-        etapa = Etapa.objects.create(
+        Etapa.objects.create(
             nome='Etapa urgente',
-            data_inicio=self.hoje,
-            data_fim=self.hoje + timedelta(days=2),
-            acao=acao,
-            responsavel=self.user,
-        )
-
-        response = self.client.post(
-            reverse('marcar_notificacao_lida', args=['etapa', etapa.pk])
-        )
-
-        self.assertRedirects(response, reverse('kanban'))
-        self.assertTrue(
-            NotificacaoLida.objects.filter(usuario=self.user, etapa=etapa).exists()
-        )
-
-    def test_lists_due_incomplete_stages_and_omits_completed_stages(self):
-        acao = self.criar_acao('Ação em andamento', self.hoje + timedelta(days=14))
-        etapa = Etapa.objects.create(
-            nome='Etapa urgente',
-            data_inicio=self.hoje - timedelta(days=1),
-            data_fim=self.hoje + timedelta(days=2),
+            data_inicio=self.hoje - timedelta(days=3),
+            data_fim=self.hoje - timedelta(days=1),
             acao=acao,
             responsavel=self.user,
         )
@@ -360,8 +314,9 @@ class NotificationCenterTests(TestCase):
         response = self.client.get(reverse('kanban'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['notification_count'], 1)
-        self.assertEqual(response.context['notifications'][0]['titulo'], f'Etapa: {etapa.nome}')
+        self.assertEqual(response.context['notification_count'], 0)
+        self.assertEqual(response.context['notifications'], [])
+        self.assertEqual(response.context['notification_feed'], [])
 
 
 class EtapaPeriodoAcaoTests(TestCase):
