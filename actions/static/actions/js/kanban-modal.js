@@ -449,7 +449,16 @@ document.addEventListener("DOMContentLoaded", function () {
         return mostrarErro((json && json.error) || "Não foi possível salvar a ação. Verifique os dados e tente novamente.");
       }
 
-      // Atualiza a página automaticamente após criar a ação
+      // Avisa que a ação foi criada; a página só recarrega depois do OK
+      if (typeof window.confirmarSite === "function") {
+        await window.confirmarSite({
+          titulo: "Ação criada com sucesso!",
+          texto: "A ação \"" + valor("acaoTexto") + "\"" + (json.codigo ? " (código " + json.codigo + ")" : "") + " foi cadastrada.",
+          sim: "OK",
+          nao: null,
+          perigo: false
+        });
+      }
       window.location.reload();
 
     } catch (erro) {

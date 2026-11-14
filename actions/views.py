@@ -1227,7 +1227,11 @@ def criar_acao_kanban_view(request):
         logger.exception('Erro inesperado ao criar ação na prefeitura %s', prefeitura.pk)
         return _erro('Erro interno ao criar a ação.', 500)
 
-    return JsonResponse({'success': True, 'message': 'Ação criada com sucesso!'}, status=201)
+    return JsonResponse({
+        'success': True,
+        'message': 'Ação criada com sucesso!',
+        'codigo': nova_acao.codigo,
+    }, status=201)
 
 
 @login_required
@@ -1430,6 +1434,9 @@ SLUGS_EM_EXECUCAO = ('em-execucao', 'execucao')
 DIAS_PROXIMO = 15   # etapas que vencem nesse prazo entram na tabela e no gráfico de prazos
 DIAS_URGENTE = 7    # etapa que vence em até esse prazo aparece em amarelo na tabela
 
+# Status que não contam como "ativos" no dashboard (o cancelado é tratado à parte)
+SLUGS_NAO_ATIVOS = ('concluido', 'suspenso', 'em-suspenso')
+
 
 def _moeda(valor):
     texto = f'{valor:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
@@ -1482,10 +1489,10 @@ def dashboard_view(request):
 
     acoes = list(
         Acao.objects.filter(prefeitura=prefeitura)
-        .select_related('status', 'eixo')
+        .select_related('status', 'eixo', 'responsavel')
     )
-    # Ativas: não estão canceladas nem concluídas
-    ativas = [a for a in acoes if not _acao_cancelada(a) and slugify(a.status.nome) != 'concluido']
+    # Ativas: não estão canceladas, concluídas nem suspensas
+    ativas = [a for a in acoes if not _acao_cancelada(a) and slugify(a.status.nome) not in SLUGS_NAO_ATIVOS]
 
     # Cards do topo
     total_ativas = len(ativas)
@@ -1527,33 +1534,25 @@ def dashboard_view(request):
         ('No prazo', '#2e8b57', no_prazo, str(no_prazo)),
     ]
 
-    # Tabela: etapas não concluídas de ações ativas que vencem no período
-    etapas = (
-        Etapa.objects.filter(
-            acao__in=ativas,
-            concluida=False,
-            data_fim__lte=limite_proximas,
-        )
-        .select_related('acao__eixo', 'acao__status', 'responsavel')
-        .order_by('data_fim', 'id')[:10]
+    # Tabela: ações ativas que vencem de hoje até o limite.
+    # As já vencidas não aparecem aqui, mas continuam contando como atrasadas nos cards e no gráfico.
+    proximas_acoes = sorted(
+        (a for a in ativas if hoje <= a.data_fim <= limite_proximas),
+        key=lambda a: (a.data_fim, a.pk),
     )
 
     proximas = []
-    for e in etapas:
-        acao = e.acao
-        dias = (e.data_fim - hoje).days
-        nivel = 'vermelho' if dias < 0 else ('amarelo' if dias <= DIAS_URGENTE else 'verde')
-        prioridade = e.prioridade or acao.prioridade
+    for a in proximas_acoes:
+        dias = (a.data_fim - hoje).days
         proximas.append({
-            'eixo': acao.eixo.nome if acao.eixo_id else '—',
-            'nome_acao': acao.nome,
-            'etapa': e.nome,
-            'responsavel': e.responsavel.nome,
-            'data': e.data_fim,
-            'nivel': nivel,
-            'status': acao.status.nome,
-            'prioridade': prioridade or '—',
-            'prioridade_classe': slugify(prioridade),
+            'eixo': a.eixo.nome if a.eixo_id else '—',
+            'nome_acao': a.nome,
+            'responsavel': a.responsavel.nome,
+            'data': a.data_fim,
+            'nivel': 'amarelo' if dias <= DIAS_URGENTE else 'verde',
+            'status': a.status.nome,
+            'prioridade': a.prioridade or '—',
+            'prioridade_classe': slugify(a.prioridade),
         })
 
     context = {
@@ -1567,7 +1566,7 @@ def dashboard_view(request):
             {'chave': 'por_eixo', 'dados': _distribuicao(fatias_custo)},
             {'chave': 'por_prazo', 'dados': _distribuicao(fatias_prazo)},
         ],
-        'proximas_etapas': proximas,
+        'proximas_acoes': proximas,
         'dias_proximo': DIAS_PROXIMO,
     }
     return render(request, 'actions/dashboard.html', context)

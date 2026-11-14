@@ -106,21 +106,20 @@ active
 
   </section>
 
-  <!-- PRÓXIMAS ETAPAS -->
-    <section class="dash-card dash-card-etapas min-w-0">
+    <!-- AÇÕES PRÓXIMAS DO VENCIMENTO -->
+  <section class="dash-card dash-card-etapas">
     <div class="dash-card-topo">
-      <h2>Etapas próximas do vencimento</h2>
-      <span class="dash-subtitulo">Até {{ dias_proximo }} dias ou já vencidas</span>
+      <h2>Ações próximas do vencimento</h2>
+      <span class="dash-subtitulo">Até {{ dias_proximo }} dias</span>
     </div>
 
-    {% if proximas_etapas %}
+    {% if proximas_acoes %}
     <div class="dash-tabela-caixa">
-      <table class="dash-tabela min-w-[760px]">
+      <table class="dash-tabela">
         <thead>
           <tr>
             <th>Eixo</th>
             <th>Nome da ação</th>
-            <th>Etapa</th>
             <th>Responsável</th>
             <th>Data prevista</th>
             <th>Status</th>
@@ -128,16 +127,15 @@ active
           </tr>
         </thead>
         <tbody>
-          {% for e in proximas_etapas %}
+          {% for a in proximas_acoes %}
           <tr>
-            <td>{{ e.eixo }}</td>
-            <td>{{ e.nome_acao }}</td>
-            <td>{{ e.etapa }}</td>
-            <td>{{ e.responsavel }}</td>
-            <td><span class="dash-data dash-data-{{ e.nivel }}">{{ e.data|date:"d/m/Y" }}</span></td>
-            <td>{{ e.status }}</td>
+            <td>{{ a.eixo }}</td>
+            <td>{{ a.nome_acao }}</td>
+            <td>{{ a.responsavel }}</td>
+            <td><span class="dash-data dash-data-{{ a.nivel }}">{{ a.data|date:"d/m/Y" }}</span></td>
+            <td>{{ a.status }}</td>
             <td>
-              <span class="dash-prio dash-prio-{{ e.prioridade_classe }}">{{ e.prioridade }}</span>
+              <span class="dash-prio dash-prio-{{ a.prioridade_classe }}">{{ a.prioridade }}</span>
             </td>
           </tr>
           {% endfor %}
@@ -145,7 +143,7 @@ active
       </table>
     </div>
     {% else %}
-      <p class="dash-vazio">Nenhuma etapa vencida ou perto do vencimento.</p>
+      <p class="dash-vazio">Nenhuma ação vence nos próximos {{ dias_proximo }} dias.</p>
     {% endif %}
   </section>
 
