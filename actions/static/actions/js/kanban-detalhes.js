@@ -235,7 +235,7 @@ document.addEventListener("DOMContentLoaded", function () {
         item("Eixo", esc(a.eixo || "Não informado")) +
         item("Nome", esc(a.nome || "Não informado"), true) +
         item("Prioridade", chipPrioridade(a.prioridade)) +
-        item("Custo", esc(fmtCusto(a.arrecadacao_estimada))) +
+        item("Arrecadação estimada (R$)", esc(fmtCusto(a.arrecadacao_estimada))) +
         item("Data de início", esc(fmtData(a.data_inicio))) +
         item("Data de fim", esc(fmtData(a.data_fim))) +
         item("Responsável", esc(a.responsavel || "Não informado"), true) +
