@@ -333,7 +333,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
 
-  /* ---------- Máscaras: CPF e custo ---------- */
+  /* ---------- Máscaras: CPF e arrecadacao_estimada ---------- */
 
   etapasList.addEventListener("input", function (event) {
     if (event.target.name !== "etapaResponsavelCpf[]") return;
@@ -346,7 +346,7 @@ document.addEventListener("DOMContentLoaded", function () {
       .replace(/\.(\d{3})(\d)/, ".$1-$2");
   });
 
-  $("custo").addEventListener("input", function (event) {
+  $("arrecadacao_estimada").addEventListener("input", function (event) {
     const digitos = event.target.value.replace(/\D/g, "");
     if (!digitos) {
       event.target.value = "";
@@ -367,7 +367,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const valor = function (id) { return $(id).value.trim(); };
 
     if (!valor("eixo") || !valor("acaoTexto") || !valor("prioridade") ||
-        !valor("custo") || !valor("dataInicio") || !valor("dataFim")) {
+        !valor("arrecadacao_estimada") || !valor("dataInicio") || !valor("dataFim")) {
       return mostrarErro("Preencha todos os campos obrigatórios marcados com asterisco (*).");
     }
 
@@ -420,7 +420,7 @@ document.addEventListener("DOMContentLoaded", function () {
       acao: hidAcao.value,
       novaAcao: hidNova.value,
       prioridade: valor("prioridade"),
-      custo: valor("custo").replace(/\./g, "").replace(",", "."),
+      arrecadacao_estimada: valor("arrecadacao_estimada").replace(/\./g, "").replace(",", "."),
       dataInicio: valor("dataInicio"),
       dataFim: valor("dataFim"),
       observacoes: valor("observacoes"),

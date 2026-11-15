@@ -69,7 +69,7 @@ active
 
     {% for status in kanban %}
     <!-- COLUNA DINÂMICA: {{ status.nome }} -->
-    <div class="column min-w-0 col-{{ status.nome|slugify }}">
+    <div class="column min-w-0 col-{{ status.chave|lower }}">
 
       <!-- Define a cor dinâmica via variável CSS (resolve o aviso de sintaxe do VS Code) -->
       <div class="column-header" style="--col-color: {{ status.cor|default:'#3e4a89' }}; background-color: var(--col-color);">
@@ -147,11 +147,6 @@ active
     <form id="kanbanStatusEditForm" method="post">
       {% csrf_token %}
       <div class="status-edit-fields">
-        <div class="status-edit-field">
-          <label for="kanbanStatusName">Nome do status</label>
-          <input type="text" id="kanbanStatusName" name="nome" maxlength="45" required>
-          <small class="status-edit-error" data-error-for="nome" hidden></small>
-        </div>
         <div class="status-edit-field">
           <label for="kanbanStatusColor">Cor da coluna</label>
           <input type="text" id="kanbanStatusColor" name="cor" maxlength="45" required
@@ -247,8 +242,8 @@ active
               {% endif %}
 
               <div class="form-group">
-                <label for="custo" class="required">Custo total (R$)</label>
-                <input type="text" id="custo" name="custo" inputmode="numeric" placeholder="0,00">
+                <label for="arrecadacao_estimada" class="required">Arrecadação estimada (R$)</label>
+                <input type="text" id="arrecadacao_estimada" name="arrecadacao_estimada" inputmode="numeric" placeholder="0,00">
               </div>
 
               <div class="form-group">

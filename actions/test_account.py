@@ -7,7 +7,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from PIL import Image
 
-from .models import Prefeitura
+from actions.models import Prefeitura
 
 
 class MinhaContaTests(TestCase):

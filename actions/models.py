@@ -166,7 +166,22 @@ class Eixo(models.Model):
             raise ValidationError({'pai': 'Este eixo tem subeixos, então não pode ser subeixo.'})
 
 class Status(models.Model):
+
+    class Chave(models.TextChoices):
+        PLANEJADO = 'PLANEJADO', 'Planejado'
+        PREPARACAO = 'PREPARACAO', 'Preparação'
+        EM_EXECUCAO = 'EM_EXECUCAO', 'Em execução'
+        EM_VALIDACAO = 'EM_VALIDACAO', 'Em validação'
+        CONCLUIDO = 'CONCLUIDO', 'Concluído'
+        SUSPENSO = 'SUSPENSO', 'Suspenso'
+        CANCELADO = 'CANCELADO', 'Cancelado'
+
+    # Grupos de regra, definidos junto da chave
+    ATIVAS = (Chave.PLANEJADO, Chave.PREPARACAO, Chave.EM_EXECUCAO, Chave.EM_VALIDACAO)
+    ENCERRADAS = (Chave.CONCLUIDO, Chave.CANCELADO)
+
     id = models.AutoField(primary_key=True)
+    chave = models.CharField(max_length=20, unique=True, editable=False)
     nome = models.CharField(max_length=45)
     cor = models.CharField(
         max_length=7,
@@ -228,7 +243,7 @@ class Acao(models.Model):
         max_length=20, choices=Status_Prioridade.choices, default='')
     data_inicio = models.DateField()
     data_fim = models.DateField()
-    custo = models.DecimalField(max_digits=14, decimal_places=2)
+    arrecadacao_estimada = models.DecimalField(max_digits=14, decimal_places=2)
     observacoes = models.TextField(blank=True, null=True)
 
     status = models.ForeignKey(Status, on_delete=models.PROTECT, related_name='acoes')
@@ -387,23 +402,5 @@ class SolicitacaoRedefinicaoSenha(models.Model):
                 fields=['funcionario'],
                 condition=Q(pendente=True),
                 name='solicitacao_senha_pendente_unica',
-            ),
-        ]
-
-
-class SolicitacaoRedefinicaoSenhaLida(models.Model):
-    usuario = models.ForeignKey(
-        Funcionario, on_delete=models.CASCADE, related_name='leituras_solicitacao_senha',
-    )
-    solicitacao = models.ForeignKey(
-        SolicitacaoRedefinicaoSenha, on_delete=models.CASCADE, related_name='leituras',
-    )
-    lida_em = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['usuario', 'solicitacao'],
-                name='solicitacao_senha_lida_usuario_unica',
             ),
         ]

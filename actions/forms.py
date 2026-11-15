@@ -188,6 +188,10 @@ class FuncionarioForm(forms.ModelForm):
 
         return dados
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['username'].disabled = True
 
 class MinhaContaForm(forms.ModelForm):
     foto = forms.ImageField(

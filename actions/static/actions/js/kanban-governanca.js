@@ -129,12 +129,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     botaoEdicaoStatusAtivo = botao;
     formEdicaoStatus.action = botao.dataset.editUrl;
-    campoNomeStatus.value = botao.dataset.statusName || "";
     campoCorStatus.value = botao.dataset.statusColor || "";
     limparErrosEdicaoStatus();
     modalEdicaoStatus.hidden = false;
     document.body.style.overflow = "hidden";
-    campoNomeStatus.focus();
+    campoCorStatus.focus();
   });
 
   if (modalEdicaoStatus) {

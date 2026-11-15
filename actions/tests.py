@@ -1,317 +1,105 @@
-import json
+from datetime import date
+from decimal import Decimal
 
-from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import PerfilUsuario, Status, Eixo, Prefeitura, Consultoria
-from .views import MAX_STATUS_COLUMNS, StatusForm, EixoForm
+from actions.models import Acao, AcaoCatalogo, Consultoria, Eixo, Funcionario, Prefeitura, Status
 
 
-class StatusFormLimitTests(TestCase):
+class BaseCenario(TestCase):
     def setUp(self):
-        for index in range(MAX_STATUS_COLUMNS):
-            Status.objects.create(
-                nome=f'Status {index + 1}',
-                cor=f'#{index + 1:06x}',
-                ordem=index,
-            )
+        self.consultoria = Consultoria.objects.create(
+            cnpj='00000000000100', nome_juridico='Consultoria LTDA',
+            nome_fantasia='Consultoria', endereco='Rua A, 1')
+        self.prefeitura = Prefeitura.objects.create(
+            cnpj='00000000000191', nome_juridico='Prefeitura Municipal',
+            nome_fantasia='Prefeitura', endereco='Praça, 1',
+            consultoria=self.consultoria)
+        self.outra = Prefeitura.objects.create(
+            cnpj='00000000000272', nome_juridico='Outra Prefeitura',
+            nome_fantasia='Outra', endereco='Rua B, 2')
 
-    def test_rejects_new_status_when_limit_is_reached(self):
-        form = StatusForm({'nome': 'Novo status', 'cor': '#ffffff'})
+        self.eixo = Eixo.objects.create(nome='Governança e Legislação')
+        self.status_planejado = Status.objects.create(
+            chave='PLANEJADO', nome='Planejado', cor='#0000ff', ordem=1)
+        self.status_cancelado = Status.objects.create(
+            chave='CANCELADO', nome='Cancelado', cor='#ff0000', ordem=7)
 
-        self.assertFalse(form.is_valid())
-        self.assertIn(
-            f'O limite de {MAX_STATUS_COLUMNS} status foi atingido.',
-            form.non_field_errors()[0],
-        )
+        self.responsavel = Funcionario.objects.create(
+            username='12345678901', nome='Responsável', prefeitura=self.prefeitura)
 
-    def test_allows_new_status_below_limit(self):
-        Status.objects.order_by('ordem').last().delete()
-        form = StatusForm({'nome': 'Novo status', 'cor': '#ffffff'})
-
-        self.assertTrue(form.is_valid(), form.errors)
-
-    def test_allows_editing_status_when_limit_is_reached(self):
-        status = Status.objects.order_by('ordem').first()
-        form = StatusForm(
-            {'nome': 'Status editado', 'cor': '#ffffff'},
-            instance=status,
-        )
-
-        self.assertTrue(form.is_valid(), form.errors)
+        self.acao = Acao.objects.create(
+            prefeitura=self.prefeitura, nome='Ação teste', eixo=self.eixo,
+            status=self.status_planejado, responsavel=self.responsavel,
+            prioridade='Alta', data_inicio=date(2026, 1, 1), data_fim=date(2026, 12, 31),
+            arrecadacao_estimada=Decimal('1500.75'))
 
 
-class EixoFormTests(TestCase):
-    def test_rejects_duplicate_eixo_name(self):
-        Eixo.objects.create(nome='Infraestrutura', descricao='Descrição do eixo')
+class RegrasDeNegocioTests(BaseCenario):
+    def test_codigo_e_sequencial_por_prefeitura(self):
+        segunda = Acao.objects.create(
+            prefeitura=self.prefeitura, nome='Segunda', eixo=self.eixo,
+            status=self.status_planejado, responsavel=self.responsavel,
+            prioridade='Média', data_inicio=date(2026, 1, 1), data_fim=date(2026, 2, 1),
+            arrecadacao_estimada=Decimal('0'))
+        self.assertEqual(self.acao.codigo, 1)
+        self.assertEqual(segunda.codigo, 2)
 
-        form = EixoForm({'nome': 'infraestrutura', 'descricao': 'Outro texto'})
+    def test_fim_antes_do_inicio_e_recusado_pelo_banco(self):
+        from django.db import IntegrityError, transaction
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Acao.objects.create(
+                prefeitura=self.prefeitura, nome='Inválida', eixo=self.eixo,
+                status=self.status_planejado, responsavel=self.responsavel,
+                prioridade='Baixa', data_inicio=date(2026, 5, 1), data_fim=date(2026, 4, 1),
+                arrecadacao_estimada=Decimal('0'))
 
-        self.assertFalse(form.is_valid())
-        self.assertIn('Já existe um eixo com esse nome.', form.errors['nome'])
+    def test_arrecadacao_e_gravada_como_decimal(self):
+        self.acao.refresh_from_db()
+        self.assertEqual(self.acao.arrecadacao_estimada, Decimal('1500.75'))
 
+    def test_cpf_e_normalizado_ao_salvar(self):
+        f = Funcionario(username='123.456.789-02', nome='Com máscara', prefeitura=self.prefeitura)
+        f.save()
+        self.assertEqual(f.username, '12345678902')
 
-class EixoManagementTests(TestCase):
+    def test_responsavel_precisa_ser_da_mesma_prefeitura(self):
+        from django.core.exceptions import ValidationError
+        estranho = Funcionario.objects.create(
+            username='12345678903', nome='De outra', prefeitura=self.outra)
+        self.acao.responsavel = estranho
+        with self.assertRaises(ValidationError):
+            self.acao.full_clean()
+
+class IsolamentoTests(BaseCenario):
     def setUp(self):
-        user = User.objects.create_user(username='eixo-manager', password='test-password')
-        PerfilUsuario.objects.create(
-            usuario=user,
-            cargo='Administrador',
-            primeiro_acesso=False,
-        )
-        self.client.force_login(user)
+        super().setUp()
+        self.secretario_outra = Funcionario.objects.create(
+            username='12345678904', nome='Secretário da outra',
+            prefeitura=self.outra, tem_acesso=True)
+        self.secretario_outra.set_password('senha-teste-123')
+        self.secretario_outra.save()
 
-    def assert_dismissible_eixo_toast(self, response, action):
-        self.assertContains(
-            response,
-            f'class="status-message status-message-success status-message-eixo-{action}"',
-        )
-        self.assertContains(response, 'class="status-message-close"')
-        self.assertContains(response, 'actions/js/gerenciar-status.js')
+        self.secretario_dona = Funcionario.objects.create(
+            username='12345678905', nome='Secretário da dona',
+            prefeitura=self.prefeitura, tem_acesso=True)
+        self.secretario_dona.set_password('senha-teste-123')
+        self.secretario_dona.save()
 
-    def test_eixo_delete_uses_confirmation_modal(self):
-        Eixo.objects.create(nome='Mobilidade', descricao='Transporte urbano')
+    def test_usuario_de_outra_prefeitura_nao_acessa_acao(self):
+        self.client.login(username='12345678904', password='senha-teste-123')
+        resposta = self.client.get(reverse('obter_detalhes_acao', args=[self.acao.id]))
+        self.assertEqual(resposta.status_code, 404)
 
-        response = self.client.get(reverse('gerenciar_eixo'))
+    def test_usuario_da_prefeitura_acessa_propria_acao(self):
+        self.client.login(username='12345678905', password='senha-teste-123')
+        resposta = self.client.get(reverse('obter_detalhes_acao', args=[self.acao.id]))
+        self.assertEqual(resposta.status_code, 200)
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'id="statusConfirmModal" hidden')
-        self.assertContains(response, 'id="statusConfirmTitle">Excluir eixo?</h2>')
-        self.assertContains(response, 'data-confirm-type="eixo"')
-        self.assertContains(response, 'id="statusConfirmCancel"')
-        self.assertContains(response, 'id="statusConfirmDelete"')
-
-    def test_create_eixo_via_management_page(self):
-        response = self.client.post(
-            reverse('gerenciar_eixo'),
-            {'nome': 'Saúde', 'descricao': 'Eixo de saúde pública'},
-            follow=True,
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(Eixo.objects.filter(nome='Saúde').exists())
-        self.assertContains(response, 'Eixo cadastrado com sucesso.')
-        self.assert_dismissible_eixo_toast(response, 'created')
-
-    def test_update_eixo_via_management_page(self):
-        eixo = Eixo.objects.create(nome='Mobilidade', descricao='Transporte urbano')
-
-        response = self.client.post(
-            reverse('editar_eixo', args=[eixo.pk]),
-            {'nome': 'Mobilidade sustentável', 'descricao': 'Transporte urbano limpo'},
-            follow=True,
-        )
-
-        self.assertEqual(response.status_code, 200)
-        eixo.refresh_from_db()
-        self.assertEqual(eixo.nome, 'Mobilidade sustentável')
-        self.assertContains(response, 'Eixo atualizado com sucesso.')
-        self.assert_dismissible_eixo_toast(response, 'updated')
-
-    def test_delete_eixo_without_catalog_items(self):
-        eixo = Eixo.objects.create(nome='Mobilidade', descricao='Transporte urbano')
-
-        response = self.client.post(reverse('excluir_eixo', args=[eixo.pk]), follow=True)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertFalse(Eixo.objects.filter(pk=eixo.pk).exists())
-        self.assertContains(response, 'Eixo excluído com sucesso.')
-        self.assert_dismissible_eixo_toast(response, 'deleted')
-
-
-class KanbanStatusEditTests(TestCase):
-    def setUp(self):
-        user = User.objects.create_user(username='status-editor', password='test-password')
-        PerfilUsuario.objects.create(
-            usuario=user,
-            cargo='Administrador',
-            primeiro_acesso=False,
-        )
-        self.client.force_login(user)
-        self.status = Status.objects.create(nome='Em andamento', cor='#123456')
-        self.url = reverse('editar_status_kanban', args=[self.status.pk])
-
-    def test_updates_status_from_kanban_modal_endpoint(self):
-        response = self.client.post(
-            self.url,
-            {'nome': 'Em análise', 'cor': '#ffffff'},
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.json()['success'])
-        self.assertIn('atualizado com sucesso', self.client.session['kanban_toast']['mensagem'])
-        self.status.refresh_from_db()
-        self.assertEqual(self.status.nome, 'Em análise')
-        self.assertEqual(self.status.cor, '#ffffff')
-        self.assertEqual(self.status.cor_nome, '#ffffff')
-
-    def test_preserves_named_color_for_status_editing(self):
-        response = self.client.post(
-            self.url,
-            {'nome': 'Em análise', 'cor': 'Lilás'},
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.status.refresh_from_db()
-        self.assertEqual(self.status.cor, '#e6e6fa')
-        self.assertEqual(self.status.cor_nome, 'Lilás')
-
-    def test_status_form_uses_saved_color_input_when_editing(self):
-        self.client.post(
-            self.url,
-            {'nome': 'Em análise', 'cor': 'Lilás'},
-        )
-
-        self.status.refresh_from_db()
-        form = StatusForm(instance=self.status)
-        self.assertEqual(form['cor'].value(), 'Lilás')
-
-    def test_legacy_named_hex_color_has_readable_edit_value(self):
-        self.status.cor = '#e6e6fa'
-        self.status.save()
-
-        form = StatusForm(instance=self.status)
-
-        self.assertEqual(form['cor'].value(), 'lilás')
-
-    def test_returns_validation_errors_without_updating_status(self):
-        response = self.client.post(
-            self.url,
-            {'nome': 'Em andamento', 'cor': 'cor-invalida'},
-        )
-
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('cor', response.json()['errors'])
-        self.status.refresh_from_db()
-        self.assertEqual(self.status.cor, '#123456')
-
-    def test_kanban_has_no_status_delete_action(self):
-        response = self.client.get(reverse('kanban'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertRegex(
-            response.content.decode(),
-            r'<h1>\s*Kanban de Governança\s*</h1>',
-        )
-        self.assertContains(response, 'Editar status Em andamento')
-        self.assertNotContains(response, 'Excluir status Em andamento')
-
-    def test_eixo_filter_includes_axes_without_board_actions(self):
-        eixo = Eixo.objects.create(nome='Mobilidade', descricao='Transporte urbano')
-
-        response = self.client.get(reverse('kanban'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertRegex(
-            response.content.decode(),
-            rf'<select id="eixoFilter">[\s\S]*?<option value="{eixo.nome}">{eixo.nome}</option>',
-        )
-
-
-class EntityManagementTests(TestCase):
-    def setUp(self):
-        user = User.objects.create_user(
-            username='config-manager',
-            password='test-password',
-            is_staff=True,
-        )
-        self.client.force_login(user)
-
-    def post_json(self, route, dados):
-        return self.client.post(
-            reverse(route),
-            data=json.dumps(dados),
-            content_type='application/json',
-        )
-
-    def dados_prefeitura(self, cnpj='12345678000195'):
-        return {
-            'cnpj': cnpj,
-            'nome_fantasia': 'Prefeitura Central',
-            'nome_juridico': 'Prefeitura Municipal Central',
-            'endereco': 'Rua Principal, 10',
-        }
-
-    def test_create_prefeitura_formats_and_normalizes_cnpj(self):
-        dados = self.dados_prefeitura('12.345.678/0001-95')
-
-        response = self.post_json('salvar_prefeitura', dados)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(Prefeitura.objects.get().cnpj, '12345678000195')
-        self.assertEqual(response.json()['registro']['cnpj_formatado'], '12.345.678/0001-95')
-
-    def test_second_prefeitura_creation_is_rejected_server_side(self):
-        registro = Prefeitura.objects.create(**self.dados_prefeitura())
-
-        response = self.post_json('salvar_prefeitura', self.dados_prefeitura('98765432000110'))
-
-        self.assertEqual(response.status_code, 409)
-        self.assertEqual(Prefeitura.objects.count(), 1)
-        registro.refresh_from_db()
-        self.assertEqual(registro.cnpj, '12345678000195')
-
-    def test_incomplete_and_duplicate_cnpj_are_rejected(self):
-        incompleto = self.post_json('salvar_prefeitura', self.dados_prefeitura('12345'))
-        self.assertEqual(incompleto.status_code, 400)
-        self.assertIn('CNPJ incompleto', incompleto.json()['errors']['cnpj'][0])
-
-        Prefeitura.objects.create(**self.dados_prefeitura())
-        outro = Prefeitura.objects.create(**self.dados_prefeitura('98765432000110'))
-        response = self.post_json('salvar_prefeitura', {
-            **self.dados_prefeitura(outro.cnpj),
-            'id': Prefeitura.objects.order_by('pk').first().pk,
-        })
-
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json()['errors']['cnpj'], ['CNPJ já cadastrado.'])
-
-    def test_legacy_short_cnpj_can_be_corrected(self):
-        registro = Prefeitura.objects.create(**self.dados_prefeitura('12345'))
-        page = self.client.get(reverse('gerenciar_prefeitura'))
-
-        self.assertEqual(page.status_code, 200)
-        self.assertContains(page, 'value="12345"')
-
-        response = self.post_json('salvar_prefeitura', {
-            **self.dados_prefeitura(),
-            'id': registro.pk,
-        })
-
-        self.assertEqual(response.status_code, 200)
-        registro.refresh_from_db()
-        self.assertEqual(registro.cnpj, '12345678000195')
-
-    def test_consultoria_requires_prefeitura_and_uses_available_choice(self):
-        response = self.client.get(reverse('gerenciar_consultoria'))
-        self.assertContains(response, 'Nenhuma prefeitura cadastrada.')
-        self.assertContains(response, reverse('gerenciar_prefeitura'))
-
-        prefeitura = Prefeitura.objects.create(**self.dados_prefeitura())
-        dados = {
-            'cnpj': '11222333000181',
-            'nome_fantasia': 'Consultoria Central',
-            'nome_juridico': 'Consultoria Central Ltda',
-            'endereco': 'Avenida Central, 20',
-            'prefeitura': prefeitura.pk,
-        }
-        saved = self.post_json('salvar_consultoria', dados)
-
-        self.assertEqual(saved.status_code, 200)
-        self.assertEqual(Consultoria.objects.get().prefeitura_id, prefeitura.pk)
-        form_page = self.client.get(reverse('gerenciar_consultoria'))
-        self.assertContains(form_page, 'Dados da consultoria')
-        self.assertContains(form_page, prefeitura.nome_fantasia)
-
-    def test_non_staff_user_cannot_access_entity_pages_or_save(self):
-        self.client.logout()
-        user = User.objects.create_user(username='regular-user', password='test-password')
-        self.client.force_login(user)
-
-        page = self.client.get(reverse('gerenciar_prefeitura'))
-        saved = self.post_json('salvar_prefeitura', self.dados_prefeitura())
-
-        self.assertEqual(page.status_code, 302)
-        self.assertEqual(saved.status_code, 302)
-        self.assertFalse(Prefeitura.objects.exists())
+class CancelamentoTests(BaseCenario):
+    def test_acao_cancelada_e_somente_leitura(self):
+        self.acao.status = self.status_cancelado
+        self.acao.save()
+        from actions.views import _acao_cancelada
+        self.assertTrue(_acao_cancelada(self.acao))

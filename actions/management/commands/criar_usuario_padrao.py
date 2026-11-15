@@ -2,6 +2,7 @@
 from django.core.management.base import BaseCommand
 
 from actions.models import Consultoria, Funcionario, Prefeitura
+from mages import settings
 
 SENHA_TESTE = 'senha123'
 
@@ -10,6 +11,8 @@ class Command(BaseCommand):
     help = 'Cria consultoria, prefeitura, um consultor e um secretário para testes.'
 
     def handle(self, *args, **options):
+        if not settings.DEBUG:
+            raise Exception('Este comando é só para ambiente de desenvolvimento.')
         consultoria, _ = Consultoria.objects.get_or_create(
             cnpj='00000000000100',
             defaults={
@@ -58,5 +61,5 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(
             f'Pronto. Logins: CPF 12345678901 (consultor) e CPF 12345678902 (secretário). '
-            f'Senha: {SENHA_TESTE}'
+            f'Senha: definida no comando (somente para testes).'
         ))

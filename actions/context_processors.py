@@ -3,9 +3,8 @@ from datetime import timedelta
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import (
-    Acao, NotificacaoLida, SolicitacaoRedefinicaoSenha,
-    SolicitacaoRedefinicaoSenhaLida,
+from actions.models import (
+    Acao, Etapa, NotificacaoLida, SolicitacaoRedefinicaoSenha, Status
 )
 
 
@@ -20,46 +19,6 @@ def _mensagem_prazo(dias):
 
 
 def notifications(request):
-    solicitacoes_senha = []
-    if request.user.is_authenticated and request.user.e_consultor:
-        solicitacoes_senha = list(
-            SolicitacaoRedefinicaoSenha.objects.filter(pendente=True)
-            .select_related('funcionario')
-        )
-    solicitacoes_senha_lidas = set(
-        SolicitacaoRedefinicaoSenhaLida.objects.filter(
-            usuario=request.user,
-            solicitacao__in=solicitacoes_senha,
-        ).values_list('solicitacao_id', flat=True)
-    ) if solicitacoes_senha else set()
-    notificacoes_senha = [
-        {
-            'id': f'solicitacao_senha-{solicitacao.pk}',
-            'titulo': 'Solicitação de troca de senha',
-            'mensagem': f'{solicitacao.funcionario.nome} deseja alterar a senha.',
-            'nome': solicitacao.funcionario.nome,
-            'tipo': 'warning',
-            'urgencia': 'seguranca',
-            'alvo_tipo': 'solicitacao_senha',
-            'alvo_id': solicitacao.pk,
-            'lida': solicitacao.pk in solicitacoes_senha_lidas,
-            'url': reverse(
-                'marcar_solicitacao_senha_lida',
-                args=[solicitacao.pk],
-            ),
-            'url_nao_lida': reverse(
-                'marcar_notificacao_nao_lida',
-                args=['solicitacao_senha', solicitacao.pk],
-            ),
-            'destino_url': reverse('gerenciar_funcionario'),
-            'solicitada_em': solicitacao.solicitada_em,
-            'data': solicitacao.solicitada_em,
-            'data_iso': solicitacao.solicitada_em,
-            'prazo': None,
-        }
-        for solicitacao in solicitacoes_senha
-    ]
-
     if not request.user.is_authenticated:
         return {
             'notifications': [],
@@ -73,6 +32,37 @@ def notifications(request):
             'notification_display_visible_count': 0,
             'notification_display_unread_count': 0,
         }
+
+    solicitacoes_senha = []
+    if request.user.e_consultor:
+        solicitacoes_senha = list(
+            SolicitacaoRedefinicaoSenha.objects.filter(pendente=True)
+            .select_related('funcionario')
+        )
+
+    notificacoes_senha = [
+    {
+        'id': f'solicitacao_senha-{s.pk}',
+        'titulo': 'Solicitação de troca de senha',
+        'mensagem': f'{s.funcionario.nome} deseja alterar a senha.',
+        'nome': s.funcionario.nome,
+        'tipo': 'warning',
+        'urgencia': 'seguranca',
+        'alvo_tipo': 'solicitacao_senha',
+        'alvo_id': s.pk,
+        'lida': False,                       # pedido pendente: sempre aparece como não lido
+        'url': reverse('gerenciar_funcionario'),
+        'url_nao_lida': reverse('gerenciar_funcionario'),
+        'destino_url': reverse('gerenciar_funcionario'),
+        'remover_url': None,                 # não se remove pedido de senha pelo sino
+        'solicitada_em': s.solicitada_em,
+        'criado_em': s.solicitada_em,
+        'data': None,
+        'data_iso': None,                    # era datetime: a view precisa de texto ou None
+        'prazo': None,
+    }
+    for s in solicitacoes_senha
+]
 
     prefeituras = list(request.user.prefeituras_permitidas()[:2])
     prefeitura_id = request.session.get('prefeitura_id')
@@ -90,26 +80,22 @@ def notifications(request):
             'password_reset_notifications': notificacoes_senha,
             'password_reset_notification_count': len(notificacoes_senha),
             'password_reset_unread_count': sum(
-                not item['lida'] for item in notificacoes_senha
+                len(notificacoes_senha)
             ),
             'notification_display_total_count': len(notificacoes_senha),
             'notification_display_visible_count': len(notificacoes_senha),
-            'notification_display_unread_count': sum(
-                not item['lida'] for item in notificacoes_senha
-            ),
             'notification_feed': notificacoes_senha,
         }
 
     hoje = timezone.localdate()
     limite = hoje + timedelta(days=7)
-    status_encerrados = ('Concluído', 'Cancelado')
     avisos = []
 
     acoes = Acao.objects.filter(
         prefeitura=prefeitura,
         data_fim__lte=limite,
     ).exclude(
-        status__nome__in=status_encerrados,
+    status__chave__in=Status.ENCERRADAS,
     ).select_related('status')
     acoes_lidas = set(
         NotificacaoLida.objects.filter(
@@ -184,14 +170,13 @@ def notifications(request):
         'notification_total_count': len(avisos),
         'password_reset_notifications': notificacoes_senha,
         'password_reset_notification_count': len(notificacoes_senha),
-        'password_reset_unread_count': sum(
-            not item['lida'] for item in notificacoes_senha
-        ),
+        'password_reset_unread_count': len(notificacoes_senha),
         'notification_feed': notification_feed,
         'notification_display_total_count': len(avisos) + len(notificacoes_senha),
         'notification_display_visible_count': len(notification_feed),
         'notification_display_unread_count': (
             sum(not notification['lida'] for notification in avisos)
-            + sum(not item['lida'] for item in notificacoes_senha)
+            + len(notificacoes_senha)
         ),
+        'password_reset_unread_count': len(notificacoes_senha),
     }

@@ -79,11 +79,8 @@ class FuncionarioAdmin(SomenteConsultorAdmin):
     ('Dados pessoais', {'fields': ('nome', 'username', 'email', 'telefone', 'endereco')}),
     ('Vínculo', {'fields': ('cargo', 'vinculo')}),
     ('Acesso ao sistema', {'fields': ('tem_acesso',)}),
-)
-
-class FuncionarioAdmin(SomenteConsultorAdmin):
-    # ... restante igual
-
+    )
+    
     def save_model(self, request, obj, form, change):
         senha = preparar_senha(obj)
         super().save_model(request, obj, form, change)
@@ -94,6 +91,9 @@ class FuncionarioAdmin(SomenteConsultorAdmin):
                 'Copie e informe ao usuário; ela não será exibida novamente.',
             )
 
+    def get_readonly_fields(self, request, obj=None):
+        return ('username',) if obj else ()
+
 # ---------------------------------------------------------------------------
 # Tabelas de apoio (configuração)
 # ---------------------------------------------------------------------------
@@ -101,11 +101,16 @@ class FuncionarioAdmin(SomenteConsultorAdmin):
 class EixoAdmin(SomenteConsultorAdmin):
     list_display = ('id', 'nome')
 
-
 @admin.register(Status)
 class StatusAdmin(SomenteConsultorAdmin):
     list_display = ('id', 'nome', 'cor', 'ordem')
+    readonly_fields = ('nome', 'ordem')
 
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 @admin.register(AcaoCatalogo)
 class AcaoCatalogoAdmin(SomenteConsultorAdmin):

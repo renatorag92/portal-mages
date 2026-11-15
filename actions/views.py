@@ -32,7 +32,7 @@ from .forms import (
 from .models import (
     Acao, AcaoCatalogo, Consultoria, Eixo, Etapa, Funcionario,
     NotificacaoLida, Prefeitura, SolicitacaoRedefinicaoSenha,
-    SolicitacaoRedefinicaoSenhaLida, Status,
+    Status,
 )
 
 logger = logging.getLogger(__name__)
@@ -266,13 +266,12 @@ def salvar_consultoria_view(request):
 # =========================================================
 # STATUS E EIXOS (configuração)
 # =========================================================
-
 class StatusForm(forms.ModelForm):
     cor = forms.CharField(max_length=45)
 
     class Meta:
         model = Status
-        fields = ('nome', 'cor')
+        fields = ('cor',)   # nome não entra no formulário
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -282,8 +281,7 @@ class StatusForm(forms.ModelForm):
     def clean_cor(self):
         cor_informada = self.cleaned_data['cor'].strip()
         self.cor_informada = cor_informada
-        cor = cor_informada.lower()
-        cor = PT_EN.get(cor, cor)
+        cor = PT_EN.get(cor_informada.lower(), cor_informada.lower())
         try:
             cor = webcolors.name_to_hex(cor)
         except ValueError:
@@ -291,29 +289,14 @@ class StatusForm(forms.ModelForm):
                 cor = webcolors.normalize_hex(cor)
             except ValueError:
                 raise ValidationError(
-                    'Cor inválida. Use um nome (ex.: amarelo) ou hexadecimal (ex.: #ffff00).'
-                )
+                    'Cor inválida. Use um nome (ex.: amarelo) ou hexadecimal (ex.: #ffff00).')
         return cor
 
     def clean(self):
         cleaned_data = super().clean()
-        if not self.instance.pk and Status.objects.count() >= MAX_STATUS_COLUMNS:
-            self.add_error(
-                None,
-                f'O limite de {MAX_STATUS_COLUMNS} status foi atingido. Exclua um status para cadastrar outro.',
-            )
-        if 'nome' in cleaned_data:
-            cleaned_data['nome'] = cleaned_data['nome'].strip()
-        mensagens = {
-            'nome': 'Já existe um status com esse nome.',
-            'cor': 'Essa cor já está cadastrada em outro status.',
-        }
-        for campo, msg in mensagens.items():
-            valor = cleaned_data.get(campo)
-            if valor and Status.objects.filter(
-                **{f'{campo}__iexact': valor}
-            ).exclude(pk=self.instance.pk).exists():
-                self.add_error(campo, msg)
+        cor = cleaned_data.get('cor')
+        if cor and Status.objects.filter(cor__iexact=cor).exclude(pk=self.instance.pk).exists():
+            self.add_error('cor', 'Essa cor já está cadastrada em outro status.')
         return cleaned_data
 
     def save(self, commit=True):
@@ -321,7 +304,6 @@ class StatusForm(forms.ModelForm):
         status.cor_nome = getattr(self, 'cor_informada', status.cor_nome)
         if commit:
             status.save()
-            self.save_m2m()
         return status
 
 class EixoForm(forms.ModelForm):
@@ -522,29 +504,25 @@ def excluir_catalogo_view(request, modelo_id):
 @user_passes_test(_usuario_configuracoes)
 def gerenciar_status_view(request, status_id=None):
     status = get_object_or_404(Status, pk=status_id) if status_id else None
+    form = None
 
-    if request.method == 'POST':
-        form = StatusForm(request.POST, instance=status)
-        if form.is_valid():
-            form.save()
-            if status:
-                messages.success(request, 'Status atualizado com sucesso.', extra_tags='status-updated')
-            else:
-                messages.success(request, 'Status cadastrado com sucesso.', extra_tags='status-created')
-            return redirect('gerenciar_status')
-    else:
-        form = StatusForm(instance=status)
+    if status:
+        if request.method == 'POST':
+            form = StatusForm(request.POST, instance=status)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Cor do status atualizada com sucesso.',
+                                 extra_tags='status-updated')
+                return redirect('gerenciar_status')
+        else:
+            form = StatusForm(instance=status)
 
     status_lista = Status.objects.annotate(total_acoes=Count('acoes')).order_by('ordem', 'id')
-    status_limite_atingido = status_lista.count() >= MAX_STATUS_COLUMNS
     return render(request, 'actions/gerenciar-status.html', {
         'form': form,
         'status_lista': status_lista,
         'status_edicao': status,
-        'status_limite_atingido': status_limite_atingido,
-        'max_status_columns': MAX_STATUS_COLUMNS,
     })
-
 
 @login_required
 @user_passes_test(_usuario_configuracoes)
@@ -569,25 +547,6 @@ def editar_status_kanban_view(request, status_id):
         'success': True,
         'status': {'id': status.id, 'nome': status.nome, 'cor': status.cor},
     })
-
-
-@login_required
-@user_passes_test(_usuario_configuracoes)
-@require_POST
-def excluir_status_view(request, status_id):
-    status = get_object_or_404(Status, pk=status_id)
-
-    try:
-        status.delete()
-        messages.success(request, 'Status excluído com sucesso.', extra_tags='status-deleted')
-    except ProtectedError:
-        # Ações usam on_delete=PROTECT: status com ações vinculadas não pode ser excluído
-        messages.error(
-            request,
-            'Este status não pode ser excluído porque está vinculado a uma ou mais ações.',
-            extra_tags='status-delete-blocked',
-        )
-    return redirect('gerenciar_status')
 
 @login_required
 @user_passes_test(_usuario_configuracoes)
@@ -761,26 +720,6 @@ def marcar_notificacao_lida_view(request, tipo, item_id):
 
     return redirect('kanban')
 
-
-@login_required
-@require_POST
-def marcar_solicitacao_senha_lida_view(request, solicitacao_id):
-    if not request.user.e_consultor:
-        return JsonResponse({'success': False}, status=403)
-    solicitacao = get_object_or_404(
-        SolicitacaoRedefinicaoSenha,
-        pk=solicitacao_id,
-        pendente=True,
-    )
-    SolicitacaoRedefinicaoSenhaLida.objects.get_or_create(
-        usuario=request.user,
-        solicitacao=solicitacao,
-    )
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        return JsonResponse({'success': True})
-    return redirect('gerenciar_funcionario')
-
-
 @login_required
 @require_POST
 def marcar_notificacao_nao_lida_view(request, tipo, item_id):
@@ -792,10 +731,6 @@ def marcar_notificacao_nao_lida_view(request, tipo, item_id):
             pk=item_id,
             pendente=True,
         )
-        SolicitacaoRedefinicaoSenhaLida.objects.filter(
-            usuario=request.user,
-            solicitacao=solicitacao,
-        ).delete()
     else:
         prefeitura = _prefeitura_ativa(request)
         if prefeitura is None:
@@ -834,10 +769,10 @@ def atualizar_notificacoes_view(request):
             'mensagem': item['mensagem'],
             'tipo': item['tipo'],
             'urgencia': item['urgencia'],
-            'lida': item['lida'],
-            'data': item['data'].isoformat(),
+            'lida': item.get('lida', False),
+            'data': _iso(item['data']),
             'prazo': (
-                item['data'].isoformat()
+                _iso(item['data'])
                 if item['alvo_tipo'] in {'acao', 'etapa'}
                 else None
             ),
@@ -856,7 +791,6 @@ def atualizar_notificacoes_view(request):
         'total_count': contexto['notification_display_total_count'],
     })
 
-
 @login_required
 @require_POST
 def remover_notificacao_view(request, tipo, item_id):
@@ -865,13 +799,12 @@ def remover_notificacao_view(request, tipo, item_id):
         return JsonResponse({'success': False}, status=400)
 
     limite = timezone.localdate() + timedelta(days=7)
-    status_encerrados = ('Concluído', 'Cancelado')
     if tipo == 'acao':
         alvo = get_object_or_404(
             Acao.objects.filter(
                 prefeitura=prefeitura,
                 data_fim__lte=limite,
-            ).exclude(status__nome__in=status_encerrados),
+            ).exclude(status__chave__in=Status.ENCERRADAS),
             pk=item_id,
         )
         notificacao, _ = NotificacaoLida.objects.get_or_create(
@@ -885,7 +818,7 @@ def remover_notificacao_view(request, tipo, item_id):
                 acao__prefeitura=prefeitura,
                 concluida=False,
                 data_fim__lte=limite,
-            ).exclude(acao__status__nome__in=status_encerrados),
+            ).exclude(acao__status__chave__in=Status.ENCERRADAS),
             pk=item_id,
         )
         notificacao, _ = NotificacaoLida.objects.get_or_create(
@@ -985,7 +918,7 @@ def _etapa_da_prefeitura(request, etapa_id):
 
 def _acao_cancelada(acao):
     # Ação cancelada é definitiva: não pode mais ser alterada
-    return slugify(acao.status.nome) == 'cancelado'
+    return acao.status.chave == Status.Chave.CANCELADO
 
 
 def _serializar_acao(acao):
@@ -995,7 +928,7 @@ def _serializar_acao(acao):
         'nome': acao.nome,
         'eixo': acao.eixo.nome,
         'prioridade': acao.prioridade,
-        'custo': acao.custo,
+        'arrecadacao_estimada': acao.arrecadacao_estimada,
         'data_inicio': _iso(acao.data_inicio),
         'data_fim': _iso(acao.data_fim),
         'observacoes': acao.observacoes or '',
@@ -1073,14 +1006,14 @@ def criar_acao_kanban_view(request):
     if prioridade not in Acao.Status_Prioridade.values:
         return _erro('Prioridade inválida.')
 
-    # O pop-up manda o custo com ponto decimal ("2121.22"); o formulário comum manda "2.121,22"
-    custo_raw = str(data.get('custo', '0')).strip()
+    # O pop-up manda a arrecadacao_estimada com ponto decimal ("2121.22"); o formulário comum manda "2.121,22"
+    arrecadacao_estimada_raw = str(data.get('arrecadacao_estimada', '0')).strip()
     if request.content_type != 'application/json':
-        custo_raw = custo_raw.replace('.', '').replace(',', '.')
+        arrecadacao_estimada_raw = arrecadacao_estimada_raw.replace('.', '').replace(',', '.')
     try:
-        custo = Decimal(custo_raw)
+        arrecadacao_estimada = Decimal(arrecadacao_estimada_raw)
     except InvalidOperation:
-        custo = 0.0
+        arrecadacao_estimada = 0.0
 
     data_inicio = _converter_data(data.get('dataInicio') or data.get('data_inicio'))
     data_fim = _converter_data(data.get('dataFim') or data.get('data_fim'))
@@ -1185,7 +1118,7 @@ def criar_acao_kanban_view(request):
                 responsavel=responsavel,
                 status=status_obj,
                 prioridade=prioridade,
-                custo=custo,
+                arrecadacao_estimada=arrecadacao_estimada,
                 data_inicio=data_inicio,
                 data_fim=data_fim,
                 observacoes=observacoes,
@@ -1268,11 +1201,11 @@ def editar_acao_view(request, acao_id):
         return _erro('Prioridade inválida.')
 
     try:
-        custo = Decimal(str(data.get('custo', '')).strip())
+        arrecadacao_estimada = Decimal(str(data.get('arrecadacao_estimada', '')).strip())
     except InvalidOperation:
-        return _erro('Custo inválido.')
-    if not custo.is_finite() or custo < 0:
-        return _erro('Custo inválido.')
+        return _erro('Arrecadação estimada inválida.')
+    if not arrecadacao_estimada.is_finite() or arrecadacao_estimada < 0:
+        return _erro('Arrecadação estimada inválida.')
 
     data_inicio = _converter_data(data.get('data_inicio'))
     data_fim = _converter_data(data.get('data_fim'))
@@ -1286,7 +1219,7 @@ def editar_acao_view(request, acao_id):
         return _erro('O período da ação não pode excluir datas de uma etapa existente.')
 
     acao.prioridade = prioridade
-    acao.custo = custo
+    acao.arrecadacao_estimada = arrecadacao_estimada
     acao.data_inicio = data_inicio
     acao.data_fim = data_fim
     acao.observacoes = (data.get('observacoes') or '').strip() or None
@@ -1430,13 +1363,8 @@ def excluir_acao_view(request, acao_id):
 # =========================================================
 
 PALETA_EIXOS = ['#3e4a89', '#2e8b57', '#b5b94a', '#7b3f9e', '#d98a1f', '#c0392b', '#2aa198', '#8a8f99']
-SLUGS_EM_EXECUCAO = ('em-execucao', 'execucao')
 DIAS_PROXIMO = 15   # etapas que vencem nesse prazo entram na tabela e no gráfico de prazos
 DIAS_URGENTE = 7    # etapa que vence em até esse prazo aparece em amarelo na tabela
-
-# Status que não contam como "ativos" no dashboard (o cancelado é tratado à parte)
-SLUGS_NAO_ATIVOS = ('concluido', 'suspenso', 'em-suspenso')
-
 
 def _moeda(valor):
     texto = f'{valor:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
@@ -1492,13 +1420,14 @@ def dashboard_view(request):
         .select_related('status', 'eixo', 'responsavel')
     )
     # Ativas: não estão canceladas, concluídas nem suspensas
-    ativas = [a for a in acoes if not _acao_cancelada(a) and slugify(a.status.nome) not in SLUGS_NAO_ATIVOS]
-
+    ativas = [a for a in acoes if not _acao_cancelada(a) and a.status.chave in Status.ATIVAS]
+    total_execucao = sum(1 for a in ativas if a.status.chave == Status.Chave.EM_EXECUCAO)
+    
     # Cards do topo
     total_ativas = len(ativas)
-    total_execucao = sum(1 for a in ativas if slugify(a.status.nome) in SLUGS_EM_EXECUCAO)
     total_atrasadas = sum(1 for a in ativas if a.data_fim < hoje)
-    impacto = sum(a.custo for a in ativas)
+    total_execucao = sum(1 for a in ativas if a.status.chave == Status.Chave.EM_EXECUCAO)
+    arrecadacao_estimada_total = sum(a.arrecadacao_estimada for a in ativas)
 
     # Barras: quantas ações (de todas) há em cada status
     contagem_status = Counter(a.status_id for a in acoes)
@@ -1513,17 +1442,17 @@ def dashboard_view(request):
             'pct': round(total / maior * 100) if maior else 0,
         })
 
-    # Rosca por eixo, com quantidade e custo das ações ativas
+    # Rosca por eixo, com quantidade e arrecadação estimada das ações ativas
     por_eixo = {}
     for a in ativas:
         nome = a.eixo.nome if a.eixo_id else 'Sem eixo'
-        qtd, custo = por_eixo.get(nome, (0, Decimal('0')))
-        por_eixo[nome] = (qtd + 1, custo + a.custo)
+        qtd, arrecadacao_estimada = por_eixo.get(nome, (0, Decimal('0')))
+        por_eixo[nome] = (qtd + 1, arrecadacao_estimada + a.arrecadacao_estimada)
 
     eixos = sorted(por_eixo.items(), key=lambda item: item[1][0], reverse=True)
     cores = [PALETA_EIXOS[i % len(PALETA_EIXOS)] for i in range(len(eixos))]
     fatias_qtd = [(nome, cor, qtd, str(qtd)) for (nome, (qtd, _)), cor in zip(eixos, cores)]
-    fatias_custo = [(nome, cor, custo, _moeda(custo)) for (nome, (_, custo)), cor in zip(eixos, cores)]
+    fatias_arrecadacao_estimada = [(nome, cor, arrecadacao_estimada, _moeda(arrecadacao_estimada)) for (nome, (_, arrecadacao_estimada)), cor in zip(eixos, cores)]
 
     # Rosca por prazo, com as ações ativas
     vence_logo = sum(1 for a in ativas if hoje <= a.data_fim <= limite_proximas)
@@ -1560,11 +1489,11 @@ def dashboard_view(request):
         'total_ativas': total_ativas,
         'total_execucao': total_execucao,
         'total_atrasadas': total_atrasadas,
-        'impacto': _moeda(impacto),
+        'arrecadacao_estimada_total': _moeda(arrecadacao_estimada_total),
         'barras': barras,
         'distribuicoes': [
             {'chave': 'visao_geral', 'dados': _distribuicao(fatias_qtd)},
-            {'chave': 'por_eixo', 'dados': _distribuicao(fatias_custo)},
+            {'chave': 'por_eixo', 'dados': _distribuicao(fatias_arrecadacao_estimada)},
             {'chave': 'por_prazo', 'dados': _distribuicao(fatias_prazo)},
         ],
         'proximas_acoes': proximas,

@@ -1,6 +1,6 @@
 {# Card de uma ação no Kanban. Os detalhes abrem no pop-up (kanban-detalhes.js). #}
-<div class="task-card min-w-0 {% if status.nome|slugify == 'cancelado' %}highlight{% endif %}"
-  draggable="{% if status.nome|slugify == 'cancelado' %}false{% else %}true{% endif %}"
+<div class="task-card min-w-0 {% if status.chave == 'CANCELADO' %}highlight{% endif %}"
+  draggable="{% if status.chave == 'CANCELADO' %}false{% else %}true{% endif %}"
   data-id="{{ acao.id }}"
   data-eixo="{{ acao.eixo.nome }}" data-search="{{ acao.codigo }} {{ acao.nome }}">
 
@@ -27,7 +27,7 @@
     <i class="bi bi-check-circle-fill task-progress-check" title="Todas as etapas concluídas"></i>
   </div>
 
-  {% if status.nome|slugify != 'cancelado' %}
+  {% if status.chave != 'CANCELADO' %}
   <!-- FORMULÁRIO DE STATUS (usado pelo arrastar e pelos botões do pop-up) -->
   <form action="{% url 'atualizar_status_acao' acao.id %}" method="post">
     {% csrf_token %}

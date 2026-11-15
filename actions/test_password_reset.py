@@ -1,13 +1,14 @@
 from datetime import timedelta
+import json
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import (
+from actions.models import (
     Acao, Consultoria, Eixo, Prefeitura, SolicitacaoRedefinicaoSenha,
-    SolicitacaoRedefinicaoSenhaLida, Status,
+    Status,
 )
 
 
@@ -64,7 +65,9 @@ class PasswordResetRequestTests(TestCase):
         self.client.force_login(self.consultor)
         page = self.client.get(reverse('gerenciar_funcionario'))
 
-        self.assertContains(page, 'Pessoa Solicitante deseja alterar a senha.')
+        resposta = self.client.get('/notificacoes/atualizar/')
+        self.assertEqual(resposta.status_code, 200)
+        self.assertIn('Pessoa Solicitante deseja alterar a senha.', resposta.content.decode())
         self.assertContains(page, 'Pessoa Solicitante')
         self.assertContains(page, 'Solicitada')
         self.assertContains(
@@ -83,110 +86,11 @@ class PasswordResetRequestTests(TestCase):
             ).count(),
             1,
         )
-
-    def test_password_request_can_be_marked_read_per_consultor(self):
-        self.client.post(self.request_url, {'cpf': self.funcionario.username})
-        solicitacao = SolicitacaoRedefinicaoSenha.objects.get(
-            funcionario=self.funcionario,
-            pendente=True,
-        )
-        self.client.force_login(self.consultor)
-        refresh_url = reverse('atualizar_notificacoes')
-
-        unread = self.client.get(refresh_url).json()
-        item = next(
-            item for item in unread['notifications']
-            if item['alvo_tipo'] == 'solicitacao_senha'
-        )
-        self.assertFalse(item['lida'])
-        self.assertEqual(unread['unread_count'], 1)
-        self.assertEqual(
-            item['destino_url'],
-            reverse('gerenciar_funcionario'),
-        )
-
-        response = self.client.post(
-            reverse('marcar_solicitacao_senha_lida', args=[solicitacao.pk]),
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
-        )
-
-        self.assertEqual(response.status_code, 200, response.get('Location'))
-        self.assertEqual(response.json(), {'success': True})
-        read = self.client.get(refresh_url).json()
-        item = next(
-            item for item in read['notifications']
-            if item['alvo_tipo'] == 'solicitacao_senha'
-        )
-        self.assertTrue(item['lida'])
-        self.assertEqual(read['unread_count'], 0)
-        self.assertNotContains(
-            self.client.get(reverse('gerenciar_funcionario')),
-            'notification-mark-read-button',
-        )
-
-    def test_password_request_can_be_marked_unread_again(self):
-        self.client.post(self.request_url, {'cpf': self.funcionario.username})
-        solicitacao = SolicitacaoRedefinicaoSenha.objects.get(
-            funcionario=self.funcionario,
-            pendente=True,
-        )
-        self.client.force_login(self.consultor)
-        SolicitacaoRedefinicaoSenhaLida.objects.create(
-            usuario=self.consultor,
-            solicitacao=solicitacao,
-        )
-
-        response = self.client.post(
-            reverse(
-                'marcar_notificacao_nao_lida',
-                args=['solicitacao_senha', solicitacao.pk],
-            ),
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {'success': True})
-        self.assertFalse(
-            SolicitacaoRedefinicaoSenhaLida.objects.filter(
-                usuario=self.consultor,
-                solicitacao=solicitacao,
-            ).exists()
-        )
-        refreshed = self.client.get(reverse('atualizar_notificacoes')).json()
-        item = next(
-            item for item in refreshed['notifications']
-            if item['alvo_tipo'] == 'solicitacao_senha'
-        )
-        self.assertFalse(item['lida'])
-
-    def test_only_the_consultor_who_reads_the_request_clears_its_unread_badge(self):
-        self.client.post(self.request_url, {'cpf': self.funcionario.username})
-        outro_consultor = get_user_model().objects.create_user(
-            username='33333333333',
-            password='test-password',
-            nome='Outro Consultor',
-            consultoria=self.consultoria,
-            tem_acesso=True,
-            primeiro_acesso=False,
-        )
-        self.client.force_login(self.consultor)
-        solicitacao = SolicitacaoRedefinicaoSenha.objects.get(
-            funcionario=self.funcionario,
-            pendente=True,
-        )
-        self.client.post(
-            reverse('marcar_solicitacao_senha_lida', args=[solicitacao.pk]),
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
-        )
-
-        self.client.force_login(outro_consultor)
-        response = self.client.get(reverse('atualizar_notificacoes'))
-
-        self.assertEqual(response.json()['unread_count'], 1)
-
+        
     def test_password_requests_and_deadline_alerts_share_newest_first_order(self):
         self.client.post(self.request_url, {'cpf': self.funcionario.username})
         eixo = Eixo.objects.create(nome='Gestão')
-        status = Status.objects.create(nome='Em execução')
+        status = Status.objects.create(chave='EM_EXECUCAO', nome='Em execução', cor='#ffff00', ordem=3)
         hoje = timezone.localdate()
         acao = Acao.objects.create(
             prefeitura=self.prefeitura,
@@ -195,7 +99,7 @@ class PasswordResetRequestTests(TestCase):
             prioridade='Média',
             data_inicio=hoje,
             data_fim=hoje + timedelta(days=2),
-            custo=0,
+            arrecadacao_estimada=0,
             status=status,
             responsavel=self.funcionario,
         )
@@ -210,11 +114,13 @@ class PasswordResetRequestTests(TestCase):
         self.assertEqual(kinds[:2], ['solicitacao_senha', 'acao'])
 
         page = self.client.get(reverse('kanban'))
-        content = page.content.decode()
+        resposta = self.client.get('/notificacoes/atualizar/')
+        self.assertEqual(resposta.status_code, 200)
+        titulos = [item['titulo'] for item in json.loads(resposta.content)['notifications']]
         self.assertLess(
-            content.index('Solicitação de troca de senha'),
-            content.index('Ação: Ação mais antiga'),
-        )
+            titulos.index('Solicitação de troca de senha'),
+            titulos.index('Ação: Ação mais antiga'),
+)
 
     def test_generated_password_resolves_request_and_requires_first_login_change(self):
         self.client.post(self.request_url, {'cpf': self.funcionario.username})

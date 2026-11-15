@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Acao, Eixo, Etapa, NotificacaoLida, Prefeitura, Status
+from actions.models import Acao, Eixo, Etapa, NotificacaoLida, Prefeitura, Status
 
 
 class NotificationCenterTests(TestCase):
@@ -27,7 +27,7 @@ class NotificationCenterTests(TestCase):
         )
         self.client.force_login(self.user)
         self.eixo = Eixo.objects.create(nome='Mobilidade')
-        self.status = Status.objects.create(nome='Em execução')
+        self.status = Status.objects.create(chave='EM_EXECUCAO', nome='Em execução', cor='#ffff00', ordem=3)
         self.hoje = timezone.localdate()
 
     def criar_acao(self, nome, data_fim, status=None, prefeitura=None):
@@ -38,7 +38,7 @@ class NotificationCenterTests(TestCase):
             prioridade='Média',
             data_inicio=min(self.hoje, data_fim),
             data_fim=data_fim,
-            custo=0,
+            arrecadacao_estimada=0,
             status=status or self.status,
             responsavel=self.user,
         )
@@ -47,7 +47,7 @@ class NotificationCenterTests(TestCase):
         self.criar_acao('Ação atrasada', self.hoje - timedelta(days=2))
         self.criar_acao('Ação próxima', self.hoje + timedelta(days=4))
         self.criar_acao('Ação distante', self.hoje + timedelta(days=8))
-        concluido = Status.objects.create(nome='Concluído')
+        concluido = Status.objects.create(chave='CONCLUIDO', nome='Concluído', cor='#008000', ordem=5)
         self.criar_acao('Ação concluída', self.hoje + timedelta(days=2), concluido)
 
         outra_prefeitura = Prefeitura.objects.create(
@@ -337,7 +337,7 @@ class EtapaPeriodoAcaoTests(TestCase):
         )
         self.client.force_login(self.user)
         self.eixo = Eixo.objects.create(nome='Mobilidade')
-        self.status = Status.objects.create(nome='Em execução')
+        self.status = Status.objects.create(chave='EM_EXECUCAO', nome='Em execução', cor='#ffff00', ordem=3)
         self.inicio_acao = timezone.localdate() + timedelta(days=5)
         self.fim_acao = self.inicio_acao + timedelta(days=10)
         self.acao = Acao.objects.create(
@@ -347,7 +347,7 @@ class EtapaPeriodoAcaoTests(TestCase):
             prioridade='Média',
             data_inicio=self.inicio_acao,
             data_fim=self.fim_acao,
-            custo=0,
+            arrecadacao_estimada=0,
             status=self.status,
             responsavel=self.user,
         )
@@ -407,7 +407,7 @@ class EtapaPeriodoAcaoTests(TestCase):
                 'novaAcao': 'Nova ação',
                 'status': self.status.pk,
                 'prioridade': 'Média',
-                'custo': '0',
+                'arrecadacao_estimada': '0',
                 'dataInicio': self.inicio_acao.isoformat(),
                 'dataFim': self.fim_acao.isoformat(),
                 'responsavel': self.user.username,
@@ -438,7 +438,7 @@ class EtapaPeriodoAcaoTests(TestCase):
             reverse('editar_acao', args=[self.acao.pk]),
             data={
                 'prioridade': 'Média',
-                'custo': '0',
+                'arrecadacao_estimada': '0',
                 'data_inicio': (self.inicio_acao + timedelta(days=1)).isoformat(),
                 'data_fim': self.fim_acao.isoformat(),
             },

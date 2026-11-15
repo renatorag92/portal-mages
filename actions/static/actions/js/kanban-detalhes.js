@@ -235,7 +235,7 @@ document.addEventListener("DOMContentLoaded", function () {
         item("Eixo", esc(a.eixo || "Não informado")) +
         item("Nome", esc(a.nome || "Não informado"), true) +
         item("Prioridade", chipPrioridade(a.prioridade)) +
-        item("Custo", esc(fmtCusto(a.custo))) +
+        item("Custo", esc(fmtCusto(a.arrecadacao_estimada))) +
         item("Data de início", esc(fmtData(a.data_inicio))) +
         item("Data de fim", esc(fmtData(a.data_fim))) +
         item("Responsável", esc(a.responsavel || "Não informado"), true) +
@@ -247,8 +247,8 @@ document.addEventListener("DOMContentLoaded", function () {
         item("Nome", esc(a.nome || "Não informado"), true) +
         campo("detf-prioridade", "Prioridade", true,
           '<select class="det-input" id="detf-prioridade" name="prioridade">' + opcoesPrioridade(a.prioridade) + "</select>") +
-        campo("detf-custo", "Custo total (R$)", true,
-          '<input class="det-input" id="detf-custo" name="custo" type="text" inputmode="numeric" value="' + esc(fmtCustoCampo(a.custo)) + '">') +
+        campo("detf-arrecadacao-estimada", "Arrecadação estimada (R$)", true,
+          '<input class="det-input" id="detf-arrecadacao-estimada" name="arrecadacao_estimada" type="text" inputmode="numeric" value="' + esc(fmtCustoCampo(a.arrecadacao_estimada)) + '">') +
         campo("detf-data-inicio", "Data de início", true,
           '<input class="det-input" id="detf-data-inicio" name="data_inicio" type="date" value="' + esc(a.data_inicio) + '">') +
         campo("detf-data-fim", "Data de fim", true,
@@ -618,7 +618,7 @@ document.addEventListener("DOMContentLoaded", function () {
     elAcao.querySelectorAll(".invalido").forEach(function (c) { c.classList.remove("invalido"); });
     caixa.hidden = true;
 
-    const vazios = ["prioridade", "custo", "data_inicio", "data_fim"].filter(function (nome) {
+    const vazios = ["prioridade", "arrecadacao_estimada", "data_inicio", "data_fim"].filter(function (nome) {
       return !ler(nome).value.trim();
     });
     vazios.forEach(function (nome) { ler(nome).classList.add("invalido"); });
@@ -631,7 +631,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const corpo = {
       prioridade: ler("prioridade").value,
-      custo: ler("custo").value.replace(/\./g, "").replace(",", "."),
+      arrecadacao_estimada: ler("arrecadacao_estimada").value.replace(/\./g, "").replace(",", "."),
       data_inicio: ler("data_inicio").value,
       data_fim: ler("data_fim").value,
       observacoes: ler("observacoes").value.trim()
@@ -874,13 +874,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // Máscaras de CPF e custo, e tira o vermelho do campo em que a pessoa digita
+  // Máscaras de cpf e arrecadacao_estimada, e tira o vermelho do campo em que a pessoa digita
   overlay.addEventListener("input", function (event) {
     const alvo = event.target;
     alvo.classList.remove("invalido");
 
     if (alvo.name === "cpf") alvo.value = mascaraCpf(alvo.value);
-    if (alvo.name === "custo") alvo.value = mascaraCusto(alvo.value);
+    if (alvo.name === "arrecadacao_estimada") alvo.value = mascaraCusto(alvo.value);
   });
   overlay.addEventListener("change", function (event) {
     event.target.classList.remove("invalido");
