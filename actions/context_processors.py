@@ -5,8 +5,9 @@ from django.utils import timezone
 
 from .models import (
     Acao, Etapa, NotificacaoLida, SolicitacaoRedefinicaoSenha,
-    SolicitacaoRedefinicaoSenhaLida,
 )
+
+STATUS_SEM_NOTIFICACAO = ('Concluído', 'Suspenso', 'Cancelado')
 
 
 def _mensagem_prazo(dias):
@@ -26,12 +27,6 @@ def notifications(request):
             SolicitacaoRedefinicaoSenha.objects.filter(pendente=True)
             .select_related('funcionario')
         )
-    solicitacoes_senha_lidas = set(
-        SolicitacaoRedefinicaoSenhaLida.objects.filter(
-            usuario=request.user,
-            solicitacao__in=solicitacoes_senha,
-        ).values_list('solicitacao_id', flat=True)
-    ) if solicitacoes_senha else set()
     notificacoes_senha = [
         {
             'id': f'solicitacao_senha-{solicitacao.pk}',
@@ -42,15 +37,9 @@ def notifications(request):
             'urgencia': 'seguranca',
             'alvo_tipo': 'solicitacao_senha',
             'alvo_id': solicitacao.pk,
-            'lida': solicitacao.pk in solicitacoes_senha_lidas,
-            'url': reverse(
-                'marcar_solicitacao_senha_lida',
-                args=[solicitacao.pk],
-            ),
-            'url_nao_lida': reverse(
-                'marcar_notificacao_nao_lida',
-                args=['solicitacao_senha', solicitacao.pk],
-            ),
+            'lida': False,
+            'url': None,
+            'url_nao_lida': None,
             'destino_url': reverse('gerenciar_funcionario'),
             'solicitada_em': solicitacao.solicitada_em,
             'data': solicitacao.solicitada_em,
@@ -102,14 +91,13 @@ def notifications(request):
 
     hoje = timezone.localdate()
     limite = hoje + timedelta(days=7)
-    status_encerrados = ('Concluído', 'Cancelado')
     avisos = []
 
     acoes = Acao.objects.filter(
         prefeitura=prefeitura,
         data_fim__lte=limite,
     ).exclude(
-        status__nome__in=status_encerrados,
+        status__nome__in=STATUS_SEM_NOTIFICACAO,
     ).select_related('status')
     acoes_lidas = set(
         NotificacaoLida.objects.filter(
@@ -142,7 +130,7 @@ def notifications(request):
         concluida=False,
         data_fim__lte=limite,
     ).exclude(
-        acao__status__nome__in=status_encerrados,
+        acao__status__nome__in=STATUS_SEM_NOTIFICACAO,
     ).select_related('acao')
     etapas_lidas = set(
         NotificacaoLida.objects.filter(

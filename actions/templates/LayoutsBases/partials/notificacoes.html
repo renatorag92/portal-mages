@@ -10,13 +10,20 @@
 >
   <header class="notification-panel-header">
     <div class="notification-heading">
-      <h2 id="notificationHeading">Notificações</h2>
+      <span class="notification-heading-icon" aria-hidden="true">
+        <i class="bi bi-bell-fill"></i>
+      </span>
+      <span class="notification-heading-copy">
+        <span class="notification-heading-eyebrow">Central de avisos</span>
+        <h2 id="notificationHeading">Notificações</h2>
+      </span>
       <span class="notification-unread-count" id="notificationUnreadCount" aria-live="polite">
         {{ notification_display_unread_count }}
       </span>
     </div>
     <button class="notification-mark-all-button" id="notificationMarkAll" type="button">
-      Marcar todas como lidas
+      <i class="bi bi-check2-all" aria-hidden="true"></i>
+      <span>Marcar todas como lidas</span>
     </button>
   </header>
 
@@ -69,11 +76,6 @@
       <span>Não há notificações neste filtro.</span>
     </div>
   </div>
-
-  <!-- Rodapé fixo com acesso à lista completa. -->
-  <footer class="notification-panel-footer">
-    <button type="button" id="notificationShowAll">Ver todas as notificações</button>
-  </footer>
 </section>
 
 <!-- Avisos temporários de novas notificações recebidas em tempo real. -->

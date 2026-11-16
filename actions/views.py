@@ -24,7 +24,9 @@ from django.views.decorators.http import require_POST
 from collections import Counter
 from datetime import date, timedelta
 
-from .context_processors import notifications as carregar_notificacoes
+from .context_processors import (
+    STATUS_SEM_NOTIFICACAO, notifications as carregar_notificacoes,
+)
 from .forms import (
     ConsultoriaForm, FuncionarioForm, LoginCPFForm, MinhaContaForm,
     PrefeituraForm, gerar_senha_provisoria, preparar_senha,
@@ -32,7 +34,7 @@ from .forms import (
 from .models import (
     Acao, AcaoCatalogo, Consultoria, Eixo, Etapa, Funcionario,
     NotificacaoLida, Prefeitura, SolicitacaoRedefinicaoSenha,
-    SolicitacaoRedefinicaoSenhaLida, Status,
+    Status,
 )
 
 logger = logging.getLogger(__name__)
@@ -767,18 +769,10 @@ def marcar_notificacao_lida_view(request, tipo, item_id):
 def marcar_solicitacao_senha_lida_view(request, solicitacao_id):
     if not request.user.e_consultor:
         return JsonResponse({'success': False}, status=403)
-    solicitacao = get_object_or_404(
-        SolicitacaoRedefinicaoSenha,
-        pk=solicitacao_id,
-        pendente=True,
-    )
-    SolicitacaoRedefinicaoSenhaLida.objects.get_or_create(
-        usuario=request.user,
-        solicitacao=solicitacao,
-    )
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        return JsonResponse({'success': True})
-    return redirect('gerenciar_funcionario')
+    return JsonResponse({
+        'success': False,
+        'error': 'A solicitação só é resolvida ao gerar uma nova senha.',
+    }, status=409)
 
 
 @login_required
@@ -787,15 +781,10 @@ def marcar_notificacao_nao_lida_view(request, tipo, item_id):
     if tipo == 'solicitacao_senha':
         if not request.user.e_consultor:
             return JsonResponse({'success': False}, status=403)
-        solicitacao = get_object_or_404(
-            SolicitacaoRedefinicaoSenha,
-            pk=item_id,
-            pendente=True,
-        )
-        SolicitacaoRedefinicaoSenhaLida.objects.filter(
-            usuario=request.user,
-            solicitacao=solicitacao,
-        ).delete()
+        return JsonResponse({
+            'success': False,
+            'error': 'A solicitação não pode ser marcada como não lida.',
+        }, status=409)
     else:
         prefeitura = _prefeitura_ativa(request)
         if prefeitura is None:
@@ -865,13 +854,12 @@ def remover_notificacao_view(request, tipo, item_id):
         return JsonResponse({'success': False}, status=400)
 
     limite = timezone.localdate() + timedelta(days=7)
-    status_encerrados = ('Concluído', 'Cancelado')
     if tipo == 'acao':
         alvo = get_object_or_404(
             Acao.objects.filter(
                 prefeitura=prefeitura,
                 data_fim__lte=limite,
-            ).exclude(status__nome__in=status_encerrados),
+            ).exclude(status__nome__in=STATUS_SEM_NOTIFICACAO),
             pk=item_id,
         )
         notificacao, _ = NotificacaoLida.objects.get_or_create(
@@ -885,7 +873,7 @@ def remover_notificacao_view(request, tipo, item_id):
                 acao__prefeitura=prefeitura,
                 concluida=False,
                 data_fim__lte=limite,
-            ).exclude(acao__status__nome__in=status_encerrados),
+            ).exclude(acao__status__nome__in=STATUS_SEM_NOTIFICACAO),
             pk=item_id,
         )
         notificacao, _ = NotificacaoLida.objects.get_or_create(
