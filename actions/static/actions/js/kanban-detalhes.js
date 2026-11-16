@@ -2,8 +2,8 @@
  * Pop-up de detalhes da ação (Kanban)
  *
  * Esquerda: dados da ação (botão "Editar ação").
- * Direita:  etapas da ação (botão "Adicionar etapa", botão "Editar etapa" em cada uma
- *           e caixa de concluída).
+ * Direita:  etapas da ação (botão "Adicionar etapa"). Cada etapa aparece recolhida, só com a
+ *           primeira linha (caixa de concluída, nome e botões); a seta abre os detalhes.
  * Os dados vêm do servidor em JSON, e o pop-up é desenhado aqui.
  */
 document.addEventListener("DOMContentLoaded", function () {
@@ -22,6 +22,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const elAcao = $("detAcao");
   const elEtapas = $("detEtapas");
   const elRodape = $("detStatus");
+  const elStatusAtual = $("detStatusAtual");
+  const elStatusAtualDot = $("detStatusAtualDot");
+  const elStatusOpcoes = $("detStatusOpcoes");
+  const elStatusToggle = elRodape.querySelector(".det-mover-toggle");
 
   const urls = {
     detalhes: overlay.dataset.urlDetalhes,
@@ -32,13 +36,14 @@ document.addEventListener("DOMContentLoaded", function () {
     excluirAcao: overlay.dataset.urlExcluirAcao,
     excluirEtapa: overlay.dataset.urlExcluirEtapa
   };
+  const somenteLeituraDashboard = overlay.dataset.somenteLeitura === "true";
 
   // Tempo da animação de fechar (igual ao do CSS). Sem animação para quem prefere menos movimento.
   const DURACAO_SAIDA = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 150;
   let timerFechar = null;
 
-  let codigoAberto = null;
-  // estado = { acao, etapas, prioridades, editandoAcao, editandoEtapa, novaEtapa }
+  let idAberto = null;
+  // estado = { acao, etapas, prioridades, editandoAcao, editandoEtapa, novaEtapa, expandidas }
   let estado = null;
 
   // Largura (em %) que a barra de progresso tinha no último desenho.
@@ -75,7 +80,7 @@ document.addEventListener("DOMContentLoaded", function () {
       .trim();
   }
 
-    // Escolhe texto escuro ou branco conforme o brilho da cor de fundo, para o texto sempre ficar legível
+  // Escolhe texto escuro ou branco conforme o brilho da cor de fundo, para o texto sempre ficar legível
   function corDoTexto(hex) {
     const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(hex || "").trim());
     if (!m) return "#fff";
@@ -87,6 +92,13 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!iso) return "Não informado";
     const partes = iso.split("-");
     return partes[2] + "/" + partes[1] + "/" + partes[0];
+  }
+
+  function limitesDatasEtapa() {
+    return {
+      inicio: estado.acao.data_inicio,
+      fim: estado.acao.data_fim
+    };
   }
 
   function fmtCusto(numero) {
@@ -132,6 +144,10 @@ document.addEventListener("DOMContentLoaded", function () {
     return !!estado && (estado.editandoAcao || estado.editandoEtapa !== null || estado.novaEtapa);
   }
 
+  function somenteLeitura() {
+    return !!estado && (somenteLeituraDashboard || estado.acao.somente_leitura);
+  }
+
 
   /* =========================================================
      PEÇAS DE HTML
@@ -175,6 +191,14 @@ document.addEventListener("DOMContentLoaded", function () {
       (desabilitado ? " disabled" : "") + '><i class="bi bi-trash3"></i> Excluir</button>';
   }
 
+  // Seta que abre e fecha os detalhes de uma etapa
+  function botaoToggleEtapa(id, aberta) {
+    return '<button type="button" class="det-etapa-toggle" data-do="alternar-etapa" data-id="' + id + '"' +
+      ' aria-expanded="' + aberta + '" aria-label="Ver detalhes da etapa">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>' +
+      "</button>";
+  }
+
   function rodapeEdicao(salvar, cancelar, id) {
     const dado = id != null ? ' data-id="' + id + '"' : "";
     return '<div class="det-erro" role="alert" hidden></div>' +
@@ -206,12 +230,12 @@ document.addEventListener("DOMContentLoaded", function () {
     let conteudo;
 
     if (!editando) {
-    conteudo =
+      conteudo =
         item("Código", esc(a.codigo)) +
         item("Eixo", esc(a.eixo || "Não informado")) +
         item("Nome", esc(a.nome || "Não informado"), true) +
         item("Prioridade", chipPrioridade(a.prioridade)) +
-        item("Custo", esc(fmtCusto(a.custo))) +
+        item("Arrecadação estimada (R$)", esc(fmtCusto(a.arrecadacao_estimada))) +
         item("Data de início", esc(fmtData(a.data_inicio))) +
         item("Data de fim", esc(fmtData(a.data_fim))) +
         item("Responsável", esc(a.responsavel || "Não informado"), true) +
@@ -223,8 +247,8 @@ document.addEventListener("DOMContentLoaded", function () {
         item("Nome", esc(a.nome || "Não informado"), true) +
         campo("detf-prioridade", "Prioridade", true,
           '<select class="det-input" id="detf-prioridade" name="prioridade">' + opcoesPrioridade(a.prioridade) + "</select>") +
-        campo("detf-custo", "Custo total (R$)", true,
-          '<input class="det-input" id="detf-custo" name="custo" type="text" inputmode="numeric" value="' + esc(fmtCustoCampo(a.custo)) + '">') +
+        campo("detf-arrecadacao-estimada", "Arrecadação estimada (R$)", true,
+          '<input class="det-input" id="detf-arrecadacao-estimada" name="arrecadacao_estimada" type="text" inputmode="numeric" value="' + esc(fmtCustoCampo(a.arrecadacao_estimada)) + '">') +
         campo("detf-data-inicio", "Data de início", true,
           '<input class="det-input" id="detf-data-inicio" name="data_inicio" type="date" value="' + esc(a.data_inicio) + '">') +
         campo("detf-data-fim", "Data de fim", true,
@@ -234,12 +258,16 @@ document.addEventListener("DOMContentLoaded", function () {
           '<textarea class="det-input" id="detf-observacoes" name="observacoes" rows="4">' + esc(a.observacoes) + "</textarea>", true);
     }
 
-    const botaoEditar = (!a.somente_leitura && !editando)
+    const botaoEditar = (!somenteLeitura() && !editando)
       ? botaoSecundario("editar-acao", null, "Editar ação", bloqueado)
       : "";
 
-    const aviso = a.somente_leitura
-      ? '<p class="det-aviso"><i class="bi bi-slash-circle"></i> Ação cancelada: não pode mais ser editada.</p>'
+    const aviso = somenteLeitura()
+      ? '<p class="det-aviso"><i class="bi bi-slash-circle"></i> ' +
+        (somenteLeituraDashboard
+          ? "Visualização somente leitura no dashboard."
+          : "Ação cancelada: não pode mais ser editada.") +
+        "</p>"
       : "";
 
     elAcao.innerHTML =
@@ -249,13 +277,13 @@ document.addEventListener("DOMContentLoaded", function () {
       '<dl class="det-grid">' + conteudo + "</dl>" +
       (editando ? rodapeEdicao("salvar-acao", "cancelar-acao") : "") +
       "</div>";
-
   }
 
   // Formulário de etapa. Com id = edita a etapa; com id = null é o formulário de etapa nova.
   function formEtapaHtml(e, id) {
     const nova = id == null;
     const p = "detf-e" + (nova ? "nova" : id) + "-";
+    const limites = limitesDatasEtapa();
 
     return '<article class="det-etapa editando' + (nova ? " nova" : "") + '"' + (nova ? "" : ' data-id="' + id + '"') + ">" +
       '<div class="det-etapa-topo"><span class="det-etapa-titulo">' +
@@ -269,9 +297,9 @@ document.addEventListener("DOMContentLoaded", function () {
       campo(p + "prioridade", "Prioridade", true,
         '<select class="det-input" id="' + p + 'prioridade" name="prioridade">' + opcoesPrioridade(e.prioridade) + "</select>") +
       campo(p + "inicio", "Início", true,
-        '<input class="det-input" id="' + p + 'inicio" name="data_inicio" type="date" value="' + esc(e.data_inicio) + '">') +
+        '<input class="det-input" id="' + p + 'inicio" name="data_inicio" type="date" min="' + esc(limites.inicio) + '" max="' + esc(limites.fim) + '" value="' + esc(e.data_inicio) + '">') +
       campo(p + "fim", "Fim", true,
-        '<input class="det-input" id="' + p + 'fim" name="data_fim" type="date" value="' + esc(e.data_fim) + '">') +
+        '<input class="det-input" id="' + p + 'fim" name="data_fim" type="date" min="' + esc(limites.inicio) + '" max="' + esc(limites.fim) + '" value="' + esc(e.data_fim) + '">') +
       campo(p + "obs", "Observações", false,
         '<input class="det-input" id="' + p + 'obs" name="observacoes" type="text" value="' + esc(e.observacoes) + '">', true) +
       "</dl>" +
@@ -279,32 +307,38 @@ document.addEventListener("DOMContentLoaded", function () {
       "</article>";
   }
 
+  // Etapa recolhida: só a primeira linha. Os detalhes ficam dentro de .det-etapa-detalhes
+  // e aparecem quando o <article> ganha a classe "aberta".
   function etapaHtml(e) {
     const algumaEdicao = emEdicao();
-    const somenteLeitura = estado.acao.somente_leitura;
+    const somenteLeituraDaAcao = somenteLeitura();
 
     if (estado.editandoEtapa === e.id) return formEtapaHtml(e, e.id);
 
-      const botoes = somenteLeitura ? "" :
-      '<div class="det-etapa-botoes">' +
+    const aberta = estado.expandidas.has(e.id);
+
+    // Em ação cancelada não há editar/excluir, mas a seta continua disponível
+    const acoes = somenteLeituraDaAcao ? "" :
       botaoSecundario("editar-etapa", e.id, "Editar etapa", algumaEdicao) +
-      botaoExcluirEtapa(e.id, algumaEdicao) +
-      "</div>";
-          
-    return '<article class="det-etapa' + (e.concluida ? " concluida" : "") + '" data-id="' + e.id + '">' +
+      botaoExcluirEtapa(e.id, algumaEdicao);
+
+    return '<article class="det-etapa' + (e.concluida ? " concluida" : "") + (aberta ? " aberta" : "") + '" data-id="' + e.id + '">' +
       '<div class="det-etapa-topo">' +
       '<label class="det-check">' +
       '<input type="checkbox" class="det-check-input" data-id="' + e.id + '"' +
-      (e.concluida ? " checked" : "") + (somenteLeitura || algumaEdicao ? " disabled" : "") + ">" +
+      (e.concluida ? " checked" : "") + (somenteLeituraDaAcao || algumaEdicao ? " disabled" : "") + ">" +
       '<span class="det-etapa-nome">' + esc(e.nome) + "</span>" +
-      "</label>" + botoes +
+      "</label>" +
+      '<div class="det-etapa-botoes">' + acoes + botaoToggleEtapa(e.id, aberta) + "</div>" +
       "</div>" +
+      '<div class="det-etapa-detalhes"><div class="det-etapa-detalhes-interno">' +
       '<dl class="det-grid">' +
       item("Responsável", esc(e.responsavel) + ' <span class="det-cpf">' + esc(mascaraCpf(e.cpf)) + "</span>", true) +
       item("Prioridade", chipPrioridade(e.prioridade)) +
       item("Período", esc(fmtData(e.data_inicio)) + " até " + esc(fmtData(e.data_fim))) +
       item("Observações", e.observacoes ? esc(e.observacoes) : vazio("Sem observações."), true, "det-obs") +
       "</dl>" +
+      "</div></div>" +
       "</article>";
   }
 
@@ -336,7 +370,7 @@ document.addEventListener("DOMContentLoaded", function () {
       ? '<div class="det-etapas-lista">' + lista.map(etapaHtml).join("") + formNova + "</div>"
       : '<p class="det-vazio">Nenhuma etapa cadastrada para esta ação.</p>';
 
-    const botaoAdicionar = estado.acao.somente_leitura
+    const botaoAdicionar = somenteLeitura()
       ? ""
       : botaoSecundario("adicionar-etapa", null, "Adicionar etapa", emEdicao(), "plus-lg");
 
@@ -359,7 +393,9 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function renderRodape() {
-    elRodape.hidden = estado.acao.somente_leitura;
+    elRodape.hidden = somenteLeitura();
+    elStatusAtual.textContent = estado.acao.status.nome;
+    elStatusAtualDot.style.setProperty("--c", estado.acao.status.cor || "#3e4a89");
     elRodape.querySelectorAll(".det-status-btn").forEach(function (botao) {
       const atual = String(botao.dataset.status) === String(estado.acao.status.id);
       botao.disabled = atual;
@@ -367,11 +403,28 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // Atualiza o andamento mostrado no card do kanban (barra e "2/5"), sem recarregar a página.
+  // Roda a cada redesenho, então cobre marcar, adicionar e excluir etapas.
+  function atualizarAndamentoDoCard() {
+    const card = document.querySelector('.task-card[data-id="' + idAberto + '"]');
+    const andamento = card && card.querySelector(".task-progress");
+    if (!andamento || !estado) return;
+
+    const total = estado.etapas.length;
+    const feitas = estado.etapas.filter(function (e) { return e.concluida; }).length;
+
+    andamento.hidden = total === 0;
+    andamento.classList.toggle("completo", total > 0 && feitas === total);
+    andamento.style.setProperty("--andamento", total ? Math.round((feitas / total) * 100) : 0);
+    andamento.querySelector(".task-progress-texto").textContent = feitas + "/" + total;
+  }
+
   function render() {
     renderCabecalho();
     renderAcao();
     renderEtapas();
     renderRodape();
+    atualizarAndamentoDoCard();
   }
 
   // Rola até o formulário da etapa nova e coloca o cursor no primeiro campo
@@ -383,7 +436,8 @@ document.addEventListener("DOMContentLoaded", function () {
     if (primeiro) primeiro.focus({ preventScroll: true });
   }
 
-    /* =========================================================
+
+  /* =========================================================
      AVISO DE CONFIRMAÇÃO (no lugar do confirm/alert do navegador)
      ========================================================= */
 
@@ -456,26 +510,29 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-    // Deixa o aviso disponível para o pop-up de cadastro (kanban-modal.js)
-    window.confirmarSite = confirmar;
+  // Deixa o aviso disponível para o pop-up de cadastro (kanban-modal.js)
+  window.confirmarSite = confirmar;
+
 
   /* =========================================================
      ABRIR E FECHAR
      ========================================================= */
 
-  async function abrir(codigo) {
+  async function abrir(id) {
     clearTimeout(timerFechar);
     overlay.classList.remove("closing");
-    codigoAberto = codigo;
+    idAberto = id;
     estado = null;
     ultimoPorcento = null;
 
-    elTitulo.textContent = "AÇÃO " + codigo;
+    elTitulo.textContent = "Ação";
     elSubtitulo.textContent = "";
     elBadge.textContent = "";
     elBadge.style.backgroundColor = "";
     elBadge.style.color = "";
     elRodape.hidden = true;
+    elStatusOpcoes.classList.remove("aberto");
+    elStatusToggle.setAttribute("aria-expanded", "false");
     elAcao.innerHTML = '<div class="det-card"><p class="det-vazio">Carregando...</p></div>';
     elEtapas.innerHTML = "";
 
@@ -484,15 +541,16 @@ document.addEventListener("DOMContentLoaded", function () {
     document.body.style.overflow = "hidden";
 
     try {
-      const dados = await pedir(urlDe(urls.detalhes, codigo));
-      if (codigoAberto !== codigo) return; // fechou enquanto carregava
+      const dados = await pedir(urlDe(urls.detalhes, id));
+      if (idAberto !== id) return; // fechou enquanto carregava
       estado = {
         acao: dados.acao,
         etapas: dados.etapas,
         prioridades: dados.prioridades,
         editandoAcao: false,
         editandoEtapa: null,
-        novaEtapa: false
+        novaEtapa: false,
+        expandidas: new Set() // ids das etapas com os detalhes abertos
       };
       render();
     } catch (erro) {
@@ -504,7 +562,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (overlay.classList.contains("closing")) return;
 
     estado = null;
-    codigoAberto = null;
+    idAberto = null;
     ultimoPorcento = null;
 
     overlay.classList.add("closing");
@@ -515,20 +573,32 @@ document.addEventListener("DOMContentLoaded", function () {
     }, DURACAO_SAIDA);
   }
 
-    async function tentarFechar() {
+  async function tentarFechar() {
     if (emEdicao() && !(await confirmarDescarte())) return;
     fechar();
   }
 
   // Botão de seta no card
   document.addEventListener("click", function (event) {
+    const acaoDashboard = event.target.closest("[data-acao-detalhes]");
+    if (acaoDashboard) {
+      abrir(acaoDashboard.dataset.acaoDetalhes);
+      return;
+    }
+
     const botao = event.target.closest(".status-menu-toggle");
     if (!botao) return;
     const card = botao.closest(".task-card");
-    if (card && card.dataset.codigo) abrir(card.dataset.codigo);
+    if (card && card.dataset.id) abrir(card.dataset.id);
   });
 
   $("detFechar").addEventListener("click", tentarFechar);
+
+  document.addEventListener("keydown", function (event) {
+    if ((event.key !== "Enter" && event.key !== " ") || !event.target.closest("[data-acao-detalhes]")) return;
+    event.preventDefault();
+    abrir(event.target.closest("[data-acao-detalhes]").dataset.acaoDetalhes);
+  });
 
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && overlay.classList.contains("open") && !overlay.classList.contains("closing")) {
@@ -548,7 +618,7 @@ document.addEventListener("DOMContentLoaded", function () {
     elAcao.querySelectorAll(".invalido").forEach(function (c) { c.classList.remove("invalido"); });
     caixa.hidden = true;
 
-    const vazios = ["prioridade", "custo", "data_inicio", "data_fim"].filter(function (nome) {
+    const vazios = ["prioridade", "arrecadacao_estimada", "data_inicio", "data_fim"].filter(function (nome) {
       return !ler(nome).value.trim();
     });
     vazios.forEach(function (nome) { ler(nome).classList.add("invalido"); });
@@ -561,7 +631,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const corpo = {
       prioridade: ler("prioridade").value,
-      custo: ler("custo").value.replace(/\./g, "").replace(",", "."),
+      arrecadacao_estimada: ler("arrecadacao_estimada").value.replace(/\./g, "").replace(",", "."),
       data_inicio: ler("data_inicio").value,
       data_fim: ler("data_fim").value,
       observacoes: ler("observacoes").value.trim()
@@ -569,7 +639,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     botao.disabled = true;
     try {
-      const resposta = await pedir(urlDe(urls.editarAcao, codigoAberto), {
+      const resposta = await pedir(urlDe(urls.editarAcao, idAberto), {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-CSRFToken": csrf() },
         body: JSON.stringify(corpo)
@@ -611,6 +681,13 @@ document.addEventListener("DOMContentLoaded", function () {
       return mostrarErro(caixa, "O CPF está incompleto.");
     }
 
+    const limites = limitesDatasEtapa();
+    if (ler("data_inicio").value < limites.inicio || ler("data_fim").value > limites.fim) {
+      ler("data_inicio").classList.toggle("invalido", ler("data_inicio").value < limites.inicio);
+      ler("data_fim").classList.toggle("invalido", ler("data_fim").value > limites.fim);
+      return mostrarErro(caixa, "As datas da etapa devem estar dentro do período da ação.");
+    }
+
     if (ler("data_fim").value < ler("data_inicio").value) {
       ler("data_fim").classList.add("invalido");
       return mostrarErro(caixa, "A data de fim não pode ser anterior à data de início.");
@@ -625,7 +702,7 @@ document.addEventListener("DOMContentLoaded", function () {
       observacoes: ler("observacoes").value.trim()
     };
 
-    const url = nova ? urlDe(urls.adicionarEtapa, codigoAberto) : urlDe(urls.editarEtapa, id);
+    const url = nova ? urlDe(urls.adicionarEtapa, idAberto) : urlDe(urls.editarEtapa, id);
 
     botao.disabled = true;
     try {
@@ -641,6 +718,7 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         estado.etapas = estado.etapas.map(function (e) { return e.id === id ? resposta.etapa : e; });
         estado.editandoEtapa = null;
+        estado.expandidas.add(id); // mostra os dados atualizados
       }
       render();
 
@@ -660,10 +738,10 @@ document.addEventListener("DOMContentLoaded", function () {
      MOVER PARA OUTRO STATUS
      ========================================================= */
 
-   async function mudarStatus(statusId) {
+  async function mudarStatus(statusId) {
     if (emEdicao() && !(await confirmarDescarte())) return;
 
-    const card = document.querySelector('.task-card[data-codigo="' + codigoAberto + '"]');
+    const card = document.querySelector('.task-card[data-id="' + idAberto + '"]');
     const form = card && card.querySelector("form");
     const input = form && form.querySelector('input[name="status"]');
     if (!input) return;
@@ -671,6 +749,11 @@ document.addEventListener("DOMContentLoaded", function () {
     input.value = statusId;
     form.submit();
   }
+
+
+  /* =========================================================
+     EXCLUIR AÇÃO / EXCLUIR ETAPA / ABRIR DETALHES DA ETAPA
+     ========================================================= */
 
   async function excluirAcao(botao) {
     const confirmado = await confirmar({
@@ -683,7 +766,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     botao.disabled = true;
     try {
-      await pedir(urlDe(urls.excluirAcao, codigoAberto), {
+      await pedir(urlDe(urls.excluirAcao, idAberto), {
         method: "POST",
         headers: { "X-CSRFToken": csrf() }
       });
@@ -714,12 +797,23 @@ document.addEventListener("DOMContentLoaded", function () {
       });
       if (!estado) return;
       estado.etapas = estado.etapas.filter(function (e) { return e.id !== id; });
+      estado.expandidas.delete(id);
       render();
     } catch (erro) {
       botao.disabled = false;
       confirmar({ titulo: "Não foi possível excluir", texto: erro.message, sim: "OK", nao: null });
     }
   }
+
+  // Abre ou fecha os detalhes de uma etapa. Não redesenha o pop-up, para a animação funcionar.
+  function alternarEtapa(id, botao) {
+    const expandir = !estado.expandidas.has(id);
+    if (expandir) estado.expandidas.add(id); else estado.expandidas.delete(id);
+
+    botao.closest(".det-etapa").classList.toggle("aberta", expandir);
+    botao.setAttribute("aria-expanded", String(expandir));
+  }
+
 
   /* =========================================================
      EVENTOS DENTRO DO POP-UP
@@ -731,22 +825,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const botao = event.target.closest("[data-do]");
     if (!botao || !estado) return;
+    if (somenteLeitura() && botao.dataset.do !== "alternar-etapa") return;
 
     const id = botao.dataset.id ? Number(botao.dataset.id) : null;
 
     switch (botao.dataset.do) {
-      case "editar-acao":        estado.editandoAcao = true; render(); break;
-      case "cancelar-acao":      estado.editandoAcao = false; render(); break;
-      case "salvar-acao":        salvarAcao(botao); break;
-      case "editar-etapa":       estado.editandoEtapa = id; render(); break;
-      case "cancelar-etapa":     estado.editandoEtapa = null; render(); break;
-      case "salvar-etapa":       salvarEtapa(id, botao); break;
-      case "adicionar-etapa":    estado.novaEtapa = true; render(); focarNovaEtapa(); break;
+      case "editar-acao":         estado.editandoAcao = true; render(); break;
+      case "cancelar-acao":       estado.editandoAcao = false; render(); break;
+      case "salvar-acao":         salvarAcao(botao); break;
+      case "editar-etapa":        estado.editandoEtapa = id; render(); break;
+      case "cancelar-etapa":      estado.editandoEtapa = null; render(); break;
+      case "salvar-etapa":        salvarEtapa(id, botao); break;
+      case "adicionar-etapa":     estado.novaEtapa = true; render(); focarNovaEtapa(); break;
       case "cancelar-nova-etapa": estado.novaEtapa = false; render(); break;
-      case "salvar-nova-etapa":  salvarEtapa(null, botao); break;
-      case "mudar-status":       mudarStatus(botao.dataset.status); break;
-      case "excluir-acao":       excluirAcao(botao); break;
-      case "excluir-etapa":      excluirEtapa(id, botao); break;
+      case "salvar-nova-etapa":   salvarEtapa(null, botao); break;
+      case "excluir-etapa":       excluirEtapa(id, botao); break;
+      case "alternar-etapa":      alternarEtapa(id, botao); break;
+      case "alternar-status":
+        elStatusOpcoes.classList.toggle("aberto");
+        elStatusToggle.setAttribute("aria-expanded", String(elStatusOpcoes.classList.contains("aberto")));
+        break;
+      case "mudar-status":        mudarStatus(botao.dataset.status); break;
+      case "excluir-acao":        excluirAcao(botao); break;
     }
   });
 
@@ -754,6 +854,7 @@ document.addEventListener("DOMContentLoaded", function () {
   overlay.addEventListener("change", async function (event) {
     const caixa = event.target.closest(".det-check-input");
     if (!caixa || !estado) return;
+    if (somenteLeitura()) return;
 
     const id = Number(caixa.dataset.id);
     caixa.disabled = true;
@@ -773,13 +874,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // Máscaras de CPF e custo, e tira o vermelho do campo em que a pessoa digita
+  // Máscaras de cpf e arrecadacao_estimada, e tira o vermelho do campo em que a pessoa digita
   overlay.addEventListener("input", function (event) {
     const alvo = event.target;
     alvo.classList.remove("invalido");
 
     if (alvo.name === "cpf") alvo.value = mascaraCpf(alvo.value);
-    if (alvo.name === "custo") alvo.value = mascaraCusto(alvo.value);
+    if (alvo.name === "arrecadacao_estimada") alvo.value = mascaraCusto(alvo.value);
   });
   overlay.addEventListener("change", function (event) {
     event.target.classList.remove("invalido");

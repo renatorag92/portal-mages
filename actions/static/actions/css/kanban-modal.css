@@ -567,14 +567,22 @@
    aí o corpo inteiro passa a rolar. */
 @media (max-width: 900px) {
   .acao-modal-dialog .acao-body {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
   }
 
-  .acao-modal-dialog .acao-col,
+  .acao-modal-dialog .acao-col {
+    display: block;
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
   .acao-modal-dialog .form-card {
     display: block;
+    width: 100%;
+    min-height: 0;
+    overflow: visible;
   }
 
   .acao-modal-dialog .form-card-dados {
@@ -582,18 +590,37 @@
   }
 
   .acao-modal-dialog .etapas-list {
+    flex: 0 0 auto;
+    min-height: 0;
     padding: 0;
     overflow: visible;
+  }
+
+  .acao-modal-dialog .etapa-card-topo {
+    flex-wrap: wrap;
+  }
+
+  .acao-modal-dialog .etapa-card-titulo {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .acao-modal-dialog .etapa-remove {
+    margin-left: auto;
   }
 }
 
 @media (max-width: 560px) {
   .acao-modal-overlay {
-    padding: 8px;
+    align-items: flex-start;
+    padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
   }
 
   .acao-modal-dialog {
-    height: calc(100vh - 16px);
+    width: 100%;
+    height: calc(100dvh - max(16px, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
+    max-height: 100%;
+    border-radius: 12px;
   }
 
   .acao-modal-dialog .acao-header,
@@ -602,8 +629,43 @@
     padding-right: 16px;
   }
 
+  .acao-modal-dialog .acao-header {
+    gap: 10px;
+    padding-top: 14px;
+    padding-bottom: 12px;
+  }
+
+  .acao-modal-dialog .acao-header-side {
+    gap: 6px;
+  }
+
+  .acao-modal-dialog .acao-badge {
+    max-width: 36vw;
+    padding: 5px 9px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .acao-modal-dialog .acao-header h2 {
+    font-size: 20px;
+  }
+
   .acao-modal-dialog .acao-body {
     padding: 14px 16px;
+  }
+
+  .acao-modal-dialog .form-card {
+    padding: 14px 12px;
+  }
+
+  .acao-modal-dialog .etapa-card {
+    padding: 12px 10px;
+  }
+
+  .acao-modal-dialog .etapa-remove {
+    padding: 6px 8px;
+    font-size: 12px;
   }
 
   .acao-modal-dialog .form-grid {
@@ -624,6 +686,7 @@
 
   .acao-modal-dialog .acao-modal-btn {
     flex: 1;
+    min-width: 0;
   }
 }
 

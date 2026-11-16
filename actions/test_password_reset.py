@@ -1,0 +1,235 @@
+from datetime import timedelta
+import json
+
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.urls import reverse
+from django.utils import timezone
+
+from actions.models import (
+    Acao, Consultoria, Eixo, Prefeitura, SolicitacaoRedefinicaoSenha,
+    Status,
+)
+
+
+class PasswordResetRequestTests(TestCase):
+    def setUp(self):
+        self.prefeitura = Prefeitura.objects.create(
+            cnpj='12345678000195',
+            nome_juridico='Prefeitura Central',
+            nome_fantasia='Prefeitura Central',
+            endereco='Rua Central, 1',
+        )
+        self.consultoria = Consultoria.objects.create(
+            cnpj='98765432000110',
+            nome_juridico='Consultoria Central',
+            nome_fantasia='Consultoria Central',
+            endereco='Rua Consultoria, 2',
+        )
+        self.prefeitura.consultoria = self.consultoria
+        self.prefeitura.save(update_fields=['consultoria'])
+
+        funcionario_model = get_user_model()
+        self.consultor = funcionario_model.objects.create_user(
+            username='11111111111',
+            password='test-password',
+            nome='Consultor Responsável',
+            consultoria=self.consultoria,
+            tem_acesso=True,
+            primeiro_acesso=False,
+        )
+        self.funcionario = funcionario_model.objects.create_user(
+            username='22222222222',
+            password='old-password',
+            nome='Pessoa Solicitante',
+            prefeitura=self.prefeitura,
+            tem_acesso=True,
+            primeiro_acesso=False,
+        )
+        self.request_url = reverse('solicitar_redefinicao_senha')
+
+    def test_login_forgot_password_creates_request_and_notifies_consultor_by_name(self):
+        login_page = self.client.get(reverse('login'))
+        self.assertContains(login_page, 'Esqueci minha senha')
+        self.assertContains(login_page, 'forgotPasswordForm')
+
+        response = self.client.post(self.request_url, {'cpf': '222.222.222-22'})
+
+        self.assertRedirects(response, reverse('login'))
+        self.assertTrue(
+            SolicitacaoRedefinicaoSenha.objects.filter(
+                funcionario=self.funcionario,
+                pendente=True,
+            ).exists()
+        )
+        self.client.force_login(self.consultor)
+        page = self.client.get(reverse('gerenciar_funcionario'))
+
+        resposta = self.client.get('/notificacoes/atualizar/')
+        self.assertEqual(resposta.status_code, 200)
+        self.assertIn('Pessoa Solicitante deseja alterar a senha.', resposta.content.decode())
+        self.assertContains(page, 'Pessoa Solicitante')
+        self.assertContains(page, 'Solicitada')
+        self.assertContains(
+            page,
+            reverse('gerar_senha_funcionario', args=[self.funcionario.pk]),
+        )
+
+    def test_repeated_requests_keep_one_pending_notification(self):
+        for _ in range(2):
+            self.client.post(self.request_url, {'cpf': self.funcionario.username})
+
+        self.assertEqual(
+            SolicitacaoRedefinicaoSenha.objects.filter(
+                funcionario=self.funcionario,
+                pendente=True,
+            ).count(),
+            1,
+        )
+
+    def test_password_request_cannot_be_marked_read_until_resolved(self):
+        self.client.post(self.request_url, {'cpf': self.funcionario.username})
+        solicitacao = SolicitacaoRedefinicaoSenha.objects.get(
+            funcionario=self.funcionario,
+            pendente=True,
+        )
+        self.client.force_login(self.consultor)
+        refresh_url = reverse('atualizar_notificacoes')
+
+        unread = self.client.get(refresh_url).json()
+        item = next(
+            item for item in unread['notifications']
+            if item['alvo_tipo'] == 'solicitacao_senha'
+        )
+        self.assertFalse(item['lida'])
+        self.assertEqual(unread['unread_count'], 1)
+        self.assertEqual(
+            item['destino_url'],
+            reverse('gerenciar_funcionario'),
+        )
+        self.assertIsNone(item['url'])
+        self.assertIsNone(item['url_nao_lida'])
+        page = self.client.get(reverse('kanban'))
+        item_html = page.content.decode()
+        self.assertNotIn(
+            'data-notification-action="toggle-read"',
+            item_html[item_html.index('Solicitação de troca de senha'):],
+        )
+
+        response = self.client.post(
+            reverse('marcar_solicitacao_senha_lida', args=[solicitacao.pk]),
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertFalse(solicitacao.leituras.exists())
+        still_unread = self.client.get(refresh_url).json()
+        self.assertEqual(still_unread['unread_count'], 1)
+
+    def test_password_request_cannot_be_marked_unread_manually(self):
+        self.client.post(self.request_url, {'cpf': self.funcionario.username})
+        solicitacao = SolicitacaoRedefinicaoSenha.objects.get(
+            funcionario=self.funcionario,
+            pendente=True,
+        )
+        self.client.force_login(self.consultor)
+        response = self.client.post(
+            reverse(
+                'marcar_notificacao_nao_lida',
+                args=['solicitacao_senha', solicitacao.pk],
+            ),
+        )
+
+        self.assertEqual(response.status_code, 409)
+        refreshed = self.client.get(reverse('atualizar_notificacoes')).json()
+        self.assertEqual(refreshed['unread_count'], 1)
+
+    def test_resolving_password_request_clears_notification_for_all_consultors(self):
+        self.client.post(self.request_url, {'cpf': self.funcionario.username})
+        outro_consultor = get_user_model().objects.create_user(
+            username='33333333333',
+            password='test-password',
+            nome='Outro Consultor',
+            consultoria=self.consultoria,
+            tem_acesso=True,
+            primeiro_acesso=False,
+        )
+        self.client.force_login(self.consultor)
+        response = self.client.post(
+            reverse('gerar_senha_funcionario', args=[self.funcionario.pk]),
+        )
+        self.assertRedirects(response, reverse('gerenciar_funcionario'))
+
+        for consultor in (self.consultor, outro_consultor):
+            self.client.force_login(consultor)
+            notificacoes = self.client.get(reverse('atualizar_notificacoes')).json()
+            self.assertEqual(notificacoes['unread_count'], 0)
+            self.assertFalse(notificacoes['notifications'])
+
+    def test_password_requests_and_deadline_alerts_share_newest_first_order(self):
+        self.client.post(self.request_url, {'cpf': self.funcionario.username})
+        eixo = Eixo.objects.create(nome='Gestão')
+        status = Status.objects.create(chave='EM_EXECUCAO', nome='Em execução', cor='#ffff00', ordem=3)
+        hoje = timezone.localdate()
+        acao = Acao.objects.create(
+            prefeitura=self.prefeitura,
+            nome='Ação mais antiga',
+            eixo=eixo,
+            prioridade='Média',
+            data_inicio=hoje,
+            data_fim=hoje + timedelta(days=2),
+            arrecadacao_estimada=0,
+            status=status,
+            responsavel=self.funcionario,
+        )
+        Acao.objects.filter(pk=acao.pk).update(
+            criado_em=timezone.now() - timedelta(days=1),
+        )
+        self.client.force_login(self.consultor)
+
+        payload = self.client.get(reverse('atualizar_notificacoes')).json()
+        kinds = [item['alvo_tipo'] for item in payload['notifications']]
+
+        self.assertEqual(kinds[:2], ['solicitacao_senha', 'acao'])
+
+        page = self.client.get(reverse('kanban'))
+        resposta = self.client.get('/notificacoes/atualizar/')
+        self.assertEqual(resposta.status_code, 200)
+        titulos = [item['titulo'] for item in json.loads(resposta.content)['notifications']]
+        self.assertLess(
+            titulos.index('Solicitação de troca de senha'),
+            titulos.index('Ação: Ação mais antiga'),
+)
+
+    def test_generated_password_resolves_request_and_requires_first_login_change(self):
+        self.client.post(self.request_url, {'cpf': self.funcionario.username})
+        self.client.force_login(self.consultor)
+
+        response = self.client.post(
+            reverse('gerar_senha_funcionario', args=[self.funcionario.pk]),
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.funcionario.refresh_from_db()
+        self.assertTrue(self.funcionario.primeiro_acesso)
+        self.assertTrue(self.funcionario.has_usable_password())
+        self.assertFalse(
+            SolicitacaoRedefinicaoSenha.objects.filter(
+                funcionario=self.funcionario,
+                pendente=True,
+            ).exists()
+        )
+        self.assertContains(response, 'Provisória')
+        self.assertContains(response, 'Nova senha provisória')
+
+    def test_unknown_or_ineligible_cpf_gets_generic_response_without_request(self):
+        response = self.client.post(self.request_url, {'cpf': '99999999999'})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], reverse('login'))
+        self.assertContains(
+            self.client.get(reverse('login')),
+            'Se o CPF informado estiver cadastrado com acesso, os consultores serão notificados.',
+        )
+        self.assertFalse(SolicitacaoRedefinicaoSenha.objects.exists())

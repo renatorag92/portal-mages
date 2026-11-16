@@ -1,0 +1,56 @@
+<!-- POP-UP: DETALHES DA AÇÃO E ETAPAS (conteúdo preenchido pelo kanban-detalhes.js) -->
+<div id="detOverlay" class="det-overlay" aria-hidden="true"
+     data-somente-leitura="{% if detalhes_somente_leitura %}true{% else %}false{% endif %}"
+     data-url-detalhes="{% url 'obter_detalhes_acao' 0 %}"
+     data-url-editar-acao="{% url 'editar_acao' 0 %}"
+     data-url-editar-etapa="{% url 'editar_etapa' 0 %}"
+     data-url-concluir-etapa="{% url 'alterar_etapa' 0 %}"
+     data-url-adicionar-etapa="{% url 'adicionar_etapa' 0 %}"
+     data-url-excluir-acao="{% url 'excluir_acao' 0 %}"
+     data-url-excluir-etapa="{% url 'excluir_etapa' 0 %}">
+
+  <div class="det-dialog" role="dialog" aria-modal="true" aria-labelledby="detTitulo">
+
+    <header class="det-header">
+      <div class="det-header-info">
+        <span class="det-label">DETALHES DA AÇÃO</span>
+        <h2 id="detTitulo">AÇÃO</h2>
+        <p id="detSubtitulo"></p>
+      </div>
+      <div class="det-header-side">
+        <span id="detBadge" class="det-badge"></span>
+        <button type="button" id="detFechar" class="det-fechar" aria-label="Fechar">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+    </header>
+
+    <div class="det-body">
+      <section id="detAcao" class="det-col" aria-label="Dados da ação"></section>
+      <section id="detEtapas" class="det-col" aria-label="Etapas da ação"></section>
+    </div>
+
+    <footer class="det-footer" id="detStatus" hidden>
+      <span class="det-footer-label">Mover para</span>
+      <button type="button" class="det-mover-toggle" data-do="alternar-status"
+              aria-expanded="false" aria-controls="detStatusOpcoes">
+        <span class="det-status-dot" id="detStatusAtualDot"></span>
+        <span>Mover para</span>
+        <strong id="detStatusAtual"></strong>
+        <i class="bi bi-chevron-down" aria-hidden="true"></i>
+      </button>
+      <div class="det-status-opcoes" id="detStatusOpcoes">
+        {% for s in kanban %}
+        <button type="button" class="det-status-btn" data-do="mudar-status" data-status="{{ s.id }}"
+                style="--c: {{ s.cor|default:'#3e4a89' }};">
+          <span class="det-status-dot"></span>{{ s.nome }}
+        </button>
+        {% endfor %}
+      </div>
+      <button type="button" class="det-btn det-btn-excluir" data-do="excluir-acao" aria-label="Excluir ação">
+        <i class="bi bi-trash3" aria-hidden="true"></i><span>Excluir ação</span>
+      </button>
+    </footer>
+
+  </div>
+</div>

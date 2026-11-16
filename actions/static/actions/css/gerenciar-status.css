@@ -122,7 +122,8 @@
   font-weight: 600;
 }
 
-.status-form-group input[type="text"] {
+.status-form-group input[type="text"],
+.status-form-group input[type="email"] {
   width: min(100%, 480px);
   padding: 9px 11px;
   border: 1px solid #d8d5cc;
@@ -371,6 +372,58 @@
   background: #d98a1f;
 }
 
+.status-message-eixo-created {
+  color: #24704a;
+  border-color: #c8e2d1;
+}
+
+.status-message-eixo-created .status-message-icon {
+  background: #e2f1e8;
+}
+
+.status-message-eixo-created .status-message-progress {
+  background: #2e8b57;
+}
+
+.status-message-eixo-updated {
+  color: #285b8f;
+  border-color: #c9dced;
+}
+
+.status-message-eixo-updated .status-message-icon {
+  background: #e6f0fa;
+}
+
+.status-message-eixo-updated .status-message-progress {
+  background: #3478b8;
+}
+
+.status-message-eixo-deleted {
+  color: #a5301f;
+  border-color: #edcbc6;
+}
+
+.status-message-eixo-deleted .status-message-icon {
+  background: #f9e5e2;
+}
+
+.status-message-eixo-deleted .status-message-progress {
+  background: #c0392b;
+}
+
+.status-message-eixo-delete-blocked {
+  color: #8a5a00;
+  border-color: #f0dfb5;
+}
+
+.status-message-eixo-delete-blocked .status-message-icon {
+  background: #fff3d6;
+}
+
+.status-message-eixo-delete-blocked .status-message-progress {
+  background: #d98a1f;
+}
+
 .status-message-close {
   position: absolute;
   top: 9px;
@@ -508,12 +561,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow-y: auto;
   padding: 20px;
   background: rgba(20, 20, 20, 0.48);
 }
 
 .status-confirm-dialog {
   width: min(100%, 420px);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
   padding: 26px;
   border: 1px solid #e0ddd4;
   border-radius: 10px;
@@ -596,6 +652,27 @@
   .status-messages {
     top: 72px;
     right: 12px;
+  }
+}
+
+@media (max-width: 560px) {
+  .status-confirm-overlay {
+    align-items: flex-start;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  }
+
+  .status-confirm-dialog {
+    max-height: 100%;
+    padding: 22px 18px;
+  }
+
+  .status-confirm-actions {
+    flex-wrap: wrap;
+  }
+
+  .status-confirm-actions button {
+    flex: 1 1 100%;
+    min-height: 44px;
   }
 }
 

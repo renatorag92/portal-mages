@@ -74,9 +74,34 @@ body {
     gap: 14px;
 }
 
+.mobile-nav-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+    padding: 8px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--text-dark);
+    cursor: pointer;
+}
+
+.mobile-nav-toggle svg {
+    width: 20px;
+    height: 20px;
+}
+
 .navbar-logo {
-    height: 60px;
-    width: auto;
+    display: block;
+    height: 48px;
+    width: 44px;
+    flex-shrink: 0;
+    align-self: center;
+    object-fit: cover;
+    object-position: center;
 }
 
 .topbar h1 {
@@ -84,6 +109,12 @@ body {
     font-weight: 700;
     color: var(--text-dark);
     margin: 0;
+}
+
+.topbar h1.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .topbar-icons {
@@ -99,14 +130,9 @@ body {
     cursor: pointer;
 }
 
-
 /* =========================================================
    AVATAR + DROPDOWN
    ========================================================= */
-
-.avatar-wrapper {
-    position: relative;
-}
 
 .avatar {
     width: 30px;
@@ -125,66 +151,12 @@ body {
     color: #fff;
 }
 
-.avatar-menu {
-    display: none;
-    position: absolute;
-    top: calc(100% + 12px);
-    right: 0;
-    width: 170px;
-    background: #ffffff;
-    border: 1px solid #ddd9cf;
-    border-radius: 10px;
-    box-shadow:
-        0 12px 35px rgba(0, 0, 0, 0.18),
-        0 3px 10px rgba(0, 0, 0, 0.08);
-    z-index: 10000;
-    padding: 6px;
-    animation: actionMenuOpen 0.16s ease-out;
-}
-
-.avatar-menu.open {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.avatar-menu-item {
+.avatar img {
     width: 100%;
-    text-align: left;
-    padding: 8px 10px;
-    border: none;
-    background: transparent;
-    border-radius: 6px;
-    font-size: 13px;
-    color: #2b2b2b;
-    cursor: pointer;
-    transition: background 0.15s ease;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
 }
-
-.avatar-menu-item:hover {
-    background: #f4f3ef;
-}
-
-.avatar-menu-item-danger {
-    color: #c0392b;
-}
-
-.avatar-menu-item-danger:hover {
-    background: rgba(192, 57, 43, 0.08);
-}
-
-@keyframes actionMenuOpen {
-    from {
-        opacity: 0;
-        transform: translateY(-5px) scale(0.98);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
 
 /* =========================================================
    ÁREA ABAIXO DA NAVBAR
@@ -213,7 +185,7 @@ body {
     flex-direction: column;
     padding: 14px 0;
     gap: 4px;
-    transition: width 0.2s ease;
+    transition: width 0.2s ease, transform 0.2s ease;
     overflow: hidden;
     position: absolute;
     left: 0;
@@ -321,8 +293,82 @@ body {
     justify-content: flex-start;
 }
 
-.sidebar:not(.expanded):not(.hover-expanded) .menu-item {
+.sidebar:not(.expanded):not(.hover-expanded):not(.mobile-open) .menu-item {
     justify-content: center;
+}
+
+
+/* =========================================================
+   GRUPO DE MENU (PAINEL ADMIN)
+   ========================================================= */
+
+/* Botão com a mesma aparência dos links */
+.sidebar-menu button.menu-item {
+    width: 100%;
+    background: none;
+    border: none;
+    font-family: inherit;
+    text-align: left;
+}
+
+.sidebar-menu button.menu-item:hover {
+    background: #f4f3ef;
+}
+
+.menu-group-toggle .label {
+    flex: 1;
+}
+
+/* Seta: só aparece com a sidebar aberta */
+.menu-group-toggle .chevron {
+    display: none;
+    width: 12px;
+    height: 12px;
+    margin-left: auto;
+    transition: transform 0.25s ease;
+}
+
+.sidebar.expanded .menu-group-toggle .chevron,
+.sidebar.hover-expanded .menu-group-toggle .chevron {
+    display: block;
+}
+
+.menu-group.open > .menu-group-toggle .chevron {
+    transform: rotate(180deg);
+}
+
+/* Pai em destaque quando o grupo contém a página atual */
+.sidebar-menu .menu-group.has-active > .menu-group-toggle {
+    color: #2b2b2b;
+    font-weight: 700 !important;
+}
+
+/* Submenu: fechado por padrão */
+.submenu {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+/* Só abre se o grupo estiver aberto E a sidebar expandida */
+.sidebar.expanded .menu-group.open > .submenu,
+.sidebar.hover-expanded .menu-group.open > .submenu,
+.sidebar.mobile-open .menu-group.open > .submenu {
+    max-height: 200px;
+}
+
+/* Recuo dos itens filhos
+   (especificidade maior que "a.menu-item" para o padding valer) */
+.sidebar-menu a.menu-item.submenu-item {
+    padding-left: 20px;
+}
+
+.sidebar-menu .submenu-item svg {
+    width: 16px;
+    height: 16px;
 }
 
 
@@ -341,26 +387,70 @@ body {
     overflow: hidden;
 }
 
+.sidebar-backdrop[hidden] {
+    display: none;
+}
+
 
 /* =========================================================
    RESPONSIVIDADE
    ========================================================= */
 
-@media (max-width: 560px) {
+@media (max-width: 767px) {
+
+    .topbar-icons {
+        gap: 10px;
+    }
 
     .sidebar {
-        width: 0;
-        border-right: none;
+        width: min(280px, 85vw);
+        border-right: 1px solid var(--border-light);
+        transform: translateX(-100%);
+        z-index: 30;
+    }
+
+    .sidebar.expanded,
+    .sidebar.hover-expanded,
+    .sidebar.mobile-open {
+        width: min(280px, 85vw);
         padding-left: 0;
         padding-right: 0;
     }
 
-    .sidebar.expanded,
-    .sidebar.hover-expanded {
-        width: 220px;
-        border-right: 1px solid var(--border-light);
-        padding-left: 0;
-        padding-right: 0;
+    .sidebar.mobile-open {
+        transform: translateX(0);
+    }
+
+    .sidebar.mobile-open .sidebar-menu {
+        padding: 0 10px;
+    }
+
+    .sidebar.mobile-open .menu-item .label {
+        display: inline;
+    }
+
+    .sidebar.mobile-open .menu-item {
+        justify-content: flex-start;
+    }
+
+    .sidebar.mobile-open .menu-group-toggle .chevron {
+        display: block;
+    }
+
+    .sidebar-backdrop {
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        border: 0;
+        background: rgba(15, 23, 42, 0.38);
+    }
+
+    .mobile-nav-toggle {
+        display: inline-flex;
+    }
+
+    .main {
+        margin-left: 0;
     }
 
 }

@@ -147,6 +147,8 @@ form {
   gap: 28px;
 }
 
+form[hidden] { display: none; }
+
 .campos {
   display: flex;
   flex-direction: column;

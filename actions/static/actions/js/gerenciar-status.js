@@ -1,5 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
-  document.querySelectorAll(".status-message").forEach(function (message) {
+
+  // Avisos somem sozinhos após 6s, exceto o da senha provisória (esse só fecha pelo X)
+  document.querySelectorAll(".status-message:not(.status-message-funcionario-senha)").forEach(function (message) {
     window.setTimeout(function () {
       message.classList.add("is-leaving");
       window.setTimeout(function () {
@@ -17,6 +19,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const modal = document.getElementById("statusConfirmModal");
   const cancelButton = document.getElementById("statusConfirmCancel");
   const deleteButton = document.getElementById("statusConfirmDelete");
+  const confirmTitle = document.getElementById("statusConfirmTitle");
   const confirmText = document.getElementById("statusConfirmText");
   const deleteForms = document.querySelectorAll(".status-delete-form");
 
@@ -41,10 +44,12 @@ document.addEventListener("DOMContentLoaded", function () {
       event.preventDefault();
       formToDelete = form;
       triggerButton = form.querySelector(".status-delete-button");
-      const statusName = triggerButton.dataset.statusName;
-      confirmText.textContent = statusName
-        ? `Tem certeza de que deseja excluir o status "${statusName}"? Esta ação não pode ser desfeita.`
-        : "Tem certeza de que deseja excluir este status? Esta ação não pode ser desfeita.";
+      const itemType = triggerButton.dataset.confirmType || "status";
+      const itemName = triggerButton.dataset.statusName;
+      confirmTitle.textContent = `Excluir ${itemType}?`;
+      confirmText.textContent = itemName
+        ? `Tem certeza de que deseja excluir o ${itemType} "${itemName}"? Esta ação não pode ser desfeita.`
+        : `Tem certeza de que deseja excluir este ${itemType}? Esta ação não pode ser desfeita.`;
       modal.hidden = false;
       cancelButton.focus();
     });

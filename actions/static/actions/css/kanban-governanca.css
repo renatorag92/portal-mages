@@ -128,11 +128,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 4px;
-
   color: var(--column-foreground, #fff);
   font-size: 12.5px;
   font-weight: 700;
-
+  border-radius: 6px 6px 0 0;
   padding: 9px 12px;
 }
 
@@ -215,11 +214,6 @@
   color: #6b6b6b;
 }
 
-.column-status-delete-form {
-  display: flex;
-  margin: 0;
-}
-
 .column-status-action {
   display: inline-flex;
   width: 25px;
@@ -273,6 +267,8 @@
 
 .status-edit-dialog {
   width: min(520px, 100%);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
   padding: 24px;
   background: #fff;
   border: 1px solid #e0ddd4;
@@ -497,41 +493,6 @@
     transform 0.15s ease;
 }
 
-/* =========================================================
-   CORES DOS CARDS POR COLUNA
-   ========================================================= */
-
-/* Planejado */
-.col-planejado .task-card {
-  background: #e8ebf7;
-  border-color: #d3d8ed;
-}
-
-/* Em preparação */
-.col-preparacao .task-card {
-  background: #eceef1;
-  border-color: #d9dce0;
-}
-
-/* Em execução */
-.col-execucao .task-card {
-  background: #fff0d7;
-  border-color: #f1d6a5;
-}
-
-/* Em validação */
-.col-validacao .task-card {
-  background: #f0e5f5;
-  border-color: #dfcce8;
-}
-
-/* Concluído */
-.col-concluido .task-card {
-  background: #e2f1e8;
-  border-color: #c9e2d2;
-}
-
-/* Cancelado */
 .col-cancelado .task-card {
   background: #f9e5e2;
   border-color: #edcbc6;
@@ -602,6 +563,146 @@
 
   .task-card {
     padding: 8px 6px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .board-wrapper {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-bottom: 16px;
+  }
+
+  .board {
+    width: max-content;
+    min-width: 100%;
+    overflow: visible;
+  }
+
+  .column {
+    flex: 0 0 min(38vw, 320px);
+    width: min(38vw, 320px);
+  }
+}
+
+@media (max-width: 767px) {
+  .frame:has(.board-wrapper) {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
+  .status-edit-overlay {
+    align-items: flex-start;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  }
+
+  .status-edit-dialog {
+    width: 100%;
+    max-height: 100%;
+    padding: 20px 16px;
+  }
+
+  .status-edit-actions {
+    flex-wrap: wrap;
+  }
+
+  .status-edit-actions button {
+    flex: 1 1 100%;
+  }
+
+  .main:has(.board-wrapper) {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .main .board-wrapper {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 6px max(12px, calc((100vw - min(86vw, 420px)) / 2)) 20px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .main .board-wrapper::-webkit-scrollbar {
+    display: none;
+  }
+
+  .board {
+    display: flex;
+    flex-direction: row;
+    width: max-content;
+    min-width: 100%;
+    height: 100%;
+    align-items: center;
+    overflow: visible;
+    gap: 12px;
+  }
+
+  .column {
+    flex: 0 0 min(86vw, 420px);
+    width: min(86vw, 420px);
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 10px;
+    opacity: 0.78;
+    height: calc(100% - 40px);
+    scroll-snap-align: center;
+    transition: height 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .column.is-selected {
+    z-index: 6;
+    opacity: 1;
+    height: 100%;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2);
+  }
+
+  .column-header {
+    flex-wrap: nowrap;
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+
+  .column-header .title {
+    flex: 1 1 auto;
+    font-size: 13px;
+    text-align: left;
+  }
+
+  .column-header-actions {
+    gap: 3px;
+  }
+
+  .column-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 10px;
+    gap: 8px;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .task-card {
+    padding: 10px 12px;
+    padding-right: 34px;
+  }
+
+  .task-card .task-id {
+    font-size: 11px;
+  }
+
+  .task-card .task-desc {
+    font-size: 12px;
+  }
+
+  .add-action-btn {
+    padding: 10px;
+    font-size: 12px;
   }
 }
 
@@ -744,5 +845,77 @@
 
   .status-messages.kanban-status-messages .status-message-progress {
     display: none;
+  }
+}
+
+/* =========================================================
+   ANDAMENTO DAS ETAPAS NO CARD
+   (cole este bloco no fim do kanban-governanca.css)
+   ========================================================= */
+
+.task-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.task-progress[hidden] {
+  display: none;
+}
+
+/* Trilho neutro: aparece bem em qualquer cor de card */
+.task-progress-barra {
+  flex: 1;
+  height: 5px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+/* --andamento (0 a 100) vem do template e é atualizada pelo JS */
+.task-progress-preenchido {
+  width: calc(var(--andamento, 0) * 1%);
+  height: 100%;
+  background: #2e8b57;
+  border-radius: 10px;
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.task-progress-texto {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: #555;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Todas as etapas concluídas: aparece o check ao lado do número */
+.task-progress-check {
+  display: none;
+  flex-shrink: 0;
+  font-size: 13px;
+  line-height: 1;
+  color: #2e8b57;
+}
+
+.task-progress.completo .task-progress-check {
+  display: block;
+}
+
+/* Ações canceladas: o andamento já não importa, então fica esmaecido */
+.col-cancelado .task-progress {
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task-progress-preenchido {
+    transition: none;
+  }
+}
+
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  .column {
+    transition: none;
   }
 }

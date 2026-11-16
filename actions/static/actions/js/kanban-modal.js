@@ -5,6 +5,8 @@
  */
 document.addEventListener("DOMContentLoaded", function () {
 
+  const $ = function (id) { return document.getElementById(id); };
+
   const overlay = document.getElementById("acaoModalOverlay");
   const form = document.getElementById("formCadastroAcao");
   if (!overlay || !form) return;
@@ -12,7 +14,17 @@ document.addEventListener("DOMContentLoaded", function () {
   // Move o pop-up para o <body>, assim nenhum container do layout limita o position: fixed
   document.body.appendChild(overlay);
 
-  const $ = function (id) { return document.getElementById(id); };
+  const campoResponsavel = $("responsavel");
+  if (campoResponsavel) {
+   campoResponsavel.addEventListener("input", function (event) {
+    event.target.value = event.target.value
+      .replace(/\D/g, "")
+      .slice(0, 11)
+      .replace(/^(\d{3})(\d)/, "$1.$2")
+      .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1-$2");
+  });
+}
 
   const selEixo = $("eixo");
   const acaoTexto = $("acaoTexto");
@@ -69,6 +81,19 @@ document.addEventListener("DOMContentLoaded", function () {
     form.querySelectorAll('select, input[type="date"]').forEach(atualizarCor);
   }
 
+  function atualizarLimitesDatasEtapas() {
+    const dataInicioAcao = $("dataInicio").value;
+    const dataFimAcao = $("dataFim").value;
+    etapasList.querySelectorAll(".etapa-card").forEach(function (cartao) {
+      const inicio = cartao.querySelector('[name="etapaInicio[]"]');
+      const fim = cartao.querySelector('[name="etapaFim[]"]');
+      inicio.min = dataInicioAcao;
+      inicio.max = dataFimAcao;
+      fim.min = dataInicioAcao;
+      fim.max = dataFimAcao;
+    });
+  }
+
 
   /* ---------- Etapas: cartões ---------- */
 
@@ -98,8 +123,9 @@ document.addEventListener("DOMContentLoaded", function () {
       rotulo.htmlFor = controle.id;
     });
 
-    cartao.querySelectorAll('select, input[type="date"]').forEach(atualizarCor);
     etapasList.appendChild(cartao);
+    atualizarLimitesDatasEtapas();
+    cartao.querySelectorAll('select, input[type="date"]').forEach(atualizarCor);
     atualizarEtapas();
 
     if (focar) {
@@ -109,6 +135,8 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   $("adicionarEtapaBtn").addEventListener("click", function () { novaEtapa(true); });
+  $("dataInicio").addEventListener("change", atualizarLimitesDatasEtapas);
+  $("dataFim").addEventListener("change", atualizarLimitesDatasEtapas);
 
   etapasList.addEventListener("click", function (event) {
     const remover = event.target.closest(".etapa-remove");
@@ -305,7 +333,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
 
-  /* ---------- Máscaras: CPF e custo ---------- */
+  /* ---------- Máscaras: CPF e arrecadacao_estimada ---------- */
 
   etapasList.addEventListener("input", function (event) {
     if (event.target.name !== "etapaResponsavelCpf[]") return;
@@ -318,7 +346,7 @@ document.addEventListener("DOMContentLoaded", function () {
       .replace(/\.(\d{3})(\d)/, ".$1-$2");
   });
 
-  $("custo").addEventListener("input", function (event) {
+  $("arrecadacao_estimada").addEventListener("input", function (event) {
     const digitos = event.target.value.replace(/\D/g, "");
     if (!digitos) {
       event.target.value = "";
@@ -339,7 +367,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const valor = function (id) { return $(id).value.trim(); };
 
     if (!valor("eixo") || !valor("acaoTexto") || !valor("prioridade") ||
-        !valor("custo") || !valor("dataInicio") || !valor("dataFim")) {
+        !valor("arrecadacao_estimada") || !valor("dataInicio") || !valor("dataFim")) {
       return mostrarErro("Preencha todos os campos obrigatórios marcados com asterisco (*).");
     }
 
@@ -347,6 +375,9 @@ document.addEventListener("DOMContentLoaded", function () {
       return mostrarErro("A data de fim não pode ser anterior à data de início.");
     }
 
+    if (campoResponsavel && campoResponsavel.value.replace(/\D/g, "").length !== 11) {
+      return mostrarErro("Informe o CPF do responsável pela ação.");
+  }
     const etapas = [];
     const cartoes = etapasList.querySelectorAll(".etapa-card");
 
@@ -373,6 +404,9 @@ document.addEventListener("DOMContentLoaded", function () {
       if (etapa.cpf.replace(/\D/g, "").length !== 11) {
         return mostrarErro("O CPF da etapa \"" + etapa.nome + "\" está incompleto.");
       }
+      if (etapa.inicio < valor("dataInicio") || etapa.fim > valor("dataFim")) {
+        return mostrarErro("As datas da etapa \"" + etapa.nome + "\" devem estar dentro do período da ação.");
+      }
       if (etapa.fim < etapa.inicio) {
         return mostrarErro("Na etapa \"" + etapa.nome + "\", a data de fim não pode ser anterior à de início.");
       }
@@ -386,10 +420,11 @@ document.addEventListener("DOMContentLoaded", function () {
       acao: hidAcao.value,
       novaAcao: hidNova.value,
       prioridade: valor("prioridade"),
-      custo: valor("custo").replace(/\./g, "").replace(",", "."),
+      arrecadacao_estimada: valor("arrecadacao_estimada").replace(/\./g, "").replace(",", "."),
       dataInicio: valor("dataInicio"),
       dataFim: valor("dataFim"),
       observacoes: valor("observacoes"),
+      responsavel: campoResponsavel ? campoResponsavel.value : "",
       etapas: etapas
     };
 
@@ -414,7 +449,16 @@ document.addEventListener("DOMContentLoaded", function () {
         return mostrarErro((json && json.error) || "Não foi possível salvar a ação. Verifique os dados e tente novamente.");
       }
 
-      // Atualiza a página automaticamente após criar a ação
+      // Avisa que a ação foi criada; a página só recarrega depois do OK
+      if (typeof window.confirmarSite === "function") {
+        await window.confirmarSite({
+          titulo: "Ação criada com sucesso!",
+          texto: "A ação \"" + valor("acaoTexto") + "\"" + (json.codigo ? " (código " + json.codigo + ")" : "") + " foi cadastrada.",
+          sim: "OK",
+          nao: null,
+          perigo: false
+        });
+      }
       window.location.reload();
 
     } catch (erro) {
