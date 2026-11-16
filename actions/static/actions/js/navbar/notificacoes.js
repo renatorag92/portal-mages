@@ -256,7 +256,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         evento.preventDefault();
         try {
-            if (item.dataset.lida !== "true") {
+            if (item.dataset.tipo !== "senha" && item.dataset.lida !== "true") {
                 await alternarLida(item.dataset.id, true);
             }
             window.location.assign(link.href);
@@ -379,33 +379,32 @@ document.addEventListener("DOMContentLoaded", function () {
         const acoes = document.createElement("div");
         acoes.className = "notification-item-actions";
         acoes.setAttribute("aria-label", "Ações da notificação");
-        acoes.appendChild(criarBotaoAcao(
-            notificacao.lida ? "toggle-read" : "toggle-read",
-            notificacao.lida ? "Marcar como não lida" : "Marcar como lida",
-            notificacao.lida ? "bi-circle" : "bi-check2",
-        ));
         if (tipo !== "senha") {
+            acoes.appendChild(criarBotaoAcao(
+                "toggle-read",
+                notificacao.lida ? "Marcar como não lida" : "Marcar como lida",
+                notificacao.lida ? "bi-circle" : "bi-check2",
+            ));
             acoes.appendChild(criarBotaoAcao("excluir", "Excluir", "bi-trash3"));
-        }
-        item.appendChild(acoes);
 
-        const menu = document.createElement("details");
-        menu.className = "notification-mobile-menu";
-        const resumo = document.createElement("summary");
-        resumo.setAttribute("aria-label", "Abrir ações da notificação");
-        resumo.innerHTML = '<i class="bi bi-three-dots" aria-hidden="true"></i>';
-        const menuAcoes = document.createElement("div");
-        menuAcoes.className = "notification-mobile-menu-actions";
-        menuAcoes.appendChild(criarBotaoAcao(
-            "toggle-read",
-            notificacao.lida ? "Marcar como não lida" : "Marcar como lida",
-            notificacao.lida ? "bi-circle" : "bi-check2",
-        ));
-        if (tipo !== "senha") {
+            item.appendChild(acoes);
+
+            const menu = document.createElement("details");
+            menu.className = "notification-mobile-menu";
+            const resumo = document.createElement("summary");
+            resumo.setAttribute("aria-label", "Abrir ações da notificação");
+            resumo.innerHTML = '<i class="bi bi-three-dots" aria-hidden="true"></i>';
+            const menuAcoes = document.createElement("div");
+            menuAcoes.className = "notification-mobile-menu-actions";
+            menuAcoes.appendChild(criarBotaoAcao(
+                "toggle-read",
+                notificacao.lida ? "Marcar como não lida" : "Marcar como lida",
+                notificacao.lida ? "bi-circle" : "bi-check2",
+            ));
             menuAcoes.appendChild(criarBotaoAcao("excluir", "Excluir", "bi-trash3"));
+            menu.append(resumo, menuAcoes);
+            item.appendChild(menu);
         }
-        menu.append(resumo, menuAcoes);
-        item.appendChild(menu);
 
         return item;
     }
@@ -562,14 +561,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         document.getElementById("notificationMarkAll")
             .addEventListener("click", marcarTodasComoLidas);
-        document.getElementById("notificationShowAll")
-            .addEventListener("click", function () {
-                filtrarNotificacoes("todas");
-                document.querySelector(".notification-scroll-area")
-                    ?.scrollTo({top: 0, behavior: "smooth"});
-                lista.querySelector("[data-id] a")?.focus({preventScroll: true});
-            });
-
         sino.addEventListener("click", function () {
             const aberto = sino.getAttribute("aria-expanded") === "true";
             painel.hidden = aberto;

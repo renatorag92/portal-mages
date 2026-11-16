@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
@@ -65,6 +65,7 @@ class NotificationCenterTests(TestCase):
         response = self.client.get(reverse('kanban'))
 
         self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Ver todas as notificações')
         notificacoes = response.context['notifications']
         self.assertEqual(response.context['notification_count'], 2)
         self.assertEqual(
@@ -82,6 +83,31 @@ class NotificationCenterTests(TestCase):
         self.assertContains(response, 'data-tipo="acao"')
         self.assertNotContains(response, 'bi-envelope')
         self.assertTrue(all(item['criado_em'] for item in notificacoes))
+
+    def test_omits_actions_and_stages_for_suspended_or_cancelled_actions(self):
+        nao_notificaveis = [
+            Status.objects.create(nome='Suspenso'),
+            Status.objects.create(nome='Cancelado'),
+        ]
+        for status in nao_notificaveis:
+            acao = self.criar_acao(
+                f'Ação {status.nome}',
+                self.hoje + timedelta(days=2),
+                status=status,
+            )
+            Etapa.objects.create(
+                nome=f'Etapa {status.nome}',
+                data_inicio=self.hoje,
+                data_fim=self.hoje + timedelta(days=1),
+                acao=acao,
+                responsavel=self.user,
+            )
+
+        response = self.client.get(reverse('atualizar_notificacoes'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['notifications'], [])
+        self.assertEqual(response.json()['unread_count'], 0)
 
     def test_clicking_action_notification_marks_it_read_and_redirects(self):
         acao = self.criar_acao('Ação próxima', self.hoje + timedelta(days=2))
@@ -133,6 +159,21 @@ class NotificationCenterTests(TestCase):
 
         self.assertContains(response, f'{horario_brasilia:%H:%M}')
 
+    def test_dashboard_marks_actions_due_today_or_tomorrow_in_red(self):
+        amanha = date.today() + timedelta(days=1)
+        acao_hoje = self.criar_acao('Ação vence hoje', date.today())
+        acao_amanha = self.criar_acao('Ação vence amanhã', amanha)
+        acao_proxima = self.criar_acao('Ação vence em dois dias', amanha + timedelta(days=1))
+
+        response = self.client.get(reverse('dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        acoes = {acao['nome_acao']: acao for acao in response.context['proximas_acoes']}
+        self.assertEqual(acoes[acao_hoje.nome]['nivel'], 'vermelho')
+        self.assertEqual(acoes[acao_amanha.nome]['nivel'], 'vermelho')
+        self.assertEqual(acoes[acao_proxima.nome]['nivel'], 'amarelo')
+        self.assertContains(response, 'class="dash-data dash-data-vermelho"')
+
     def test_deadline_colors_distinguish_tomorrow_from_overdue_for_actions_only(self):
         acao_amanha = self.criar_acao('Ação vence amanhã', self.hoje + timedelta(days=1))
         acao_atrasada = self.criar_acao('Ação atrasada', self.hoje - timedelta(days=2))
@@ -167,6 +208,7 @@ class NotificationCenterTests(TestCase):
         self.assertIn('Prazo atrasado', notificacoes[f'Ação: {acao_atrasada.nome}']['mensagem'])
         self.assertNotIn(f'Etapa: {etapa_amanha.nome}', notificacoes)
         self.assertNotIn(f'Etapa: {etapa_atrasada.nome}', notificacoes)
+        self.assertTrue(all(item['alvo_tipo'] == 'acao' for item in notificacoes.values()))
 
     def test_refresh_endpoint_returns_action_notifications_only(self):
         acao = self.criar_acao('Ação próxima', self.hoje + timedelta(days=5))

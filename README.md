@@ -126,7 +126,7 @@ Acesse http://127.0.0.1:8000 e entre com:
 | Perfil | CPF | Senha |
 |---|---|---|
 | Consultor | 12345678901 | senha123 |
-| Secretário |98765432102 | senha123 |
+| Secretário |12345678902 | senha123 |
 
 
 ### Solicitação de troca de senha

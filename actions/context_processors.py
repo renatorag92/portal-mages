@@ -3,9 +3,11 @@ from datetime import timedelta
 from django.urls import reverse
 from django.utils import timezone
 
-from actions.models import (
-    Acao, Etapa, NotificacaoLida, SolicitacaoRedefinicaoSenha, Status
+from .models import (
+    Acao, NotificacaoLida, SolicitacaoRedefinicaoSenha,
 )
+
+STATUS_SEM_NOTIFICACAO = ('Concluído', 'Suspenso', 'Cancelado')
 
 
 def _mensagem_prazo(dias):
@@ -19,6 +21,34 @@ def _mensagem_prazo(dias):
 
 
 def notifications(request):
+    solicitacoes_senha = []
+    if request.user.is_authenticated and request.user.e_consultor:
+        solicitacoes_senha = list(
+            SolicitacaoRedefinicaoSenha.objects.filter(pendente=True)
+            .select_related('funcionario')
+        )
+    notificacoes_senha = [
+        {
+            'id': f'solicitacao_senha-{solicitacao.pk}',
+            'titulo': 'Solicitação de troca de senha',
+            'mensagem': f'{solicitacao.funcionario.nome} deseja alterar a senha.',
+            'nome': solicitacao.funcionario.nome,
+            'tipo': 'warning',
+            'urgencia': 'seguranca',
+            'alvo_tipo': 'solicitacao_senha',
+            'alvo_id': solicitacao.pk,
+            'lida': False,
+            'url': None,
+            'url_nao_lida': None,
+            'destino_url': reverse('gerenciar_funcionario'),
+            'solicitada_em': solicitacao.solicitada_em,
+            'data': solicitacao.solicitada_em,
+            'data_iso': solicitacao.solicitada_em,
+            'prazo': None,
+        }
+        for solicitacao in solicitacoes_senha
+    ]
+
     if not request.user.is_authenticated:
         return {
             'notifications': [],
@@ -95,7 +125,7 @@ def notifications(request):
         prefeitura=prefeitura,
         data_fim__lte=limite,
     ).exclude(
-    status__chave__in=Status.ENCERRADAS,
+        status__nome__in=STATUS_SEM_NOTIFICACAO,
     ).select_related('status')
     acoes_lidas = set(
         NotificacaoLida.objects.filter(
