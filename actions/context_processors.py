@@ -3,9 +3,11 @@ from datetime import timedelta
 from django.urls import reverse
 from django.utils import timezone
 
-from actions.models import (
-    Acao, Etapa, NotificacaoLida, SolicitacaoRedefinicaoSenha, Status
+from .models import (
+    Acao, Etapa, NotificacaoLida, SolicitacaoRedefinicaoSenha,
 )
+
+STATUS_SEM_NOTIFICACAO = ('Concluído', 'Suspenso', 'Cancelado')
 
 
 def _mensagem_prazo(dias):
@@ -19,6 +21,34 @@ def _mensagem_prazo(dias):
 
 
 def notifications(request):
+    solicitacoes_senha = []
+    if request.user.is_authenticated and request.user.e_consultor:
+        solicitacoes_senha = list(
+            SolicitacaoRedefinicaoSenha.objects.filter(pendente=True)
+            .select_related('funcionario')
+        )
+    notificacoes_senha = [
+        {
+            'id': f'solicitacao_senha-{solicitacao.pk}',
+            'titulo': 'Solicitação de troca de senha',
+            'mensagem': f'{solicitacao.funcionario.nome} deseja alterar a senha.',
+            'nome': solicitacao.funcionario.nome,
+            'tipo': 'warning',
+            'urgencia': 'seguranca',
+            'alvo_tipo': 'solicitacao_senha',
+            'alvo_id': solicitacao.pk,
+            'lida': False,
+            'url': None,
+            'url_nao_lida': None,
+            'destino_url': reverse('gerenciar_funcionario'),
+            'solicitada_em': solicitacao.solicitada_em,
+            'data': solicitacao.solicitada_em,
+            'data_iso': solicitacao.solicitada_em,
+            'prazo': None,
+        }
+        for solicitacao in solicitacoes_senha
+    ]
+
     if not request.user.is_authenticated:
         return {
             'notifications': [],
@@ -95,7 +125,7 @@ def notifications(request):
         prefeitura=prefeitura,
         data_fim__lte=limite,
     ).exclude(
-    status__chave__in=Status.ENCERRADAS,
+        status__nome__in=STATUS_SEM_NOTIFICACAO,
     ).select_related('status')
     acoes_lidas = set(
         NotificacaoLida.objects.filter(
@@ -121,6 +151,39 @@ def notifications(request):
             'alvo_tipo': 'acao',
             'alvo_id': acao.pk,
             'lida': acao.pk in acoes_lidas,
+        })
+
+    etapas = Etapa.objects.filter(
+        acao__prefeitura=prefeitura,
+        concluida=False,
+        data_fim__lte=limite,
+    ).exclude(
+        acao__status__nome__in=STATUS_SEM_NOTIFICACAO,
+    ).select_related('acao')
+    etapas_lidas = set(
+        NotificacaoLida.objects.filter(
+            usuario=request.user,
+            etapa__acao__prefeitura=prefeitura,
+            removida=False,
+        ).values_list('etapa_id', flat=True)
+    )
+    for etapa in etapas:
+        dias = (etapa.data_fim - hoje).days
+        mensagem, tipo = _mensagem_prazo(dias)
+        avisos.append({
+            'titulo': f'Etapa: {etapa.nome}',
+            'mensagem': f'{mensagem} Ação: {etapa.acao.nome}.',
+            'data': etapa.data_fim,
+            'criado_em': etapa.criado_em,
+            'tipo': tipo,
+            'urgencia': {
+                'overdue': 'atrasado',
+                'danger': 'breve',
+                'warning': 'info',
+            }[tipo],
+            'alvo_tipo': 'etapa',
+            'alvo_id': etapa.pk,
+            'lida': etapa.pk in etapas_lidas,
         })
 
     acoes_removidas = set(

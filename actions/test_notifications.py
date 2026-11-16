@@ -65,6 +65,7 @@ class NotificationCenterTests(TestCase):
         response = self.client.get(reverse('kanban'))
 
         self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Ver todas as notificações')
         notificacoes = response.context['notifications']
         self.assertEqual(response.context['notification_count'], 2)
         self.assertEqual(
@@ -82,6 +83,31 @@ class NotificationCenterTests(TestCase):
         self.assertContains(response, 'data-tipo="acao"')
         self.assertNotContains(response, 'bi-envelope')
         self.assertTrue(all(item['criado_em'] for item in notificacoes))
+
+    def test_omits_actions_and_stages_for_suspended_or_cancelled_actions(self):
+        nao_notificaveis = [
+            Status.objects.create(nome='Suspenso'),
+            Status.objects.create(nome='Cancelado'),
+        ]
+        for status in nao_notificaveis:
+            acao = self.criar_acao(
+                f'Ação {status.nome}',
+                self.hoje + timedelta(days=2),
+                status=status,
+            )
+            Etapa.objects.create(
+                nome=f'Etapa {status.nome}',
+                data_inicio=self.hoje,
+                data_fim=self.hoje + timedelta(days=1),
+                acao=acao,
+                responsavel=self.user,
+            )
+
+        response = self.client.get(reverse('atualizar_notificacoes'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['notifications'], [])
+        self.assertEqual(response.json()['unread_count'], 0)
 
     def test_clicking_action_notification_marks_it_read_and_redirects(self):
         acao = self.criar_acao('Ação próxima', self.hoje + timedelta(days=2))

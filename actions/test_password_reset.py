@@ -86,7 +86,86 @@ class PasswordResetRequestTests(TestCase):
             ).count(),
             1,
         )
-        
+
+    def test_password_request_cannot_be_marked_read_until_resolved(self):
+        self.client.post(self.request_url, {'cpf': self.funcionario.username})
+        solicitacao = SolicitacaoRedefinicaoSenha.objects.get(
+            funcionario=self.funcionario,
+            pendente=True,
+        )
+        self.client.force_login(self.consultor)
+        refresh_url = reverse('atualizar_notificacoes')
+
+        unread = self.client.get(refresh_url).json()
+        item = next(
+            item for item in unread['notifications']
+            if item['alvo_tipo'] == 'solicitacao_senha'
+        )
+        self.assertFalse(item['lida'])
+        self.assertEqual(unread['unread_count'], 1)
+        self.assertEqual(
+            item['destino_url'],
+            reverse('gerenciar_funcionario'),
+        )
+        self.assertIsNone(item['url'])
+        self.assertIsNone(item['url_nao_lida'])
+        page = self.client.get(reverse('kanban'))
+        item_html = page.content.decode()
+        self.assertNotIn(
+            'data-notification-action="toggle-read"',
+            item_html[item_html.index('Solicitação de troca de senha'):],
+        )
+
+        response = self.client.post(
+            reverse('marcar_solicitacao_senha_lida', args=[solicitacao.pk]),
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertFalse(solicitacao.leituras.exists())
+        still_unread = self.client.get(refresh_url).json()
+        self.assertEqual(still_unread['unread_count'], 1)
+
+    def test_password_request_cannot_be_marked_unread_manually(self):
+        self.client.post(self.request_url, {'cpf': self.funcionario.username})
+        solicitacao = SolicitacaoRedefinicaoSenha.objects.get(
+            funcionario=self.funcionario,
+            pendente=True,
+        )
+        self.client.force_login(self.consultor)
+        response = self.client.post(
+            reverse(
+                'marcar_notificacao_nao_lida',
+                args=['solicitacao_senha', solicitacao.pk],
+            ),
+        )
+
+        self.assertEqual(response.status_code, 409)
+        refreshed = self.client.get(reverse('atualizar_notificacoes')).json()
+        self.assertEqual(refreshed['unread_count'], 1)
+
+    def test_resolving_password_request_clears_notification_for_all_consultors(self):
+        self.client.post(self.request_url, {'cpf': self.funcionario.username})
+        outro_consultor = get_user_model().objects.create_user(
+            username='33333333333',
+            password='test-password',
+            nome='Outro Consultor',
+            consultoria=self.consultoria,
+            tem_acesso=True,
+            primeiro_acesso=False,
+        )
+        self.client.force_login(self.consultor)
+        response = self.client.post(
+            reverse('gerar_senha_funcionario', args=[self.funcionario.pk]),
+        )
+        self.assertRedirects(response, reverse('gerenciar_funcionario'))
+
+        for consultor in (self.consultor, outro_consultor):
+            self.client.force_login(consultor)
+            notificacoes = self.client.get(reverse('atualizar_notificacoes')).json()
+            self.assertEqual(notificacoes['unread_count'], 0)
+            self.assertFalse(notificacoes['notifications'])
+
     def test_password_requests_and_deadline_alerts_share_newest_first_order(self):
         self.client.post(self.request_url, {'cpf': self.funcionario.username})
         eixo = Eixo.objects.create(nome='Gestão')
