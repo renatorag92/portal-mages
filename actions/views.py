@@ -1492,7 +1492,11 @@ def dashboard_view(request):
             'nome_acao': a.nome,
             'responsavel': a.responsavel.nome,
             'data': a.data_fim,
-            'nivel': 'amarelo' if dias <= DIAS_URGENTE else 'verde',
+            'nivel': (
+                'vermelho' if dias <= 1
+                else 'amarelo' if dias <= DIAS_URGENTE
+                else 'verde'
+            ),
             'status': a.status.nome,
             'prioridade': a.prioridade or '—',
             'prioridade_classe': slugify(a.prioridade),

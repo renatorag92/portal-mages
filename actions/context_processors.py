@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .models import (
-    Acao, Etapa, NotificacaoLida, SolicitacaoRedefinicaoSenha,
+    Acao, NotificacaoLida, SolicitacaoRedefinicaoSenha,
 )
 
 STATUS_SEM_NOTIFICACAO = ('Concluído', 'Suspenso', 'Cancelado')
@@ -151,39 +151,6 @@ def notifications(request):
             'alvo_tipo': 'acao',
             'alvo_id': acao.pk,
             'lida': acao.pk in acoes_lidas,
-        })
-
-    etapas = Etapa.objects.filter(
-        acao__prefeitura=prefeitura,
-        concluida=False,
-        data_fim__lte=limite,
-    ).exclude(
-        acao__status__nome__in=STATUS_SEM_NOTIFICACAO,
-    ).select_related('acao')
-    etapas_lidas = set(
-        NotificacaoLida.objects.filter(
-            usuario=request.user,
-            etapa__acao__prefeitura=prefeitura,
-            removida=False,
-        ).values_list('etapa_id', flat=True)
-    )
-    for etapa in etapas:
-        dias = (etapa.data_fim - hoje).days
-        mensagem, tipo = _mensagem_prazo(dias)
-        avisos.append({
-            'titulo': f'Etapa: {etapa.nome}',
-            'mensagem': f'{mensagem} Ação: {etapa.acao.nome}.',
-            'data': etapa.data_fim,
-            'criado_em': etapa.criado_em,
-            'tipo': tipo,
-            'urgencia': {
-                'overdue': 'atrasado',
-                'danger': 'breve',
-                'warning': 'info',
-            }[tipo],
-            'alvo_tipo': 'etapa',
-            'alvo_id': etapa.pk,
-            'lida': etapa.pk in etapas_lidas,
         })
 
     acoes_removidas = set(
