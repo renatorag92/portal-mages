@@ -1,44 +1,78 @@
-from django.urls import path
-from . import views
 from django.contrib.auth.views import LogoutView
+from django.urls import path
+from .controllers import (
+    controlador_acao,
+    controlador_catalogo,
+    controlador_consultoria,
+    controlador_eixo,
+    controlador_etapa,
+    controlador_funcionario,
+    controlador_kanban_dashboard,
+    controlador_notificacao,
+    controlador_prefeitura,
+    controlador_status,
+    login,
+)
 
 urlpatterns = [
-    path('', views.kanban_view, name='kanban'),  # Rota para a página do Kanban
-    path('kanban/eixos/', views.gerenciar_eixo_view, name='gerenciar_eixo'),
-    path('kanban/eixos/<int:eixo_id>/editar/', views.gerenciar_eixo_view, name='editar_eixo'),
-    path('kanban/eixos/<int:eixo_id>/excluir/', views.excluir_eixo_view, name='excluir_eixo'),
-    path('kanban/status/', views.gerenciar_status_view, name='gerenciar_status'),
-    path('configuracoes/prefeitura/', views.gerenciar_prefeitura_view, name='gerenciar_prefeitura'),
-    path('configuracoes/prefeitura/salvar/', views.salvar_prefeitura_view, name='salvar_prefeitura'),
-    path('configuracoes/consultoria/', views.gerenciar_consultoria_view, name='gerenciar_consultoria'),
-    path('configuracoes/consultoria/salvar/', views.salvar_consultoria_view, name='salvar_consultoria'),
-    path('configuracoes/funcionarios/', views.gerenciar_funcionario_view, name='gerenciar_funcionario'),
-    path('configuracoes/funcionarios/<int:funcionario_id>/editar/', views.gerenciar_funcionario_view, name='editar_funcionario'),
-    path('configuracoes/funcionarios/<int:funcionario_id>/excluir/', views.excluir_funcionario_view, name='excluir_funcionario'),
-    path('configuracoes/funcionarios/<int:funcionario_id>/nova-senha/', views.gerar_senha_funcionario_view, name='gerar_senha_funcionario'),
-    path('configuracoes/catalogo/', views.gerenciar_catalogo_view, name='gerenciar_catalogo'), # Rota para gerenciar o catálogo de modelos
-    path('configuracoes/catalogo/<int:modelo_id>/editar/', views.gerenciar_catalogo_view, name='editar_catalogo'), # Rota para alterar dados de um modelo do catálogo
-    path('configuracoes/catalogo/<int:modelo_id>/excluir/', views.excluir_catalogo_view, name='excluir_catalogo'), # Rota para excluir um modelo do catálogo
-    path('kanban/status/<int:status_id>/editar/', views.gerenciar_status_view, name='editar_status'), # Rota para alterar dados de um status
-    path('kanban/status/<int:status_id>/editar-no-kanban/', views.editar_status_kanban_view, name='editar_status_kanban'),
-    path('kanban/criar-acao/', views.criar_acao_kanban_view, name='criar_acao_kanban'),  # Rota para criar uma ação
-    path('kanban/acao/<int:acao_id>/', views.obter_detalhes_acao_view, name='obter_detalhes_acao'),  # Dados da ação e das etapas (pop-up de detalhes)
-    path('kanban/acao/<int:acao_id>/editar/', views.editar_acao_view, name='editar_acao'),  # Rota para alterar dados de uma ação
-    path('kanban/acao/<int:acao_id>/excluir/', views.excluir_acao_view, name='excluir_acao'),  # Rota para excluir uma ação
-    path('kanban/etapa/<int:etapa_id>/editar/', views.editar_etapa_view, name='editar_etapa'),  # Rota para alterar dados de uma etapa
-    path('kanban/acao/<int:acao_id>/etapas/nova/', views.adicionar_etapa_view, name='adicionar_etapa'),  # Rota para adicionar uma etapa
-    path('kanban/etapa/<int:etapa_id>/concluir/', views.alterar_etapa_view, name='alterar_etapa'),  # Rota para marcar/desmarcar etapa como concluída
-    path('kanban/etapa/<int:etapa_id>/excluir/', views.excluir_etapa_view, name='excluir_etapa'),  # Rota para excluir uma etapa
-    path('escolher-prefeitura/', views.escolher_prefeitura_view, name='escolher_prefeitura'), # Rota para escolher a prefeitura
-    path('minha-conta/', views.minha_conta_view, name='minha_conta'), # Rota para a página de "Minha Conta"
-    path('notificacoes/<str:tipo>/<int:item_id>/lida/', views.marcar_notificacao_lida_view, name='marcar_notificacao_lida'), # Rota para marcar uma notificação como lida
-    path('notificacoes/<str:tipo>/<int:item_id>/nao-lida/', views.marcar_notificacao_nao_lida_view, name='marcar_notificacao_nao_lida'), # Rota para marcar uma notificação como não lida
-    path('notificacoes/atualizar/', views.atualizar_notificacoes_view, name='atualizar_notificacoes'), # Rota para atualizar a lista de notificações
-    path('notificacoes/<str:tipo>/<int:item_id>/remover/', views.remover_notificacao_view, name='remover_notificacao'), # Rota para remover uma notificação
-    path('login/', views.CustomLoginView.as_view(), name='login'), # Rota do login
-    path('solicitar-redefinicao-senha/', views.solicitar_redefinicao_senha_view, name='solicitar_redefinicao_senha'), # Rota para solicitar redefinição de senha
-    path('redefinir-senha/', views.CustomPasswordChangeView.as_view(), name='redefinir-senha'),  # Rota para alterar a senha
-    path('actions/<int:acao_id>/atualizar_status/', views.atualizar_status_acao, name='atualizar_status_acao'),  # Rota para atualizar o status da ação
-    path('logout/', LogoutView.as_view(next_page='/login/'), name='logout'),  # Rota de logout
-    path('dashboard/', views.dashboard_view, name='dashboard'),  # Dashboard com os indicadores
+    # Login, Logout e Sessão
+    path('login/', login.CustomLoginView.as_view(), name='login'),
+    path('logout/', LogoutView.as_view(next_page='login'), name='logout'),
+    path('redefinir-senha/', login.CustomPasswordChangeView.as_view(), name='redefinir-senha'),
+    path('escolher-prefeitura/', login.escolher_prefeitura_view, name='escolher_prefeitura'),
+    path('solicitar-redefinicao-senha/', login.solicitar_redefinicao_senha_view, name='solicitar_redefinicao_senha'),
+
+    # Prefeitura
+    path('cadastros/prefeitura/', controlador_prefeitura.gerenciar_prefeitura_view, name='gerenciar_prefeitura'),
+    path('cadastros/prefeitura/salvar/', controlador_prefeitura.salvar_prefeitura_view, name='salvar_prefeitura'),
+
+    # Consultoria
+    path('cadastros/consultoria/', controlador_consultoria.gerenciar_consultoria_view, name='gerenciar_consultoria'),
+    path('cadastros/consultoria/salvar/', controlador_consultoria.salvar_consultoria_view, name='salvar_consultoria'),
+
+    # Funcionário e Conta
+    path('minha-conta/', controlador_funcionario.minha_conta_view, name='minha_conta'),
+    path('cadastros/funcionarios/', controlador_funcionario.gerenciar_funcionario_view, name='gerenciar_funcionario'),
+    path('cadastros/funcionarios/<int:funcionario_id>/', controlador_funcionario.gerenciar_funcionario_view, name='editar_funcionario'),
+    path('cadastros/funcionarios/<int:funcionario_id>/excluir/', controlador_funcionario.excluir_funcionario_view, name='excluir_funcionario'),
+    path('cadastros/funcionarios/<int:funcionario_id>/gerar-senha/', controlador_funcionario.gerar_senha_funcionario_view, name='gerar_senha_funcionario'),
+
+    # Eixo
+    path('config/eixos/', controlador_eixo.gerenciar_eixo_view, name='gerenciar_eixo'),
+    path('config/eixos/<int:eixo_id>/', controlador_eixo.gerenciar_eixo_view, name='editar_eixo'),
+    path('config/eixos/<int:eixo_id>/excluir/', controlador_eixo.excluir_eixo_view, name='excluir_eixo'),
+
+    # Catálogo de Ações
+    path('config/catalogo/', controlador_catalogo.gerenciar_catalogo_view, name='gerenciar_catalogo'),
+    path('config/catalogo/<int:modelo_id>/', controlador_catalogo.gerenciar_catalogo_view, name='editar_catalogo'),
+    path('config/catalogo/<int:modelo_id>/excluir/', controlador_catalogo.excluir_catalogo_view, name='excluir_catalogo'),
+
+    # Status
+    path('config/status/', controlador_status.gerenciar_status_view, name='gerenciar_status'),
+    path('config/status/<int:status_id>/', controlador_status.gerenciar_status_view, name='editar_status'),
+    path('kanban/status/<int:status_id>/editar/', controlador_status.editar_status_kanban_view, name='editar_status_kanban'),
+
+    # Kanban e Dashboard
+    path('', controlador_kanban_dashboard.kanban_view, name='kanban'),
+    path('dashboard/', controlador_kanban_dashboard.dashboard_view, name='dashboard'),
+
+    # Ação
+    path('acoes/criar/', controlador_acao.criar_acao_kanban_view, name='criar_acao_kanban'),
+    path('acoes/<int:acao_id>/', controlador_acao.obter_detalhes_acao_view, name='obter_detalhes_acao'),
+    path('acoes/<int:acao_id>/editar/', controlador_acao.editar_acao_view, name='editar_acao'),
+    path('acoes/<int:acao_id>/excluir/', controlador_acao.excluir_acao_view, name='excluir_acao'),
+    path('acoes/<int:acao_id>/status/', controlador_acao.atualizar_status_acao, name='atualizar_status_acao'),
+
+    # Etapa
+    path('acoes/<int:acao_id>/etapas/adicionar/', controlador_etapa.adicionar_etapa_view, name='adicionar_etapa'),
+    path('etapas/<int:etapa_id>/editar/', controlador_etapa.editar_etapa_view, name='editar_etapa'),
+    path('etapas/<int:etapa_id>/alterar/', controlador_etapa.alterar_etapa_view, name='alterar_etapa'),
+    path('etapas/<int:etapa_id>/excluir/', controlador_etapa.excluir_etapa_view, name='excluir_etapa'),
+
+    # Notificações
+    path('notificacoes/atualizar/', controlador_notificacao.atualizar_notificacoes_view, name='atualizar_notificacoes'),
+    path('notificacoes/<str:tipo>/<int:item_id>/lida/', controlador_notificacao.marcar_notificacao_lida_view, name='marcar_notificacao_lida'),
+    path('notificacoes/<str:tipo>/<int:item_id>/nao-lida/', controlador_notificacao.marcar_notificacao_nao_lida_view, name='marcar_notificacao_nao_lida'),
+    path('notificacoes/<str:tipo>/<int:item_id>/remover/', controlador_notificacao.remover_notificacao_view, name='remover_notificacao'),
+    path('notificacoes/solicitacao-senha/<int:solicitacao_id>/lida/', controlador_notificacao.marcar_solicitacao_senha_lida_view, name='marcar_solicitacao_senha_lida'),
 ]
