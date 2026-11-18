@@ -14,15 +14,15 @@ EIXOS = [
     ('Governança e Legislação', None),
 ]
 
-# (nome, cor hex, nome da cor exibido na edição, ordem da coluna)
-STATUS = [
-    ('Planejado', '#0000ff', 'azul', 1),
-    ('Preparação', '#00ffff', 'ciano', 2),
-    ('Em execução', '#ffff00', 'amarelo', 3),
-    ('Em validação', '#800080', 'roxo', 4),
-    ('Concluído', '#008000', 'verde', 5),
-    ('Suspenso', '#808080', 'cinza', 6),
-    ('Cancelado', '#ff0000', 'vermelho', 7),
+# (chave, nome, cor hex, nome da cor exibido na edição, ordem da coluna)
+STATUS_COM_CHAVE = [
+    ('PLANEJADO', 'Planejado', '#0000ff', 'azul', 1),
+    ('PREPARACAO', 'Preparação', '#00ffff', 'ciano', 2),
+    ('EM_EXECUCAO', 'Em execução', '#ffff00', 'amarelo', 3),
+    ('EM_VALIDACAO', 'Em validação', '#800080', 'roxo', 4),
+    ('CONCLUIDO', 'Concluído', '#008000', 'verde', 5),
+    ('SUSPENSO', 'Suspenso', '#808080', 'cinza', 6),
+    ('CANCELADO', 'Cancelado', '#ff0000', 'vermelho', 7),
 ]
 
 CATALOGO = {
@@ -164,12 +164,11 @@ class Command(BaseCommand):
             eixos[nome] = eixo
             novos['eixos'] += criado
 
-        for nome, cor, cor_nome, ordem in STATUS:
-            _, criado = Status.objects.get_or_create(
-                nome=nome,
-                defaults={'cor': cor, 'cor_nome': cor_nome, 'ordem': ordem},
+        for chave, nome, cor, cor_nome, ordem in STATUS_COM_CHAVE:
+            Status.objects.get_or_create(
+                chave=chave,
+                defaults={'nome': nome, 'cor': cor, 'cor_nome': cor_nome, 'ordem': ordem},
             )
-            novos['status'] += criado
 
         for eixo_nome, acoes in CATALOGO.items():
             for nome in acoes:

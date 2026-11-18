@@ -937,7 +937,7 @@ def _acao_cancelada(acao):
 def _serializar_acao(acao):
     return {
         'id': acao.id,
-        'codigo': acao.codigo,
+        'id': acao.id,
         'nome': acao.nome,
         'eixo': acao.eixo.nome,
         'prioridade': acao.prioridade,
@@ -986,7 +986,7 @@ def atualizar_status_acao(request, acao_id):
         acao.save()
         status_destino_id = status_destino.pk
         request.session['kanban_toast'] = {
-            'mensagem': f'Ação {acao.codigo} movida para "{status_destino.nome}".'
+            'mensagem': f'Ação {acao.id} movida para "{status_destino.nome}".'
         }
 
     if status_destino_id is not None:
@@ -1176,7 +1176,7 @@ def criar_acao_kanban_view(request):
     return JsonResponse({
         'success': True,
         'message': 'Ação criada com sucesso!',
-        'codigo': nova_acao.codigo,
+        'id': nova_acao.id,
     }, status=201)
 
 

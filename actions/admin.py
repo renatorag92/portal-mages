@@ -134,10 +134,10 @@ class AuditoriaAdminMixin:
 
 @admin.register(Acao)
 class AcaoAdmin(AuditoriaAdminMixin, SomenteConsultorAdmin):
-    list_display = ('codigo', 'nome', 'prefeitura', 'prioridade', 'data_inicio', 'data_fim')
+    list_display = ('id', 'nome', 'prefeitura', 'prioridade', 'data_inicio', 'data_fim')
     list_filter = ('prefeitura', 'prioridade', 'status')
     search_fields = ('nome', 'modelo__nome')
-    readonly_fields = ('codigo', 'criado_em', 'atualizado_em', 'criado_por', 'atualizado_por')
+    readonly_fields = ('id', 'criado_em', 'atualizado_em', 'criado_por', 'atualizado_por')
 
 
 @admin.register(Etapa)

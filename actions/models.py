@@ -230,8 +230,7 @@ class Acao(models.Model):
     prefeitura = models.ForeignKey(Prefeitura, on_delete=models.PROTECT, related_name='acoes')
 
     # Número sequencial dentro da prefeitura (1, 2, 3...), gerado automaticamente
-    codigo = models.PositiveIntegerField(editable=False)
-
+    id = models.AutoField(primary_key=True)
     # Sempre preenchidos: se escolheu do catálogo, são copiados do modelo
     nome = models.CharField(max_length=255)
     eixo = models.ForeignKey(Eixo, on_delete=models.PROTECT, related_name='acoes')
@@ -265,10 +264,8 @@ class Acao(models.Model):
     class Meta:
         verbose_name = 'Ação'
         verbose_name_plural = 'Ações'
-        ordering = ['prefeitura', 'codigo']
+        ordering = ['-id']
         constraints = [
-            models.UniqueConstraint(
-                fields=['prefeitura', 'codigo'], name='acao_codigo_unico_por_prefeitura'),
             models.CheckConstraint(
                 condition=Q(data_fim__gte=F('data_inicio')),
                 name='acao_data_fim_apos_inicio',
@@ -291,16 +288,8 @@ class Acao(models.Model):
             raise ValidationError(
                 {'responsavel': 'O responsável deve ser funcionário da mesma prefeitura da ação.'})
 
-    def save(self, *args, **kwargs):
-        self._aplicar_modelo()
-        if not self.codigo:
-            ultimo = Acao.objects.filter(prefeitura_id=self.prefeitura_id) \
-                .aggregate(m=Max('codigo'))['m']
-            self.codigo = (ultimo or 0) + 1
-        super().save(*args, **kwargs)
-
     def __str__(self):
-        return f"{self.codigo} - {self.nome}"
+        return f"{self.id} - {self.nome}"
 
 
 class Etapa(models.Model):

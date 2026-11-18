@@ -2,17 +2,17 @@
 <div class="task-card min-w-0 {% if status.chave == 'CANCELADO' %}highlight{% endif %}"
   draggable="{% if status.chave == 'CANCELADO' %}false{% else %}true{% endif %}"
   data-id="{{ acao.id }}"
-  data-eixo="{{ acao.eixo.nome }}" data-search="{{ acao.codigo }} {{ acao.nome }}">
+  data-eixo="{{ acao.eixo.nome }}" data-search="{{ acao.id }} {{ acao.nome }}">
 
   <!-- BOTÃO QUE ABRE O POP-UP DE DETALHES -->
-  <button type="button" class="status-menu-toggle" aria-label="Ver detalhes da ação {{ acao.codigo }}">
+  <button type="button" class="status-menu-toggle" aria-label="Ver detalhes da ação {{ acao.id }}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
       <polyline points="6 9 12 15 18 9"></polyline>
     </svg>
   </button>
 
   <!-- IDENTIFICAÇÃO -->
-  <span class="task-id">AÇÃO {{ acao.codigo }}</span>
+  <span class="task-id">AÇÃO {{ acao.id }}</span>
 
   <!-- NOME -->
   <div class="task-desc">{{ acao.nome }}</div>

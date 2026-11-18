@@ -453,7 +453,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (typeof window.confirmarSite === "function") {
         await window.confirmarSite({
           titulo: "Ação criada com sucesso!",
-          texto: "A ação \"" + valor("acaoTexto") + "\"" + (json.codigo ? " (código " + json.codigo + ")" : "") + " foi cadastrada.",
+          texto: "A ação \"" + valor("acaoTexto") + "\"" + (json.id ? " (código " + json.id + ")" : "") + " foi cadastrada.",
           sim: "OK",
           nao: null,
           perigo: false

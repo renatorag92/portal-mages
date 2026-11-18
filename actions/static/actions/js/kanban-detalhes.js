@@ -215,7 +215,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function renderCabecalho() {
     const a = estado.acao;
-    elTitulo.textContent = "AÇÃO " + a.codigo;
+    elTitulo.textContent = "AÇÃO " + a.id;
     elSubtitulo.textContent = a.nome || "";
     elBadge.textContent = a.status.nome;
     elBadge.style.backgroundColor = a.status.cor;
@@ -231,7 +231,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (!editando) {
       conteudo =
-        item("Código", esc(a.codigo)) +
+        item("Código", esc(a.id)) +
         item("Eixo", esc(a.eixo || "Não informado")) +
         item("Nome", esc(a.nome || "Não informado"), true) +
         item("Prioridade", chipPrioridade(a.prioridade)) +
@@ -242,7 +242,7 @@ document.addEventListener("DOMContentLoaded", function () {
         item("Observações", a.observacoes ? esc(a.observacoes) : vazio("Nenhuma observação informada."), true, "det-obs det-obs-acao");
     } else {
       conteudo =
-        item("Código", esc(a.codigo)) +
+        item("Código", esc(a.id)) +
         item("Eixo", esc(a.eixo || "Não informado")) +
         item("Nome", esc(a.nome || "Não informado"), true) +
         campo("detf-prioridade", "Prioridade", true,
@@ -757,7 +757,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   async function excluirAcao(botao) {
     const confirmado = await confirmar({
-      titulo: "Excluir a ação " + estado.acao.codigo + "?",
+      titulo: "Excluir a ação " + estado.acao.id + "?",
       texto: "A ação e todas as suas etapas serão excluídas de forma permanente. Essa operação não pode ser desfeita.",
       sim: "Excluir",
       nao: "Cancelar"
