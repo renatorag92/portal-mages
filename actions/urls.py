@@ -8,19 +8,19 @@ from .controllers import (
     controlador_etapa,
     controlador_funcionario,
     controlador_kanban_dashboard,
+    controlador_login,
     controlador_notificacao,
     controlador_prefeitura,
     controlador_status,
-    login,
 )
 
 urlpatterns = [
     # Login, Logout e Sessão
-    path('login/', login.CustomLoginView.as_view(), name='login'),
+    path('login/', controlador_login.CustomLoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(next_page='login'), name='logout'),
-    path('redefinir-senha/', login.CustomPasswordChangeView.as_view(), name='redefinir-senha'),
-    path('escolher-prefeitura/', login.escolher_prefeitura_view, name='escolher_prefeitura'),
-    path('solicitar-redefinicao-senha/', login.solicitar_redefinicao_senha_view, name='solicitar_redefinicao_senha'),
+    path('redefinir-senha/', controlador_login.CustomPasswordChangeView.as_view(), name='redefinir-senha'),
+    path('escolher-prefeitura/', controlador_login.escolher_prefeitura_view, name='escolher_prefeitura'),
+    path('solicitar-redefinicao-senha/', controlador_login.solicitar_redefinicao_senha_view, name='solicitar_redefinicao_senha'),
 
     # Prefeitura
     path('cadastros/prefeitura/', controlador_prefeitura.gerenciar_prefeitura_view, name='gerenciar_prefeitura'),
