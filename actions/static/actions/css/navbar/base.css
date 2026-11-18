@@ -357,7 +357,7 @@ body {
 .sidebar.expanded .menu-group.open > .submenu,
 .sidebar.hover-expanded .menu-group.open > .submenu,
 .sidebar.mobile-open .menu-group.open > .submenu {
-    max-height: 200px;
+    max-height: 260px;
 }
 
 /* Recuo dos itens filhos

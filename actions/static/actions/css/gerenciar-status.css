@@ -134,6 +134,23 @@
   font-size: 13px;
 }
 
+.status-inline-field {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 130px;
+  padding: 8px 9px;
+  border: 1px solid #d8d5cc;
+  border-radius: 6px;
+  background: #f5f4f0;
+  color: #2b2b2b;
+  font: inherit;
+}
+
+.status-inline-field:focus {
+  outline: 2px solid #3b3b8c;
+  outline-offset: 1px;
+}
+
 .status-help-text {
   color: #6b6b6b;
   font-size: 12px;
