@@ -97,6 +97,107 @@ class IsolamentoTests(BaseCenario):
         resposta = self.client.get(reverse('obter_detalhes_acao', args=[self.acao.id]))
         self.assertEqual(resposta.status_code, 200)
 
+
+class GerenciarCatalogoTests(BaseCenario):
+    def setUp(self):
+        super().setUp()
+        self.item_catalogo = AcaoCatalogo.objects.create(
+            nome='Ação pré-cadastrada', eixo=self.eixo)
+        self.consultor = Funcionario.objects.create(
+            username='12345678906', nome='Consultor',
+            consultoria=self.consultoria, tem_acesso=True)
+        self.usuario_prefeitura = Funcionario.objects.create(
+            username='12345678907', nome='Usuário da prefeitura',
+            prefeitura=self.prefeitura, tem_acesso=True)
+
+    def test_consultor_acessa_gerenciamento_de_acoes(self):
+        self.client.force_login(self.consultor)
+
+        resposta = self.client.get(reverse('gerenciar_catalogo'))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, 'Gerenciar Ações')
+        self.assertContains(resposta, 'Ação pré-cadastrada')
+
+    def test_consultor_edita_acao_pre_cadastrada(self):
+        self.client.force_login(self.consultor)
+
+        resposta = self.client.post(
+            reverse('editar_catalogo', args=[self.item_catalogo.pk]),
+            {'nome': 'Ação atualizada', 'eixo': self.eixo.pk},
+        )
+
+        self.assertRedirects(resposta, reverse('gerenciar_catalogo'))
+        self.item_catalogo.refresh_from_db()
+        self.assertEqual(self.item_catalogo.nome, 'Ação atualizada')
+
+    def test_consultor_altera_eixo_da_acao(self):
+        outro_eixo = Eixo.objects.create(nome='Saúde')
+        self.client.force_login(self.consultor)
+
+        resposta = self.client.post(
+            reverse('editar_catalogo', args=[self.item_catalogo.pk]),
+            {'nome': self.item_catalogo.nome, 'eixo': outro_eixo.pk},
+        )
+
+        self.assertRedirects(resposta, reverse('gerenciar_catalogo'))
+        self.item_catalogo.refresh_from_db()
+        self.assertEqual(self.item_catalogo.eixo_id, outro_eixo.pk)
+
+    def test_lapis_abre_edicao_na_linha_da_acao(self):
+        self.client.force_login(self.consultor)
+
+        resposta = self.client.get(reverse('editar_catalogo', args=[self.item_catalogo.pk]))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, 'name="nome"')
+        self.assertContains(resposta, 'name="eixo"')
+        self.assertContains(resposta, 'Cadastrar ação no catálogo')
+
+    def test_acao_em_uso_nao_pode_ser_excluida(self):
+        self.acao.modelo = self.item_catalogo
+        self.acao.save()
+        self.client.force_login(self.consultor)
+
+        resposta = self.client.post(reverse('excluir_catalogo', args=[self.item_catalogo.pk]))
+
+        self.assertRedirects(resposta, reverse('gerenciar_catalogo'))
+        self.assertTrue(AcaoCatalogo.objects.filter(pk=self.item_catalogo.pk).exists())
+        self.acao.refresh_from_db()
+        self.assertEqual(self.acao.modelo_id, self.item_catalogo.pk)
+
+    def test_exclusao_de_acao_em_uso_fica_desabilitada_na_lista(self):
+        self.acao.modelo = self.item_catalogo
+        self.acao.save()
+        self.client.force_login(self.consultor)
+
+        resposta = self.client.get(reverse('gerenciar_catalogo'))
+
+        self.assertContains(resposta, 'ação em uso')
+        self.assertContains(resposta, 'disabled')
+
+    def test_consultor_filtra_catalogo_por_nome_e_eixo(self):
+        outro_eixo = Eixo.objects.create(nome='Saúde')
+        outra_acao = AcaoCatalogo.objects.create(nome='Ação de saúde', eixo=outro_eixo)
+        self.client.force_login(self.consultor)
+
+        resposta = self.client.get(
+            reverse('gerenciar_catalogo'),
+            {'nome': 'saúde', 'eixo': outro_eixo.pk},
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, outra_acao.nome)
+        self.assertNotContains(resposta, self.item_catalogo.nome)
+
+    def test_usuario_da_prefeitura_nao_acessa_gerenciamento_de_acoes(self):
+        self.client.force_login(self.usuario_prefeitura)
+
+        resposta = self.client.get(reverse('gerenciar_catalogo'))
+
+        self.assertEqual(resposta.status_code, 302)
+
+
 class CancelamentoTests(BaseCenario):
     def test_acao_cancelada_e_somente_leitura(self):
         self.acao.status = self.status_cancelado

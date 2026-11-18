@@ -114,8 +114,8 @@ class StatusAdmin(SomenteConsultorAdmin):
 
 @admin.register(AcaoCatalogo)
 class AcaoCatalogoAdmin(SomenteConsultorAdmin):
-    list_display = ('nome', 'eixo', 'ativa')
-    list_filter = ('eixo', 'ativa')
+    list_display = ('nome', 'eixo')
+    list_filter = ('eixo',)
     search_fields = ('nome', 'eixo__nome')
 
 
