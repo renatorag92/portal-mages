@@ -88,6 +88,17 @@
                     </a>
 
                     <a
+                        href="{% url 'gerenciar_catalogo' %}"
+                        class="menu-item submenu-item {% if url_name == 'gerenciar_catalogo' or url_name == 'editar_catalogo' %}active{% endif %}"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" aria-hidden="true">
+                            <rect x="2" y="2" width="12" height="12" rx="2"/>
+                            <path d="M5 6h6M5 8.5h6M5 11h4"/>
+                        </svg>
+                        <span class="label">Gerenciar Ações</span>
+                    </a>
+
+                    <a
                         href="{% url 'gerenciar_status' %}"
                         class="menu-item submenu-item {% if url_name == 'gerenciar_status' or url_name == 'editar_status' %}active{% endif %}"
                     >
@@ -134,17 +145,6 @@
                             <path d="M7.1 8.6h1.8l-.4-.9H7.5z" fill="currentColor"/>
                         </svg>
                         <span class="label">Gerenciar Funcionários</span>
-                    </a>
-
-                    <a
-                        href="{% url 'gerenciar_catalogo' %}"
-                        class="menu-item submenu-item {% if url_name == 'gerenciar_catalogo' or url_name == 'editar_catalogo' %}active{% endif %}"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" aria-hidden="true">
-                            <rect x="2" y="2" width="12" height="12" rx="2"/>
-                            <path d="M5 6h6M5 8.5h6M5 11h4"/>
-                        </svg>
-                        <span class="label">Catálogo de Ações</span>
                     </a>
 
                 </div>

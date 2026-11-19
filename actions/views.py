@@ -380,8 +380,7 @@ def excluir_eixo_view(request, eixo_id):
 class AcaoCatalogoForm(forms.ModelForm):
     class Meta:
         model = AcaoCatalogo
-        fields = ('nome', 'eixo', 'ativa')
-        labels = {'ativa': 'Disponível para escolha'}
+        fields = ('nome', 'eixo')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -466,29 +465,48 @@ def excluir_funcionario_view(request, funcionario_id):
 @user_passes_test(_usuario_configuracoes)
 def gerenciar_catalogo_view(request, modelo_id=None):
     modelo = get_object_or_404(AcaoCatalogo, pk=modelo_id) if modelo_id else None
+    form = AcaoCatalogoForm()
+    catalogo_edicao_form = AcaoCatalogoForm(instance=modelo) if modelo else None
 
     if request.method == 'POST':
-        form = AcaoCatalogoForm(request.POST, instance=modelo)
-        if form.is_valid():
-            form.save()
+        form_enviado = AcaoCatalogoForm(request.POST, instance=modelo)
+        if form_enviado.is_valid():
+            form_enviado.save()
             messages.success(
                 request,
                 'Ação do catálogo atualizada com sucesso.' if modelo else 'Ação do catálogo cadastrada com sucesso.',
                 extra_tags='catalogo-updated' if modelo else 'catalogo-created',
             )
             return redirect('gerenciar_catalogo')
+        if modelo:
+            catalogo_edicao_form = form_enviado
+        else:
+            form = form_enviado
     else:
         form = AcaoCatalogoForm(instance=modelo)
 
+    nome_filtro = (request.GET.get('nome') or '').strip()
+    eixo_filtro = (request.GET.get('eixo') or '').strip()
+    eixos_lista = Eixo.objects.filter(
+        subeixos__isnull=True).select_related('pai').order_by('nome')
     catalogo_lista = (
         AcaoCatalogo.objects.select_related('eixo', 'eixo__pai')
         .annotate(total_acoes=Count('instancias'))
         .order_by('eixo__nome', 'nome')
     )
+    if nome_filtro:
+        catalogo_lista = catalogo_lista.filter(nome__icontains=nome_filtro)
+    if eixo_filtro.isdigit():
+        catalogo_lista = catalogo_lista.filter(eixo_id=eixo_filtro)
+
     return render(request, 'actions/gerenciar-catalogo.html', {
         'form': form,
+        'catalogo_edicao_form': catalogo_edicao_form,
         'catalogo_lista': catalogo_lista,
         'catalogo_edicao': modelo,
+        'nome_filtro': nome_filtro,
+        'eixo_filtro': eixo_filtro,
+        'eixos_lista': eixos_lista,
     })
 
 
@@ -497,8 +515,16 @@ def gerenciar_catalogo_view(request, modelo_id=None):
 @require_POST
 def excluir_catalogo_view(request, modelo_id):
     modelo = get_object_or_404(AcaoCatalogo, pk=modelo_id)
-    # As ações já criadas guardam o nome copiado, então continuam existindo (on_delete=SET_NULL)
-    modelo.delete()
+    try:
+        modelo.delete()
+    except ProtectedError:
+        messages.error(
+            request,
+            'Esta ação não pode ser excluída porque está sendo usada em uma ou mais ações.',
+            extra_tags='catalogo-delete-blocked',
+        )
+        return redirect('gerenciar_catalogo')
+
     messages.success(request, 'Ação do catálogo excluída com sucesso.', extra_tags='catalogo-deleted')
     return redirect('gerenciar_catalogo')
 
@@ -878,7 +904,7 @@ def kanban_view(request):
         st.cor_para_edicao = _cor_para_edicao(st)
 
     eixos_raiz = Eixo.objects.filter(pai__isnull=True).prefetch_related('subeixos')
-    acoes_catalogo = AcaoCatalogo.objects.filter(ativa=True).select_related('eixo')
+    acoes_catalogo = AcaoCatalogo.objects.select_related('eixo')
     acoes_catalogo_list = [{'id': a.id, 'nome': a.nome, 'eixo_id': a.eixo_id} for a in acoes_catalogo]
 
     # Dicionário de eixos, incluindo subeixos, para exibir no filtro do kanban
@@ -1040,7 +1066,7 @@ def criar_acao_kanban_view(request):
     # Nome e eixo: do catálogo, ou digitados pelo usuário (sem criar nada no catálogo)
     if acao_catalogo_id and acao_catalogo_id != 'outra':
         modelo = AcaoCatalogo.objects.select_related('eixo').filter(
-            pk=acao_catalogo_id, ativa=True).first() if str(acao_catalogo_id).isdigit() else None
+            pk=acao_catalogo_id).first() if str(acao_catalogo_id).isdigit() else None
         if modelo is None:
             return _erro('Ação do catálogo não encontrada.')
         nome_acao, eixo_obj = modelo.nome, modelo.eixo

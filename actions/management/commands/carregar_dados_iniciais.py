@@ -174,7 +174,7 @@ class Command(BaseCommand):
             for nome in acoes:
                 _, criado = AcaoCatalogo.objects.get_or_create(
                     nome=nome,
-                    defaults={'eixo': eixos[eixo_nome], 'ativa': True},
+                    defaults={'eixo': eixos[eixo_nome]},
                 )
                 novos['catalogo'] += criado
 

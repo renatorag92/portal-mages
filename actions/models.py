@@ -206,7 +206,6 @@ class AcaoCatalogo(models.Model):
     id = models.AutoField(primary_key=True)
     nome = models.CharField(max_length=255, unique=True)
     eixo = models.ForeignKey(Eixo, on_delete=models.PROTECT, related_name='modelos')
-    ativa = models.BooleanField(default=True)   # esconde da lista sem apagar
 
     class Meta:
         verbose_name = 'Ação do Catálogo'
@@ -235,7 +234,7 @@ class Acao(models.Model):
     nome = models.CharField(max_length=255)
     eixo = models.ForeignKey(Eixo, on_delete=models.PROTECT, related_name='acoes')
     modelo = models.ForeignKey(
-        AcaoCatalogo, on_delete=models.SET_NULL, null=True, blank=True,
+        AcaoCatalogo, on_delete=models.PROTECT, null=True, blank=True,
         related_name='instancias')   # origem: catálogo (None = criada pelo município)
 
     prioridade = models.CharField(

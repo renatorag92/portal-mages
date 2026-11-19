@@ -1,8 +1,8 @@
 {% extends "LayoutsBases/base.html" %}
 {% load static %}
 
-{% block title %}Catálogo de Ações{% endblock %}
-{% block page_title %}Catálogo de Ações{% endblock %}
+{% block title %}Gerenciar Ações{% endblock %}
+{% block page_title %}Gerenciar Ações{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'actions/css/gerenciar-status.css' %}">
@@ -11,7 +11,7 @@
 {% block content %}
 <div class="status-page w-full min-w-0 px-3 py-4 sm:px-6 sm:py-6">
   <section class="status-card w-full min-w-0 p-4 sm:p-6">
-    <h2 class="status-card-title">{% if catalogo_edicao %}Editar ação do catálogo{% else %}Cadastrar ação no catálogo{% endif %}</h2>
+    <h2 class="status-card-title">Cadastrar ação no catálogo</h2>
 
     <form method="post">
       {% csrf_token %}
@@ -30,29 +30,40 @@
           {{ form.eixo.errors }}
         </div>
 
-        <div class="status-form-group">
-          <label>{{ form.ativa }} Disponível para escolha</label>
-          {{ form.ativa.errors }}
-        </div>
       </div>
 
-      <p class="status-help-text">
-        Ações desativadas continuam aparecendo nas ações já criadas, mas não são oferecidas para novos cadastros.
-      </p>
-
       <div class="status-form-actions">
-        <button type="submit" class="status-save-button">
-          {% if catalogo_edicao %}Salvar alterações{% else %}Salvar ação{% endif %}
-        </button>
-        {% if catalogo_edicao %}
-        <a href="{% url 'gerenciar_catalogo' %}" class="status-cancel-button">Cancelar</a>
-        {% endif %}
+        <button type="submit" class="status-save-button">Salvar ação</button>
       </div>
     </form>
   </section>
 
   <section class="status-card w-full min-w-0 p-4 sm:p-6">
-    <h2 class="status-card-title">Ações do catálogo</h2>
+    <h2 class="status-card-title">Ações cadastradas no catálogo</h2>
+    <form method="get" class="mb-4">
+      <div class="status-form-fields grid-cols-1 sm:grid-cols-2">
+        <div class="status-form-group">
+          <label for="filtro-nome">Nome da ação:</label>
+          <input id="filtro-nome" type="search" name="nome" value="{{ nome_filtro }}"
+            placeholder="Buscar pelo nome">
+        </div>
+        <div class="status-form-group">
+          <label for="filtro-eixo">Eixo:</label>
+          <select id="filtro-eixo" name="eixo">
+            <option value="">Todos os eixos</option>
+            {% for eixo in eixos_lista %}
+            <option value="{{ eixo.id }}" {% if eixo_filtro == eixo.id|stringformat:"s" %}selected{% endif %}>
+              {% if eixo.pai %}{{ eixo.pai.nome }} › {% endif %}{{ eixo.nome }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="status-form-actions">
+        <button type="submit" class="status-save-button">Filtrar</button>
+        <a href="{% url 'gerenciar_catalogo' %}" class="status-cancel-button">Limpar filtros</a>
+      </div>
+    </form>
     <div class="status-table-wrapper w-full min-w-0 overflow-x-auto">
       <table class="status-table min-w-[720px]">
         <thead>
@@ -60,19 +71,44 @@
             <th>Nome</th>
             <th>Eixo</th>
             <th>Usada em</th>
-            <th>Disponível</th>
             <th class="status-table-actions-heading">Ações</th>
           </tr>
         </thead>
         <tbody>
           {% for item in catalogo_lista %}
           <tr>
+            {% if catalogo_edicao.pk == item.pk %}
+            <td>
+              <input class="status-inline-field" type="text" name="nome"
+                value="{{ catalogo_edicao_form.nome.value }}" form="editar-catalogo-{{ item.id }}"
+                aria-label="Nome da ação">
+              {{ catalogo_edicao_form.nome.errors }}
+            </td>
+            <td>
+              <select class="status-inline-field" name="eixo" form="editar-catalogo-{{ item.id }}"
+                aria-label="Eixo da ação">
+                {% for eixo in eixos_lista %}
+                <option value="{{ eixo.id }}" {% if catalogo_edicao_form.eixo.value|stringformat:"s" == eixo.id|stringformat:"s" %}selected{% endif %}>
+                  {% if eixo.pai %}{{ eixo.pai.nome }} › {% endif %}{{ eixo.nome }}
+                </option>
+                {% endfor %}
+              </select>
+              {{ catalogo_edicao_form.eixo.errors }}
+            </td>
+            {% else %}
             <td>{{ item.nome }}</td>
             <td>{% if item.eixo.pai %}{{ item.eixo.pai.nome }} › {% endif %}{{ item.eixo.nome }}</td>
+            {% endif %}
             <td>{{ item.total_acoes }} {{ item.total_acoes|pluralize:"ação,ações" }}</td>
-            <td>{% if item.ativa %}Sim{% else %}Não{% endif %}</td>
             <td>
               <div class="status-row-actions">
+                {% if catalogo_edicao.pk == item.pk %}
+                <form id="editar-catalogo-{{ item.id }}" method="post" action="{% url 'editar_catalogo' item.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="status-save-button">Salvar</button>
+                </form>
+                <a href="{% url 'gerenciar_catalogo' %}" class="status-cancel-button">Cancelar</a>
+                {% else %}
                 <a href="{% url 'editar_catalogo' item.id %}" class="status-edit-button"
                   aria-label="Editar {{ item.nome }}" title="Editar">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -81,6 +117,20 @@
                     <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/>
                   </svg>
                 </a>
+                {% endif %}
+                {% if item.total_acoes %}
+                <button type="button" class="status-delete-button status-delete-disabled"
+                  aria-label="Não é possível excluir {{ item.nome }} porque está sendo usada"
+                  title="Não é possível excluir: ação em uso" disabled>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 6h18"/>
+                    <path d="M8 6V4h8v2"/>
+                    <path d="m19 6-1 14H6L5 6"/>
+                    <path d="M10 11v5M14 11v5"/>
+                  </svg>
+                </button>
+                {% else %}
                 <form method="post" action="{% url 'excluir_catalogo' item.id %}" class="status-delete-form">
                   {% csrf_token %}
                   <button type="submit" class="status-delete-button"
@@ -95,12 +145,13 @@
                     </svg>
                   </button>
                 </form>
+                {% endif %}
               </div>
             </td>
           </tr>
           {% empty %}
           <tr>
-            <td colspan="5" class="status-table-empty">Nenhuma ação no catálogo.</td>
+            <td colspan="4" class="status-table-empty">Nenhuma ação encontrada.</td>
           </tr>
           {% endfor %}
         </tbody>
