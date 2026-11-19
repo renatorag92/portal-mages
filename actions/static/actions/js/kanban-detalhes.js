@@ -231,7 +231,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (!editando) {
       conteudo =
-        item("Código", esc(a.id)) +
+        item("ID", esc(a.id)) +
         item("Eixo", esc(a.eixo || "Não informado")) +
         item("Nome", esc(a.nome || "Não informado"), true) +
         item("Prioridade", chipPrioridade(a.prioridade)) +
@@ -242,7 +242,7 @@ document.addEventListener("DOMContentLoaded", function () {
         item("Observações", a.observacoes ? esc(a.observacoes) : vazio("Nenhuma observação informada."), true, "det-obs det-obs-acao");
     } else {
       conteudo =
-        item("Código", esc(a.id)) +
+        item("ID", esc(a.id)) +
         item("Eixo", esc(a.eixo || "Não informado")) +
         item("Nome", esc(a.nome || "Não informado"), true) +
         campo("detf-prioridade", "Prioridade", true,
