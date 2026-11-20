@@ -37,14 +37,14 @@ class BaseCenario(TestCase):
 
 
 class RegrasDeNegocioTests(BaseCenario):
-    def test_codigo_e_sequencial_por_prefeitura(self):
+    def test_id_e_sequencial_por_prefeitura(self):
         segunda = Acao.objects.create(
             prefeitura=self.prefeitura, nome='Segunda', eixo=self.eixo,
             status=self.status_planejado, responsavel=self.responsavel,
             prioridade='Média', data_inicio=date(2026, 1, 1), data_fim=date(2026, 2, 1),
             arrecadacao_estimada=Decimal('0'))
-        self.assertEqual(self.acao.codigo, 1)
-        self.assertEqual(segunda.codigo, 2)
+        self.assertEqual(self.acao.id, 1)
+        self.assertEqual(segunda.id, 2)
 
     def test_fim_antes_do_inicio_e_recusado_pelo_banco(self):
         from django.db import IntegrityError, transaction

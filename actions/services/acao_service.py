@@ -23,7 +23,7 @@ class AcaoService:
     def serializar(acao):
         return {
             'id': acao.id,
-            'codigo': acao.codigo,
+            'id': acao.id,
             'nome': acao.nome,
             'eixo': acao.eixo.nome,
             'prioridade': acao.prioridade,

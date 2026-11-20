@@ -17,7 +17,7 @@ class Funcionario(AbstractUser):
     """
     # O login é o CPF: reaproveita o campo `username` do Django (coluna `cpf` no banco,
     # armazenado só com dígitos). Em código, acesse também por `funcionario.cpf`.
-    username = models.CharField(
+    cpf = models.CharField(
         'CPF', max_length=11, unique=True, db_column='cpf',
         error_messages={'unique': 'Já existe um funcionário com este CPF.'})
 
