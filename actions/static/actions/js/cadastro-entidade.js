@@ -135,12 +135,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const display = form.querySelector('[data-display="' + key + '"]');
       const input = form.querySelector('[data-input="' + key + '"]');
       if (display) display.textContent = key === "cnpj" ? registro.cnpj_formatado : entry[1];
-      if (input && key !== "prefeitura") input.value = key === "cnpj" ? registro.cnpj_formatado : entry[1];
+      if (input) input.value = key === "cnpj" ? registro.cnpj_formatado : entry[1];
     });
-    const prefeituraDisplay = form.querySelector('[data-display="prefeitura"]');
-    const prefeituraInput = form.querySelector('[data-input="prefeitura"]');
-    if (prefeituraDisplay && registro.prefeitura_nome) prefeituraDisplay.textContent = registro.prefeitura_nome;
-    if (prefeituraInput && registro.prefeitura_id) prefeituraInput.value = registro.prefeitura_id;
   }
 
   editButton.addEventListener("click", function () {

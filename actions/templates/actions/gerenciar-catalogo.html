@@ -53,7 +53,7 @@
             <option value="">Todos os eixos</option>
             {% for eixo in eixos_lista %}
             <option value="{{ eixo.id }}" {% if eixo_filtro == eixo.id|stringformat:"s" %}selected{% endif %}>
-              {% if eixo.pai %}{{ eixo.pai.nome }} › {% endif %}{{ eixo.nome }}
+              {% if eixo.principal %}{{ eixo.principal.nome }} › {% endif %}{{ eixo.nome }}
             </option>
             {% endfor %}
           </select>
@@ -89,7 +89,7 @@
                 aria-label="Eixo da ação">
                 {% for eixo in eixos_lista %}
                 <option value="{{ eixo.id }}" {% if catalogo_edicao_form.eixo.value|stringformat:"s" == eixo.id|stringformat:"s" %}selected{% endif %}>
-                  {% if eixo.pai %}{{ eixo.pai.nome }} › {% endif %}{{ eixo.nome }}
+                  {% if eixo.principal %}{{ eixo.principal.nome }} › {% endif %}{{ eixo.nome }}
                 </option>
                 {% endfor %}
               </select>
@@ -97,7 +97,7 @@
             </td>
             {% else %}
             <td>{{ item.nome }}</td>
-            <td>{% if item.eixo.pai %}{{ item.eixo.pai.nome }} › {% endif %}{{ item.eixo.nome }}</td>
+            <td>{% if item.eixo.principal %}{{ item.eixo.principal.nome }} › {% endif %}{{ item.eixo.nome }}</td>
             {% endif %}
             <td>{{ item.total_acoes }} {{ item.total_acoes|pluralize:"ação,ações" }}</td>
             <td>

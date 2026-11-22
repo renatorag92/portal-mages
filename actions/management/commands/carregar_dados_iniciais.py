@@ -3,7 +3,7 @@ from django.db import transaction
 
 from actions.models import AcaoCatalogo, Eixo, Status
 
-# (nome, pai). O pai precisa vir antes do filho na lista.
+# (nome, principal). O eixo principal precisa vir antes do subeixo na lista.
 EIXOS = [
     ('Cadastro Tributário', None),
     ('Cadastro Imobiliário', 'Cadastro Tributário'),
@@ -156,10 +156,10 @@ class Command(BaseCommand):
         novos = {'eixos': 0, 'status': 0, 'catalogo': 0}
 
         eixos = {}
-        for nome, pai in EIXOS:
+        for nome, principal in EIXOS:
             eixo, criado = Eixo.objects.get_or_create(
                 nome=nome,
-                defaults={'pai': eixos[pai] if pai else None},
+                defaults={'principal': eixos[principal] if principal else None},
             )
             eixos[nome] = eixo
             novos['eixos'] += criado

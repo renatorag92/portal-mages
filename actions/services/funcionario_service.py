@@ -1,4 +1,3 @@
-from django.core.files.storage import default_storage
 from django.db.models.deletion import ProtectedError
 
 from ..forms import preparar_senha
@@ -16,6 +15,10 @@ class FuncionarioService:
         return FuncionarioRepositorio.listar_com_solicitacao_pendente()
 
     @staticmethod
+    def contar_consultores():
+        return FuncionarioRepositorio.contar_consultores()
+
+    @staticmethod
     def salvar(form):
         registro = form.save(commit=False)
         senha = preparar_senha(registro)
@@ -27,6 +30,12 @@ class FuncionarioService:
         funcionario = FuncionarioRepositorio.buscar_ou_404(funcionario_id)
         if funcionario.pk == usuario_logado.pk:
             raise ErroRegraNegocio('Você não pode excluir o seu próprio cadastro.')
+        if funcionario.e_consultor:
+            total_consultores = FuncionarioRepositorio.contar_consultores()
+            if total_consultores <= 2:
+                raise ErroRegraNegocio(
+                    'Não é possível excluir consultores quando restarem menos de três no sistema.'
+                )
         try:
             FuncionarioRepositorio.excluir(funcionario)
         except ProtectedError:
@@ -35,9 +44,5 @@ class FuncionarioService:
             )
 
     @staticmethod
-    def atualizar_perfil(form, usuario, nova_foto_enviada, limpar_foto):
-        foto_anterior = FuncionarioRepositorio.obter_caminho_foto(usuario.pk)
-        usuario_atualizado = form.save()
-        if foto_anterior and (nova_foto_enviada or limpar_foto):
-            default_storage.delete(foto_anterior)
-        return usuario_atualizado
+    def atualizar_perfil(form):
+        return form.save()

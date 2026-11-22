@@ -22,7 +22,7 @@ class CatalogoRepositorio:
     @staticmethod
     def listar_filtrado(nome_filtro='', eixo_filtro=''):
         qs = (
-            AcaoCatalogo.objects.select_related('eixo', 'eixo__pai')
+            AcaoCatalogo.objects.select_related('eixo', 'eixo__principal')
             .annotate(total_acoes=Count('instancias'))
             .order_by('eixo__nome', 'nome')
         )

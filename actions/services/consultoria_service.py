@@ -24,14 +24,12 @@ class ConsultoriaService:
     @staticmethod
     def preparar_tela(form_class):
         registro = ConsultoriaRepositorio.obter_primeira()
-        sem_prefeituras = not PrefeituraRepositorio.existe_alguma()
         return {
             'tipo_entidade': 'consultoria',
             'titulo_entidade': 'Consultoria',
             'registro': registro,
             'cnpj_formatado': formatar_cnpj(registro.cnpj) if registro else '',
-            'form': form_class(instance=registro) if not sem_prefeituras else None,
-            'sem_prefeituras': sem_prefeituras,
+            'form': form_class(instance=registro),
         }
 
     @staticmethod

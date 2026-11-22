@@ -35,6 +35,13 @@ class FuncionarioRepositorio:
         )
 
     @staticmethod
+    def contar_consultores():
+        return Funcionario.objects.filter(
+            tem_acesso=True,
+            consultoria__isnull=False,
+        ).count()
+
+    @staticmethod
     def obter_caminho_foto(funcionario_id):
         return Funcionario.objects.values_list('foto', flat=True).get(pk=funcionario_id)
 

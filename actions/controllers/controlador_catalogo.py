@@ -21,7 +21,7 @@ class AcaoCatalogoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['eixo'].queryset = EixoService.listar_folha()
         self.fields['eixo'].label_from_instance = lambda e: (
-            f'{e.pai.nome} › {e.nome}' if e.pai_id else e.nome
+            f'{e.principal.nome} › {e.nome}' if e.principal_id else e.nome
         )
 
     def clean_nome(self):

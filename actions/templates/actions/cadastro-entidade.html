@@ -21,12 +21,6 @@
       {% if registro %}Dados da {{ titulo_entidade|lower }}{% else %}Cadastrar {{ titulo_entidade|lower }}{% endif %}
     </h2>
 
-    {% if tipo_entidade == 'consultoria' and sem_prefeituras %}
-    <div class="entity-notice" role="status">
-      <p>Nenhuma prefeitura cadastrada. Cadastre uma prefeitura antes de continuar.</p>
-      <a href="{% url 'gerenciar_prefeitura' %}">Ir para Prefeitura</a>
-    </div>
-    {% else %}
     <form id="entityForm" class="entity-form" novalidate>
       {% csrf_token %}
       <div class="entity-errors" id="entityErrors" role="alert" aria-live="assertive" tabindex="-1" hidden></div>
@@ -60,20 +54,6 @@
             data-input="endereco" required value="{{ form.endereco.value|default_if_none:'' }}"
             {% if registro %}hidden{% endif %}>
         </div>
-        {% if tipo_entidade == 'consultoria' %}
-        <div class="entity-field">
-          <label for="entityPrefeitura">Prefeitura</label>
-          <span class="entity-value" data-display="prefeitura" {% if not registro %}hidden{% endif %}>{% if registro %}{{ prefeitura_atual.nome_fantasia }}{% endif %}</span>
-          <select id="entityPrefeitura" name="prefeitura" data-input="prefeitura" required {% if registro %}hidden{% endif %}>
-            <option value="">Selecione uma prefeitura</option>
-            {% for prefeitura in form.fields.prefeitura.queryset %}
-            <option value="{{ prefeitura.pk }}" {% if registro and prefeitura_atual_id == prefeitura.pk %}selected{% endif %}>
-              {{ prefeitura.nome_fantasia }}
-            </option>
-            {% endfor %}
-          </select>
-        </div>
-        {% endif %}
       </div>
 
       <div class="entity-actions">
@@ -82,7 +62,6 @@
         <button type="button" class="entity-button entity-cancel" id="entityCancel" hidden>Cancelar</button>
       </div>
     </form>
-    {% endif %}
   </section>
 </div>
 
