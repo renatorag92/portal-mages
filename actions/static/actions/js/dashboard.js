@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", function () {
         el.style.width = el.dataset.largura + "%";
     });
 
-  const abas = document.querySelectorAll(".dash-aba");
+  const abas = document.querySelectorAll(".dash-abas:not(.dash-prazo-abas) .dash-aba");
   const paineis = document.querySelectorAll(".dash-painel");
 
   abas.forEach(function (aba) {
@@ -29,6 +29,30 @@ document.addEventListener("DOMContentLoaded", function () {
 
       paineis.forEach(function (painel) {
         painel.classList.toggle("ativo", painel.dataset.painel === chave);
+      });
+    });
+  });
+
+  const abasPrazo = document.querySelectorAll(".dash-prazo-abas .dash-aba");
+  const paineisPrazo = document.querySelectorAll(".dash-prazo-painel");
+  const subtitulosPrazo = document.querySelectorAll("[data-prazo-subtitulo]");
+
+  abasPrazo.forEach(function (aba) {
+    aba.addEventListener("click", function () {
+      const prazo = aba.dataset.prazoAba;
+
+      abasPrazo.forEach(function (outraAba) {
+        const ativa = outraAba === aba;
+        outraAba.classList.toggle("ativa", ativa);
+        outraAba.setAttribute("aria-selected", String(ativa));
+        outraAba.tabIndex = ativa ? 0 : -1;
+      });
+
+      paineisPrazo.forEach(function (painel) {
+        painel.hidden = painel.id !== aba.getAttribute("aria-controls");
+      });
+      subtitulosPrazo.forEach(function (subtitulo) {
+        subtitulo.hidden = subtitulo.dataset.prazoSubtitulo !== prazo;
       });
     });
   });

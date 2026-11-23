@@ -107,46 +107,47 @@ active
 
   </section>
 
-    <!-- AÇÕES PRÓXIMAS DO VENCIMENTO -->
   <section class="dash-card dash-card-etapas">
     <div class="dash-card-topo">
-      <h2>Ações próximas do vencimento</h2>
-      <span class="dash-subtitulo">Até {{ dias_proximo }} dias</span>
+      <h2>Ações por prazo</h2>
+      <span class="dash-subtitulo" data-prazo-subtitulo="proximas">Até {{ dias_proximo }} dias</span>
+      <span class="dash-subtitulo" data-prazo-subtitulo="atrasadas" hidden>Prazo vencido</span>
     </div>
 
-    {% if proximas_acoes %}
-    <div class="dash-tabela-caixa">
-      <table class="dash-tabela">
-        <thead>
-          <tr>
-            <th>Eixo</th>
-            <th>Nome da ação</th>
-            <th>Responsável</th>
-            <th>Data prevista</th>
-            <th>Status</th>
-            <th>Prioridade</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for a in proximas_acoes %}
-          <tr class="dash-acao-detalhes" data-acao-detalhes="{{ a.id }}" tabindex="0" role="button"
-              aria-label="Ver detalhes da ação {{ a.nome_acao }}">
-            <td>{{ a.eixo }}</td>
-            <td>{{ a.nome_acao }}</td>
-            <td>{{ a.responsavel }}</td>
-            <td><span class="dash-data dash-data-{{ a.nivel }}">{{ a.data|date:"d/m/Y" }}</span></td>
-            <td>{{ a.status }}</td>
-            <td>
-              <span class="dash-prio dash-prio-{{ a.prioridade_classe }}">{{ a.prioridade }}</span>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <div class="dash-abas dash-prazo-abas" role="tablist" aria-label="Ações por prazo">
+      <button type="button" class="dash-aba ativa" id="aba-acoes-proximas"
+              data-prazo-aba="proximas" role="tab" aria-selected="true"
+              aria-controls="painel-acoes-proximas">
+        Próximas do vencimento ({{ proximas_acoes|length }})
+      </button>
+      <button type="button" class="dash-aba" id="aba-acoes-atrasadas"
+              data-prazo-aba="atrasadas" role="tab" aria-selected="false"
+              aria-controls="painel-acoes-atrasadas" tabindex="-1">
+        Atrasadas ({{ atrasadas_acoes|length }})
+      </button>
     </div>
-    {% else %}
+
+    <div class="dash-prazo-painel" id="painel-acoes-proximas" role="tabpanel"
+         aria-labelledby="aba-acoes-proximas" tabindex="0">
+      {% if proximas_acoes %}
+      <div class="dash-tabela-caixa">
+        {% include "actions/_dashboard_acoes_tabela.html" with acoes=proximas_acoes %}
+      </div>
+      {% else %}
       <p class="dash-vazio">Nenhuma ação vence nos próximos {{ dias_proximo }} dias.</p>
-    {% endif %}
+      {% endif %}
+    </div>
+
+    <div class="dash-prazo-painel" id="painel-acoes-atrasadas" role="tabpanel"
+         aria-labelledby="aba-acoes-atrasadas" tabindex="0" hidden>
+      {% if atrasadas_acoes %}
+      <div class="dash-tabela-caixa">
+        {% include "actions/_dashboard_acoes_tabela.html" with acoes=atrasadas_acoes %}
+      </div>
+      {% else %}
+      <p class="dash-vazio">Nenhuma ação atrasada.</p>
+      {% endif %}
+    </div>
   </section>
 
 </div>

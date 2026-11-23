@@ -128,25 +128,35 @@ class DashboardService:
             (a for a in ativas if hoje <= a.data_fim <= limite_proximas),
             key=lambda a: (a.data_fim, a.pk),
         )
+        atrasadas_acoes = sorted(
+            (a for a in ativas if a.data_fim < hoje),
+            key=lambda a: (a.data_fim, a.pk),
+        )
 
-        proximas = []
-        for a in proximas_acoes:
-            dias = (a.data_fim - hoje).days
-            proximas.append({
+        def preparar_acao(a, nivel):
+            return {
                 'id': a.id,
                 'eixo': a.eixo.nome if a.eixo_id else '—',
                 'nome_acao': a.nome,
                 'responsavel': a.responsavel.nome,
                 'data': a.data_fim,
-                'nivel': (
-                    'vermelho' if dias <= 1
-                    else 'amarelo' if dias <= DIAS_URGENTE
-                    else 'verde'
-                ),
+                'nivel': nivel,
                 'status': a.status.nome,
                 'prioridade': a.prioridade or '—',
                 'prioridade_classe': slugify(a.prioridade),
-            })
+            }
+
+        proximas = []
+        for a in proximas_acoes:
+            dias = (a.data_fim - hoje).days
+            nivel = (
+                'vermelho' if dias <= 1
+                else 'amarelo' if dias <= DIAS_URGENTE
+                else 'verde'
+            )
+            proximas.append(preparar_acao(a, nivel))
+
+        atrasadas = [preparar_acao(a, 'vermelho') for a in atrasadas_acoes]
 
         return {
             'total_ativas': total_ativas,
@@ -160,5 +170,6 @@ class DashboardService:
                 {'chave': 'por_prazo', 'dados': cls._distribuicao(fatias_prazo)},
             ],
             'proximas_acoes': proximas,
+            'atrasadas_acoes': atrasadas,
             'dias_proximo': DIAS_PROXIMO,
         }

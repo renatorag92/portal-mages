@@ -1,0 +1,27 @@
+<table class="dash-tabela">
+  <thead>
+    <tr>
+      <th>Eixo</th>
+      <th>Nome da ação</th>
+      <th>Responsável</th>
+      <th>Data prevista</th>
+      <th>Status</th>
+      <th>Prioridade</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for a in acoes %}
+    <tr class="dash-acao-detalhes" data-acao-detalhes="{{ a.id }}" tabindex="0" role="button"
+        aria-label="Ver detalhes da ação {{ a.nome_acao }}">
+      <td>{{ a.eixo }}</td>
+      <td>{{ a.nome_acao }}</td>
+      <td>{{ a.responsavel }}</td>
+      <td><span class="dash-data dash-data-{{ a.nivel }}">{{ a.data|date:"d/m/Y" }}</span></td>
+      <td>{{ a.status }}</td>
+      <td>
+        <span class="dash-prio dash-prio-{{ a.prioridade_classe }}">{{ a.prioridade }}</span>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

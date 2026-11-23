@@ -164,6 +164,9 @@ class NotificationCenterTests(TestCase):
         acao_hoje = self.criar_acao('Ação vence hoje', date.today())
         acao_amanha = self.criar_acao('Ação vence amanhã', amanha)
         acao_proxima = self.criar_acao('Ação vence em dois dias', amanha + timedelta(days=1))
+        acao_atrasada = self.criar_acao('Ação atrasada', date.today() - timedelta(days=2))
+        concluido = Status.objects.create(chave='CONCLUIDO', nome='Concluído', cor='#008000', ordem=5)
+        self.criar_acao('Ação concluída atrasada', date.today() - timedelta(days=3), concluido)
 
         response = self.client.get(reverse('dashboard'))
 
@@ -172,6 +175,10 @@ class NotificationCenterTests(TestCase):
         self.assertEqual(acoes[acao_hoje.nome]['nivel'], 'vermelho')
         self.assertEqual(acoes[acao_amanha.nome]['nivel'], 'vermelho')
         self.assertEqual(acoes[acao_proxima.nome]['nivel'], 'amarelo')
+        atrasadas = response.context['atrasadas_acoes']
+        self.assertEqual([acao['nome_acao'] for acao in atrasadas], [acao_atrasada.nome])
+        self.assertEqual(atrasadas[0]['nivel'], 'vermelho')
+        self.assertContains(response, 'Atrasadas (1)')
         self.assertContains(response, 'class="dash-data dash-data-vermelho"')
 
     def test_deadline_colors_distinguish_tomorrow_from_overdue_for_actions_only(self):

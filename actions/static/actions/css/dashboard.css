@@ -142,6 +142,10 @@
   gap: 6px;
 }
 
+.dash-prazo-abas {
+  justify-content: flex-end;
+}
+
 .dash-aba {
   padding: 6px 12px;
   font-family: inherit;
@@ -167,6 +171,10 @@
 .dash-aba:focus-visible {
   outline: 2px solid var(--dash-azul);
   outline-offset: 2px;
+}
+
+.dash-prazo-painel:not([hidden]) {
+  animation: dash-entra 0.25s ease-out;
 }
 
 
@@ -385,6 +393,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .dash-painel.ativo,
+  .dash-prazo-painel:not([hidden]),
   .dash-barra-preench {
     animation: none;
     transition: none;
