@@ -21,18 +21,18 @@ class EixoRepositorio:
 
     @staticmethod
     def listar_principais(excluir_pk=None):
-        qs = Eixo.objects.filter(pai__isnull=True)
+        qs = Eixo.objects.filter(principal__isnull=True)
         if excluir_pk:
             qs = qs.exclude(pk=excluir_pk)
         return qs
 
     @staticmethod
     def listar_folha():
-        return Eixo.objects.filter(subeixos__isnull=True).select_related('pai').order_by('nome')
+        return Eixo.objects.filter(subeixos__isnull=True).select_related('principal').order_by('nome')
 
     @staticmethod
     def listar_raiz_com_subeixos():
-        return Eixo.objects.filter(pai__isnull=True).prefetch_related('subeixos')
+        return Eixo.objects.filter(principal__isnull=True).prefetch_related('subeixos')
 
     @staticmethod
     def nome_existe(nome, excluir_pk=None):

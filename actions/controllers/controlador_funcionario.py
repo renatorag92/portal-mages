@@ -15,12 +15,7 @@ def minha_conta_view(request):
     if request.method == 'POST':
         form = MinhaContaForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
-            FuncionarioService.atualizar_perfil(
-                form,
-                request.user,
-                bool(request.FILES.get('foto')),
-                'foto-clear' in request.POST,
-            )
+            FuncionarioService.atualizar_perfil(form)
             messages.success(request, 'Seus dados foram atualizados com sucesso.')
             return redirect('minha_conta')
     else:
@@ -58,6 +53,7 @@ def gerenciar_funcionario_view(request, funcionario_id=None):
         'form': form,
         'funcionario_lista': FuncionarioService.listar_todos(),
         'funcionario_edicao': funcionario,
+        'total_consultores': FuncionarioService.contar_consultores(),
     })
 
 

@@ -122,7 +122,8 @@ class PasswordResetRequestTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 409)
-        self.assertFalse(solicitacao.leituras.exists())
+        solicitacao.refresh_from_db()
+        self.assertTrue(solicitacao.pendente)
         still_unread = self.client.get(refresh_url).json()
         self.assertEqual(still_unread['unread_count'], 1)
 

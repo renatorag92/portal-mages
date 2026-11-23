@@ -12,20 +12,20 @@ from ._base import usuario_configuracoes
 
 
 class EixoForm(forms.ModelForm):
-    pai = forms.ModelChoiceField(
+    principal = forms.ModelChoiceField(
         queryset=Eixo.objects.none(),
         required=False,
-        label='Eixo pai',
+        label='Eixo principal',
         empty_label='Nenhum (eixo principal)',
     )
 
     class Meta:
         model = Eixo
-        fields = ('nome', 'pai')
+        fields = ('nome', 'principal')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['pai'].queryset = EixoService.listar_principais(self.instance.pk)
+        self.fields['principal'].queryset = EixoService.listar_principais(self.instance.pk)
 
     def clean_nome(self):
         nome = (self.cleaned_data.get('nome') or '').strip()

@@ -21,34 +21,6 @@ def _mensagem_prazo(dias):
 
 
 def notifications(request):
-    solicitacoes_senha = []
-    if request.user.is_authenticated and request.user.e_consultor:
-        solicitacoes_senha = list(
-            SolicitacaoRedefinicaoSenha.objects.filter(pendente=True)
-            .select_related('funcionario')
-        )
-    notificacoes_senha = [
-        {
-            'id': f'solicitacao_senha-{solicitacao.pk}',
-            'titulo': 'Solicitação de troca de senha',
-            'mensagem': f'{solicitacao.funcionario.nome} deseja alterar a senha.',
-            'nome': solicitacao.funcionario.nome,
-            'tipo': 'warning',
-            'urgencia': 'seguranca',
-            'alvo_tipo': 'solicitacao_senha',
-            'alvo_id': solicitacao.pk,
-            'lida': False,
-            'url': None,
-            'url_nao_lida': None,
-            'destino_url': reverse('gerenciar_funcionario'),
-            'solicitada_em': solicitacao.solicitada_em,
-            'data': solicitacao.solicitada_em,
-            'data_iso': solicitacao.solicitada_em,
-            'prazo': None,
-        }
-        for solicitacao in solicitacoes_senha
-    ]
-
     if not request.user.is_authenticated:
         return {
             'notifications': [],
@@ -71,28 +43,28 @@ def notifications(request):
         )
 
     notificacoes_senha = [
-    {
-        'id': f'solicitacao_senha-{s.pk}',
-        'titulo': 'Solicitação de troca de senha',
-        'mensagem': f'{s.funcionario.nome} deseja alterar a senha.',
-        'nome': s.funcionario.nome,
-        'tipo': 'warning',
-        'urgencia': 'seguranca',
-        'alvo_tipo': 'solicitacao_senha',
-        'alvo_id': s.pk,
-        'lida': False,                       # pedido pendente: sempre aparece como não lido
-        'url': reverse('gerenciar_funcionario'),
-        'url_nao_lida': reverse('gerenciar_funcionario'),
-        'destino_url': reverse('gerenciar_funcionario'),
-        'remover_url': None,                 # não se remove pedido de senha pelo sino
-        'solicitada_em': s.solicitada_em,
-        'criado_em': s.solicitada_em,
-        'data': None,
-        'data_iso': None,                    # era datetime: a view precisa de texto ou None
-        'prazo': None,
-    }
-    for s in solicitacoes_senha
-]
+        {
+            'id': f'solicitacao_senha-{s.pk}',
+            'titulo': 'Solicitação de troca de senha',
+            'mensagem': f'{s.funcionario.nome} deseja alterar a senha.',
+            'nome': s.funcionario.nome,
+            'tipo': 'warning',
+            'urgencia': 'seguranca',
+            'alvo_tipo': 'solicitacao_senha',
+            'alvo_id': s.pk,
+            'lida': False,
+            'url': None,
+            'url_nao_lida': None,
+            'destino_url': reverse('gerenciar_funcionario'),
+            'remover_url': None,
+            'solicitada_em': s.solicitada_em,
+            'criado_em': s.solicitada_em,
+            'data': s.solicitada_em,
+            'data_iso': s.solicitada_em,
+            'prazo': None,
+        }
+        for s in solicitacoes_senha
+    ]
 
     prefeituras = list(request.user.prefeituras_permitidas()[:2])
     prefeitura_id = request.session.get('prefeitura_id')

@@ -30,9 +30,9 @@ Gerenciar Eixos
           {{ form.nome.errors }}
         </div>
         <div class="status-form-group">
-          <label for="{{ form.pai.id_for_label }}">Eixo principal (opcional):</label>
-          {{ form.pai }}
-          {{ form.pai.errors }}
+          <label for="{{ form.principal.id_for_label }}">Eixo principal (opcional):</label>
+          {{ form.principal }}
+          {{ form.principal.errors }}
         </div>
       </div>
 
@@ -54,7 +54,7 @@ Gerenciar Eixos
         <thead>
           <tr>
             <th>Nome</th>
-            <th>Eixo pai</th>
+            <th>Eixo principal</th>
             <th>Itens no catálogo</th>
             <th class="status-table-actions-heading">Ações</th>
           </tr>
@@ -63,7 +63,7 @@ Gerenciar Eixos
           {% for eixo in eixo_lista %}
           <tr>
             <td>{{ eixo.nome }}</td>
-            <td>{{ eixo.pai.nome|default:'-' }}</td>
+            <td>{{ eixo.principal.nome|default:'-' }}</td>
             <td>{{ eixo.total_vinculos }}</td>
             <td>
               <div class="status-row-actions">

@@ -198,9 +198,61 @@ class GerenciarCatalogoTests(BaseCenario):
         self.assertEqual(resposta.status_code, 302)
 
 
+class ExclusaoConsultorTests(BaseCenario):
+    def criar_consultor(self, cpf, nome):
+        return Funcionario.objects.create(
+            username=cpf,
+            nome=nome,
+            consultoria=self.consultoria,
+            tem_acesso=True,
+            primeiro_acesso=False,
+        )
+
+    def test_nunca_exclui_um_consultor_quando_somente_existirem_dois(self):
+        consultor_1 = self.criar_consultor('12345678908', 'Consultor 1')
+        consultor_2 = self.criar_consultor('12345678909', 'Consultor 2')
+        self.client.force_login(consultor_1)
+
+        resposta = self.client.post(
+            reverse('excluir_funcionario', args=[consultor_2.pk])
+        )
+
+        self.assertRedirects(resposta, reverse('gerenciar_funcionario'))
+        self.assertTrue(Funcionario.objects.filter(pk=consultor_2.pk).exists())
+
+    def test_com_tres_consultores_permite_excluir_um(self):
+        consultor_1 = self.criar_consultor('12345678910', 'Consultor 1')
+        consultor_2 = self.criar_consultor('12345678911', 'Consultor 2')
+        consultor_3 = self.criar_consultor('12345678912', 'Consultor 3')
+        self.client.force_login(consultor_3)
+
+        resposta = self.client.post(
+            reverse('excluir_funcionario', args=[consultor_1.pk])
+        )
+
+        self.assertRedirects(resposta, reverse('gerenciar_funcionario'))
+        self.assertFalse(Funcionario.objects.filter(pk=consultor_1.pk).exists())
+        self.assertTrue(Funcionario.objects.filter(pk=consultor_2.pk).exists())
+
+    def test_com_tres_consultores_a_interface_esconde_a_exclusao_apos_reduzir_a_dois(self):
+        consultor_1 = self.criar_consultor('12345678913', 'Consultor 1')
+        consultor_2 = self.criar_consultor('12345678914', 'Consultor 2')
+        consultor_3 = self.criar_consultor('12345678915', 'Consultor 3')
+        consultor_1.delete()
+        self.client.force_login(consultor_2)
+
+        resposta = self.client.get(reverse('gerenciar_funcionario'))
+
+        self.assertContains(resposta, consultor_3.nome)
+        self.assertNotContains(
+            resposta,
+            reverse('excluir_funcionario', args=[consultor_3.pk]),
+        )
+
+
 class CancelamentoTests(BaseCenario):
     def test_acao_cancelada_e_somente_leitura(self):
         self.acao.status = self.status_cancelado
         self.acao.save()
-        from actions.views import _acao_cancelada
+        from actions.services.acao_service import _acao_cancelada
         self.assertTrue(_acao_cancelada(self.acao))

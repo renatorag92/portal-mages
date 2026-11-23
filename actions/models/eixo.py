@@ -5,7 +5,7 @@ from django.db import models
 class Eixo(models.Model):
     id = models.AutoField(primary_key=True)
     nome = models.CharField(max_length=45, unique=True)
-    pai = models.ForeignKey(
+    principal = models.ForeignKey(
         'self', on_delete=models.PROTECT, null=True, blank=True,
         related_name='subeixos')
 
@@ -14,11 +14,11 @@ class Eixo(models.Model):
 
     def clean(self):
         super().clean()
-        if self.pai_id is None:
+        if self.principal_id is None:
             return
-        if self.pai_id == self.pk:
-            raise ValidationError({'pai': 'Um eixo não pode ser subeixo de si mesmo.'})
-        if self.pai.pai_id is not None:
-            raise ValidationError({'pai': 'Só é permitido um nível de subeixo.'})
+        if self.principal_id == self.pk:
+            raise ValidationError({'principal': 'Um eixo não pode ser subeixo de si mesmo.'})
+        if self.principal.principal_id is not None:
+            raise ValidationError({'principal': 'Só é permitido um nível de subeixo.'})
         if self.pk and self.subeixos.exists():
-            raise ValidationError({'pai': 'Este eixo tem subeixos, então não pode ser subeixo.'})
+            raise ValidationError({'principal': 'Este eixo tem subeixos, então não pode ser subeixo.'})

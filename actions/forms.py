@@ -1,6 +1,5 @@
 import re
 import secrets
-import uuid
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -81,49 +80,14 @@ class PrefeituraForm(CadastroEntidadeForm):
 class ConsultoriaForm(CadastroEntidadeForm):
     entidade_model = Consultoria
 
-    # Escolhe a prefeitura que será vinculada a esta consultoria (relação 1:1)
-    prefeitura = forms.ModelChoiceField(
-        queryset=Prefeitura.objects.none(),
-        label='Prefeitura',
-        empty_label='Selecione uma prefeitura',
-        error_messages={
-            'required': 'O campo Prefeitura é obrigatório.',
-            'invalid_choice': 'Selecione uma prefeitura válida e disponível.',
-        },
-    )
-
-    def __init__(self, *args, instance=None, **kwargs):
-        super().__init__(*args, instance=instance, **kwargs)
-
-        if self.instance is not None and self.instance.pk:
-            # Pode manter a prefeitura já vinculada ou escolher uma sem consultoria
-            disponiveis = Prefeitura.objects.filter(
-                Q(consultoria__isnull=True) | Q(consultoria=self.instance))
-            atual = Prefeitura.objects.filter(consultoria=self.instance).first()
-            if atual is not None:
-                self.initial.setdefault('prefeitura', atual.pk)
-        else:
-            disponiveis = Prefeitura.objects.filter(consultoria__isnull=True)
-
-        self.fields['prefeitura'].queryset = disponiveis.order_by('nome_fantasia')
-
     def salvar(self):
-        """Grava a consultoria e o vínculo 1:1 com a prefeitura escolhida."""
         dados = self.cleaned_data
-        prefeitura = dados['prefeitura']
 
         with transaction.atomic():
             consultoria = self.instance if self.instance is not None else Consultoria()
             for campo in CAMPOS_ENTIDADE:
                 setattr(consultoria, campo, dados[campo])
             consultoria.save()
-
-            # Desvincula a prefeitura anterior, se houver, antes de vincular a nova
-            Prefeitura.objects.filter(consultoria=consultoria) \
-                .exclude(pk=prefeitura.pk).update(consultoria=None)
-            if prefeitura.consultoria_id != consultoria.pk:
-                prefeitura.consultoria = consultoria
-                prefeitura.save()
 
         return consultoria
 
@@ -154,6 +118,7 @@ class FuncionarioForm(forms.ModelForm):
                 self.initial.setdefault('vinculo', 'prefeitura')
             elif self.instance.consultoria_id:
                 self.initial.setdefault('vinculo', 'consultoria')
+            self.fields['username'].disabled = True
 
     def clean_username(self):
         digitos = re.sub(r'\D', '', self.cleaned_data.get('username') or '')
@@ -188,57 +153,16 @@ class FuncionarioForm(forms.ModelForm):
 
         return dados
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.instance.pk:
-            self.fields['username'].disabled = True
-
 class MinhaContaForm(forms.ModelForm):
-    foto = forms.ImageField(
-        required=False,
-        error_messages={
-            'invalid_image': 'Envie uma imagem JPG, PNG ou WEBP.',
-        },
-        widget=forms.ClearableFileInput(attrs={
-            'accept': 'image/jpeg,image/png,image/webp',
-        }),
-    )
-
     class Meta:
         model = Funcionario
-        fields = ['nome', 'email', 'telefone', 'endereco', 'foto']
+        fields = ['nome', 'email', 'telefone', 'endereco']
         labels = {
             'nome': 'Nome completo',
             'email': 'E-mail',
             'telefone': 'Telefone',
             'endereco': 'Endereço',
-            'foto': 'Foto de perfil',
         }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        foto_widget = self.fields['foto'].widget
-        foto_widget.initial_text = 'Foto atual:'
-        foto_widget.input_text = 'Escolher outra foto'
-        foto_widget.clear_checkbox_label = 'Remover foto'
-
-    def clean_foto(self):
-        foto = self.cleaned_data.get('foto')
-        upload = self.files.get(self.add_prefix('foto'))
-        if upload is None:
-            return foto
-
-        if upload.size > 5 * 1024 * 1024:
-            raise ValidationError('A foto deve ter no máximo 5 MB.')
-
-        formatos = {'JPEG': 'jpg', 'PNG': 'png', 'WEBP': 'webp'}
-        formato = getattr(getattr(upload, 'image', None), 'format', None)
-        extensao = formatos.get(formato)
-        if extensao is None:
-            raise ValidationError('Envie uma imagem JPG, PNG ou WEBP.')
-
-        upload.name = f'{uuid.uuid4().hex}.{extensao}'
-        return foto
 
 
 ALFABETO_SENHA = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
