@@ -118,6 +118,7 @@ class FuncionarioForm(forms.ModelForm):
                 self.initial.setdefault('vinculo', 'prefeitura')
             elif self.instance.consultoria_id:
                 self.initial.setdefault('vinculo', 'consultoria')
+            self.fields['username'].disabled = True
 
     def clean_username(self):
         digitos = re.sub(r'\D', '', self.cleaned_data.get('username') or '')
@@ -151,11 +152,6 @@ class FuncionarioForm(forms.ModelForm):
             self.instance.prefeitura = None
 
         return dados
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.instance.pk:
-            self.fields['username'].disabled = True
 
 class MinhaContaForm(forms.ModelForm):
     class Meta:

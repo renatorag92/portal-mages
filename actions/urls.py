@@ -71,8 +71,8 @@ urlpatterns = [
 
     # Notificações
     path('notificacoes/atualizar/', controlador_notificacao.atualizar_notificacoes_view, name='atualizar_notificacoes'),
+    path('notificacoes/solicitacao-senha/<int:solicitacao_id>/lida/', controlador_notificacao.marcar_solicitacao_senha_lida_view, name='marcar_solicitacao_senha_lida'),
     path('notificacoes/<str:tipo>/<int:item_id>/lida/', controlador_notificacao.marcar_notificacao_lida_view, name='marcar_notificacao_lida'),
     path('notificacoes/<str:tipo>/<int:item_id>/nao-lida/', controlador_notificacao.marcar_notificacao_nao_lida_view, name='marcar_notificacao_nao_lida'),
     path('notificacoes/<str:tipo>/<int:item_id>/remover/', controlador_notificacao.remover_notificacao_view, name='remover_notificacao'),
-    path('notificacoes/solicitacao-senha/<int:solicitacao_id>/lida/', controlador_notificacao.marcar_solicitacao_senha_lida_view, name='marcar_solicitacao_senha_lida'),
 ]

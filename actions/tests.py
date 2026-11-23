@@ -205,6 +205,7 @@ class ExclusaoConsultorTests(BaseCenario):
             nome=nome,
             consultoria=self.consultoria,
             tem_acesso=True,
+            primeiro_acesso=False,
         )
 
     def test_nunca_exclui_um_consultor_quando_somente_existirem_dois(self):
@@ -253,5 +254,5 @@ class CancelamentoTests(BaseCenario):
     def test_acao_cancelada_e_somente_leitura(self):
         self.acao.status = self.status_cancelado
         self.acao.save()
-        from actions.views import _acao_cancelada
+        from actions.services.acao_service import _acao_cancelada
         self.assertTrue(_acao_cancelada(self.acao))
